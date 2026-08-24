@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "quant-india"
+version = "0.1.0"
+description = "Production repository foundation for Indian Trading"
+requires-python = ">=3.12,<3.13"
+dependencies = []
+
+[project.scripts]
+quant-india = "main:main"
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "ruff",
+    "pre-commit"
+]
+
+[tool.setuptools]
+packages = ["config", "ingestion", "research", "models", "backtest", "portfolio", "agents", "risk_kill", "execution", "reconciliation", "orchestration", "observability", "dashboard", "reports"]
+py-modules = ["main"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]

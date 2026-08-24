@@ -1,1 +1,3 @@
-# indian_trading
+# Indian Trading
+
+Production repository scaffold.
