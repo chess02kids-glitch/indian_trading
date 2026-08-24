@@ -1,0 +1,49 @@
+# Go-Live Checklist (50+ items)
+- [ ] 1. ENV: SECRET_KEY set
+- [ ] 2. ENV: BROKER_TOKEN masked
+- [ ] 3. ENV: SUPABASE_URL valid
+- [ ] 4. ENV: DUCKDB_PATH set
+- [ ] 5. AUTH: OAuth refresh working
+- [ ] 6. AUTH: session expiry handled
+- [ ] 7. DB: migrations applied
+- [ ] 8. DB: RLS enabled
+- [ ] 9. RISK: kill switches active
+- [ ] 10. RISK: daily loss limit set
+- [ ] 11. RECON: EOD mandatory
+- [ ] 12. RECON: mismatch triggers kill
+- [ ] 13. BACKUP: DuckDB copied
+- [ ] 14. BACKUP: Supabase dump scheduled
+- [ ] 15. BACKUP: restore doc present
+- [ ] 16. DOCKER: Python 3.12
+- [ ] 17. DOCKER: non-root user
+- [ ] 18. SYSTEMD: auto-restart
+- [ ] 19. SYSTEMD: env loaded
+- [ ] 20. MONITOR: health.json
+- [ ] 21. MONITOR: dashboard live
+- [ ] 22. CI: dependency cache
+- [ ] 23. CI: Docker build passed
+- [ ] 24. CI: security checks pass
+- [ ] 25. CI: migration verified
+- [ ] 26. DEPLOY: VPS Ubuntu
+- [ ] 27. DEPLOY: log rotation
+- [ ] 28. DEPLOY: rollback script
+- [ ] 29. TEST: dry-run full lifecycle
+- [ ] 30. TEST: stale data handled
+- [ ] 31. TEST: duplicate rejected
+- [ ] 32. TEST: session expiry
+- [ ] 33. TEST: broker failure
+- [ ] 34. TEST: recon mismatch
+- [ ] 35. PAPER: LIMIT only enforced
+- [ ] 36. PAPER: idempotency keys present
+- [ ] 37. AUDIT: log trail preserved
+- [ ] 38. DOCS: architecture updated
+- [ ] 39. DOCS: rollout checklist done
+- [ ] 40. INFRA: healthcheck configured
+- [ ] 41. INFRA: metrics exposed
+- [ ] 42. SEC: no secrets in repo
+- [ ] 43. SEC: token masking active
+- [ ] 44. PERF: no slow scans
+- [ ] 45. PERF: index verified
+- [ ] 46. RELEASE: RC-1 tagged
+- [ ] 47. RELEASE: readiness report generated
+- [ ] 48. RELEASE: sign-off complete

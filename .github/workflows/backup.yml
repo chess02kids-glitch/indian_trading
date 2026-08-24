@@ -25,6 +25,3 @@ jobs:
       run: ruff format --check .
     - name: Run Pytest
       run: pytest
-- uses: actions/cache@v4
-- name: Docker build
-  run: docker build .

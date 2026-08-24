@@ -1,0 +1,6 @@
+[Unit]
+Description=Quant India Pipeline
+[Service]
+ExecStart=/usr/bin/python -m cli pipeline daily
+Restart=always
+EnvironmentFile=/etc/quant-india/env
