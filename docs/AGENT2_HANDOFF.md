@@ -205,6 +205,17 @@ first; the boundary tests exist to keep the safety invariants honest.
 7. Do **not** wire any adapter to a live broker — there is no live broker
    mode in this system.
 
+### Dependency note (important)
+
+`mlflow` is an **optional extra** (`.[tracking]`), not a base dependency:
+every mlflow release caps `cryptography <50` or `pyarrow <23`, while the
+safe ranges for PYSEC-2026-3552 (fixed 50.0.0) and PYSEC-2026-113 (fixed
+23.0.1) are `cryptography >=50.0.0` and `pyarrow >=23.0.1`. Base deps pin
+the safe ranges so CI's `pip-audit --strict` passes. `research/experiments.py`
+degrades to the local JSONL audit trail when mlflow is absent, so nothing
+breaks without the extra. If a future mlflow release lifts the caps, the
+extra can be merged back into base deps.
+
 ## Operating rules (unchanged)
 
 - All execution stays in RESEARCH / PAPER / SANDBOX. No live capital.
