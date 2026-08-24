@@ -39,7 +39,7 @@ class AuthHealthMonitor:
             "configured": False,
             "connectivity_ok": False,
             "session_active": False,
-            "token_valid": False,
+            "token_valid": False,  # nosec B105
         }
 
         # 1. Configuration Health

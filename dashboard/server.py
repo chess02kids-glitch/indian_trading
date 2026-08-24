@@ -75,7 +75,9 @@ class DashboardHandler(BaseHTTPRequestHandler):
 def run_server(port: int | None = None) -> None:
     """Run the dashboard on all interfaces for a container or VPS reverse proxy."""
     actual_port = port if port is not None else int(os.getenv("PORT", "8080"))
-    server = ThreadingHTTPServer(("0.0.0.0", actual_port), DashboardHandler)
+    # The dashboard must listen on all interfaces; exposure is controlled by
+    # the VPS/container reverse proxy.
+    server = ThreadingHTTPServer(("0.0.0.0", actual_port), DashboardHandler)  # nosec B104
     server.serve_forever()
 
 
