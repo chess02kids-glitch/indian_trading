@@ -25,18 +25,18 @@ def run_migrations() -> None:
     conn = None
     try:
         conn = psycopg2.connect(db_url)
-        conn.autocommit = True
-        with conn.cursor() as cur:
-            for sql_file in sql_files:
-                logger.info(f"Applying migration: {sql_file.name}")
-                with open(sql_file, "r") as f:
-                    sql = f.read()
-                try:
-                    cur.execute(sql)
-                    logger.info(f"Successfully applied {sql_file.name}")
-                except Exception as e:
-                    logger.error(f"Failed to apply {sql_file.name}: {e}")
-                    raise
+        with conn:  # Transaction safety block
+            with conn.cursor() as cur:
+                for sql_file in sql_files:
+                    logger.info(f"Applying migration: {sql_file.name}")
+                    with open(sql_file, "r") as f:
+                        sql = f.read()
+                    try:
+                        cur.execute(sql)
+                        logger.info(f"Successfully applied {sql_file.name}")
+                    except Exception as e:
+                        logger.error(f"Failed to apply {sql_file.name}: {e}")
+                        raise
     except Exception as e:
         logger.error(f"Migration runner failed: {e}")
         raise

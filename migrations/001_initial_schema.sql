@@ -3,22 +3,40 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- USERS TABLE
 CREATE TABLE IF NOT EXISTS public.users (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     email VARCHAR(255) UNIQUE NOT NULL,
     role VARCHAR(50) NOT NULL DEFAULT 'trader',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Trigger to automatically create a public.users record when a new auth user signs up
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO public.users (id, email, role)
+    VALUES (NEW.id, NEW.email, 'trader');
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+    AFTER INSERT ON auth.users
+    FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
 -- API SESSIONS
 CREATE TABLE IF NOT EXISTS public.api_sessions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-    broker_name VARCHAR(50) NOT NULL,
-    session_token TEXT NOT NULL,
+    broker VARCHAR(50) NOT NULL,
+    access_token TEXT NOT NULL,
+    refresh_token TEXT,
+    is_active BOOLEAN NOT NULL DEFAULT true,
     expires_at TIMESTAMPTZ NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(user_id, broker)
 );
 
 -- ENUMS for trading
@@ -35,7 +53,7 @@ END$$;
 -- ORDERS TABLE
 CREATE TABLE IF NOT EXISTS public.orders (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID NOT NULL REFERENCES public.users(id),
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
     symbol VARCHAR(50) NOT NULL,
     side order_side NOT NULL,
     quantity DECIMAL NOT NULL CHECK (quantity > 0),
@@ -51,7 +69,7 @@ CREATE INDEX IF NOT EXISTS idx_orders_status ON public.orders(status);
 -- EXECUTIONS TABLE
 CREATE TABLE IF NOT EXISTS public.executions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    order_id UUID NOT NULL REFERENCES public.orders(id),
+    order_id UUID NOT NULL REFERENCES public.orders(id) ON DELETE CASCADE,
     executed_quantity DECIMAL NOT NULL CHECK (executed_quantity > 0),
     executed_price DECIMAL NOT NULL CHECK (executed_price > 0),
     execution_time TIMESTAMPTZ NOT NULL,
@@ -64,7 +82,7 @@ CREATE INDEX IF NOT EXISTS idx_executions_order_id ON public.executions(order_id
 -- POSITIONS TABLE
 CREATE TABLE IF NOT EXISTS public.positions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID NOT NULL REFERENCES public.users(id),
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
     symbol VARCHAR(50) NOT NULL,
     quantity DECIMAL NOT NULL,
     average_price DECIMAL NOT NULL,

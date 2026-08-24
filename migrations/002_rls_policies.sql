@@ -41,6 +41,11 @@ ON public.api_sessions FOR DELETE
 TO authenticated 
 USING (auth.uid() = user_id);
 
+CREATE POLICY "Users can update their own API sessions"
+ON public.api_sessions FOR UPDATE
+TO authenticated
+USING (auth.uid() = user_id);
+
 -------------------------------------------------------------------------------
 -- ORDERS
 -------------------------------------------------------------------------------

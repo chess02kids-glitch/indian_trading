@@ -65,3 +65,8 @@ DROP TRIGGER IF EXISTS audit_api_sessions_trigger ON public.api_sessions;
 CREATE TRIGGER audit_api_sessions_trigger 
 AFTER INSERT OR UPDATE OR DELETE ON public.api_sessions 
 FOR EACH ROW EXECUTE FUNCTION audit_trigger_func();
+
+DROP TRIGGER IF EXISTS audit_users_trigger ON public.users;
+CREATE TRIGGER audit_users_trigger 
+AFTER INSERT OR UPDATE OR DELETE ON public.users 
+FOR EACH ROW EXECUTE FUNCTION audit_trigger_func();
