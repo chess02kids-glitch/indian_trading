@@ -19,7 +19,9 @@ def _returns_series(returns: pd.Series) -> pd.Series:
         raise ResearchInputError("returns index must be sorted and unique")
     values = pd.to_numeric(returns, errors="coerce")
     if values.isna().any() or not ((values + 1) >= 0).all():
-        raise ResearchInputError("returns must be numeric and no less than -100 percent")
+        raise ResearchInputError(
+            "returns must be numeric and no less than -100 percent"
+        )
     return values.astype(float)
 
 
@@ -36,7 +38,9 @@ def drawdown(equity: pd.Series) -> pd.Series:
     if not isinstance(equity, pd.Series) or equity.empty:
         raise ResearchInputError("equity must be a non-empty pandas Series")
     if (equity < 0).any():
-        raise ResearchInputError("equity must remain non-negative for drawdown calculation")
+        raise ResearchInputError(
+            "equity must remain non-negative for drawdown calculation"
+        )
     peaks = equity.cummax()
     ratio = equity.div(peaks.where(peaks != 0))
     return ratio.fillna(0.0).sub(1.0)
@@ -50,11 +54,17 @@ def rolling_sharpe(
 ) -> pd.Series:
     """Calculate trailing annualized Sharpe ratios."""
     if window < 2 or periods_per_year < 1:
-        raise ResearchInputError("window must be at least two and periods_per_year positive")
+        raise ResearchInputError(
+            "window must be at least two and periods_per_year positive"
+        )
     values = _returns_series(returns)
     excess = values - risk_free_rate / periods_per_year
     volatility = excess.rolling(window, min_periods=window).std()
-    return excess.rolling(window, min_periods=window).mean() / volatility * sqrt(periods_per_year)
+    return (
+        excess.rolling(window, min_periods=window).mean()
+        / volatility
+        * sqrt(periods_per_year)
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -111,7 +121,9 @@ def compute_performance_metrics(
     calmar = annualized / abs(max_drawdown) if max_drawdown < 0 else 0.0
     total_turnover = 0.0
     if turnover is not None:
-        if not isinstance(turnover, pd.Series) or not turnover.index.equals(values.index):
+        if not isinstance(turnover, pd.Series) or not turnover.index.equals(
+            values.index
+        ):
             raise ResearchInputError("turnover must align with returns")
         numeric_turnover = pd.to_numeric(turnover, errors="coerce")
         if (

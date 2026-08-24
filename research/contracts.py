@@ -100,7 +100,9 @@ class MarketData:
         required = {date_column, symbol_column, close_column}
         missing = required - set(frame.columns)
         if missing:
-            raise ResearchInputError("long frame is missing columns: " + ", ".join(sorted(missing)))
+            raise ResearchInputError(
+                "long frame is missing columns: " + ", ".join(sorted(missing))
+            )
         working = frame.copy()
         working[date_column] = pd.to_datetime(working[date_column], errors="raise")
         if working.duplicated([date_column, symbol_column]).any():
@@ -131,8 +133,14 @@ class FactorMetadata:
     version: str = "1.0"
 
     def __post_init__(self) -> None:
-        if not self.name.strip() or not self.family.strip() or not self.description.strip():
-            raise ResearchInputError("factor metadata name, family, and description are required")
+        if (
+            not self.name.strip()
+            or not self.family.strip()
+            or not self.description.strip()
+        ):
+            raise ResearchInputError(
+                "factor metadata name, family, and description are required"
+            )
         object.__setattr__(self, "parameters", dict(self.parameters))
 
     def to_dict(self) -> dict[str, Any]:
@@ -210,7 +218,9 @@ class CostModel:
             or self.transaction_cost_bps < 0
             or self.slippage_bps < 0
         ):
-            raise ResearchInputError("cost and slippage must be finite and non-negative")
+            raise ResearchInputError(
+                "cost and slippage must be finite and non-negative"
+            )
 
     @property
     def proportional_rate(self) -> float:
@@ -256,7 +266,9 @@ class Experiment:
             "factor_set": self.factor_set,
             "universe": self.universe,
         }
-        encoded = json.dumps(payload, sort_keys=True, default=str, separators=(",", ":"))
+        encoded = json.dumps(
+            payload, sort_keys=True, default=str, separators=(",", ":")
+        )
         return hashlib.sha256(encoded.encode("utf-8")).hexdigest()[:16]
 
     def to_dict(self) -> dict[str, Any]:

@@ -119,7 +119,9 @@ class EMAFactor(Factor):
 
     def compute(self, data: MarketData) -> pd.DataFrame:
         """Compute an exponentially weighted trailing average."""
-        return data.close.ewm(span=self.span, adjust=False, min_periods=self.span).mean()
+        return data.close.ewm(
+            span=self.span, adjust=False, min_periods=self.span
+        ).mean()
 
 
 @dataclass(frozen=True, slots=True)
@@ -155,8 +157,12 @@ class MovingAverageCrossoverFactor(Factor):
     def compute(self, data: MarketData) -> pd.DataFrame:
         """Compute a binary crossover panel with unavailable periods as zero."""
         if self.method == "sma":
-            fast = data.close.rolling(self.fast_window, min_periods=self.fast_window).mean()
-            slow = data.close.rolling(self.slow_window, min_periods=self.slow_window).mean()
+            fast = data.close.rolling(
+                self.fast_window, min_periods=self.fast_window
+            ).mean()
+            slow = data.close.rolling(
+                self.slow_window, min_periods=self.slow_window
+            ).mean()
         else:
             fast = data.close.ewm(
                 span=self.fast_window, adjust=False, min_periods=self.fast_window

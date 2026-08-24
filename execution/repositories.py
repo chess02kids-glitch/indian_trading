@@ -38,5 +38,10 @@ class ExecutionsRepository:
 
     @with_retries(max_retries=3)
     def get_by_order(self, order_id: str) -> List[Dict]:
-        res = self.client.table("executions").select("*").eq("order_id", order_id).execute()
+        res = (
+            self.client.table("executions")
+            .select("*")
+            .eq("order_id", order_id)
+            .execute()
+        )
         return res.data

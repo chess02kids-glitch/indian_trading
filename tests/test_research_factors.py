@@ -86,7 +86,9 @@ def test_market_data_from_long_frame() -> None:
     """Canonical long-form data pivots into aligned research panels."""
     frame = pd.DataFrame(
         {
-            "date": pd.to_datetime(["2024-01-01", "2024-01-01", "2024-01-02", "2024-01-02"]),
+            "date": pd.to_datetime(
+                ["2024-01-01", "2024-01-01", "2024-01-02", "2024-01-02"]
+            ),
             "symbol": ["A", "B", "A", "B"],
             "close": [10, 20, 11, 19],
             "high": [11, 21, 12, 20],
@@ -156,9 +158,16 @@ def test_standard_factor_set_and_strategy_signals() -> None:
     momentum = MomentumStrategy(lookback=20).generate_signals(data)
     factor_strategy = FactorStrategy(MomentumFactor(20), strategy_name="custom_factor")
     assert momentum.values.index.equals(data.close.index)
-    assert factor_strategy.generate_signals(data).metadata["strategy"] == "custom_factor"
-    assert CrossoverStrategy(5, 10).generate_signals(data).values.shape == data.close.shape
-    assert MeanReversionStrategy(20).generate_signals(data).values.shape == data.close.shape
+    assert (
+        factor_strategy.generate_signals(data).metadata["strategy"] == "custom_factor"
+    )
+    assert (
+        CrossoverStrategy(5, 10).generate_signals(data).values.shape == data.close.shape
+    )
+    assert (
+        MeanReversionStrategy(20).generate_signals(data).values.shape
+        == data.close.shape
+    )
 
 
 def test_strategy_factory_and_invalid_contract_inputs() -> None:
@@ -180,7 +189,10 @@ def test_research_universes_are_configuration_driven() -> None:
     custom = custom_universe(["abc", "def"], name="my_universe", as_of=date(2024, 1, 1))
     assert custom.contains("ABC")
     assert resolve_universe({"name": "nifty_50"}).name == "nifty50"
-    assert resolve_universe({"name": "custom", "symbols": ["A", "B"]}).symbols == ("A", "B")
+    assert resolve_universe({"name": "custom", "symbols": ["A", "B"]}).symbols == (
+        "A",
+        "B",
+    )
 
 
 class _TestQualityFactor(QualityFactor):
@@ -198,7 +210,9 @@ class _TestQualityFactor(QualityFactor):
 def test_quality_factor_interface_validates_fundamentals() -> None:
     """Quality interfaces accept deterministic fundamentals and reject bad input."""
     factor = _TestQualityFactor()
-    fundamentals = pd.DataFrame({"score": [1.0, 2.0]}, index=pd.date_range("2024-01-01", periods=2))
+    fundamentals = pd.DataFrame(
+        {"score": [1.0, 2.0]}, index=pd.date_range("2024-01-01", periods=2)
+    )
     assert factor.compute(fundamentals).iloc[-1, 0] == 2.0
     with pytest.raises(ResearchInputError):
         factor.compute(pd.DataFrame())

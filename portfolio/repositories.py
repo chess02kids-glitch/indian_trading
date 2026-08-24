@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 from config.database import get_supabase_client, with_retries
 from observability.logging import get_logger
@@ -18,7 +18,12 @@ class OrdersRepository:
 
     @with_retries(max_retries=3)
     def create_order(
-        self, user_id: str, symbol: str, side: str, quantity: float, price: Optional[float] = None
+        self,
+        user_id: str,
+        symbol: str,
+        side: str,
+        quantity: float,
+        price: Optional[float] = None,
     ) -> Dict:
         data = {
             "user_id": user_id,
@@ -32,11 +37,15 @@ class OrdersRepository:
         return res.data[0]
 
     @with_retries(max_retries=3)
-    def update_status(self, order_id: str, status: str, broker_order_id: Optional[str] = None) -> Dict:
+    def update_status(
+        self, order_id: str, status: str, broker_order_id: Optional[str] = None
+    ) -> Dict:
         update_data = {"status": status}
         if broker_order_id:
             update_data["broker_order_id"] = broker_order_id
-        res = self.client.table("orders").update(update_data).eq("id", order_id).execute()
+        res = (
+            self.client.table("orders").update(update_data).eq("id", order_id).execute()
+        )
         return res.data[0] if res.data else {}
 
 
@@ -52,11 +61,19 @@ class PositionsRepository:
 
     @with_retries(max_retries=3)
     def get_position(self, user_id: str, symbol: str) -> Optional[Dict]:
-        res = self.client.table("positions").select("*").eq("user_id", user_id).eq("symbol", symbol).execute()
+        res = (
+            self.client.table("positions")
+            .select("*")
+            .eq("user_id", user_id)
+            .eq("symbol", symbol)
+            .execute()
+        )
         return res.data[0] if res.data else None
 
     @with_retries(max_retries=3)
-    def upsert_position(self, user_id: str, symbol: str, quantity: float, average_price: float) -> Dict:
+    def upsert_position(
+        self, user_id: str, symbol: str, quantity: float, average_price: float
+    ) -> Dict:
         data = {
             "user_id": user_id,
             "symbol": symbol,
@@ -64,5 +81,9 @@ class PositionsRepository:
             "average_price": average_price,
         }
         # Assuming UNIQUE(user_id, symbol) exists to allow upsert
-        res = self.client.table("positions").upsert(data, on_conflict="user_id,symbol").execute()
+        res = (
+            self.client.table("positions")
+            .upsert(data, on_conflict="user_id,symbol")
+            .execute()
+        )
         return res.data[0]

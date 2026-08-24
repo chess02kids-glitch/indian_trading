@@ -23,5 +23,7 @@ class UsersRepository:
 
     @with_retries(max_retries=3)
     def create(self, email: str, role: str = "trader") -> Dict:
-        res = self.client.table("users").insert({"email": email, "role": role}).execute()
+        res = (
+            self.client.table("users").insert({"email": email, "role": role}).execute()
+        )
         return res.data[0]

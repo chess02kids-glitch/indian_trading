@@ -212,15 +212,23 @@ def resolve_universe(config: Mapping[str, Any] | Path | str) -> Universe:
         try:
             config = json.loads(path.read_text(encoding="utf-8"))
         except FileNotFoundError as exc:
-            raise ResearchInputError(f"universe configuration does not exist: {path}") from exc
+            raise ResearchInputError(
+                f"universe configuration does not exist: {path}"
+            ) from exc
         except json.JSONDecodeError as exc:
-            raise ResearchInputError(f"universe configuration is not valid JSON: {path}") from exc
+            raise ResearchInputError(
+                f"universe configuration is not valid JSON: {path}"
+            ) from exc
     if not isinstance(config, Mapping):
-        raise ResearchInputError("universe configuration must be a mapping or JSON path")
+        raise ResearchInputError(
+            "universe configuration must be a mapping or JSON path"
+        )
     name = str(config.get("name", "custom")).strip().lower().replace("_", "")
     as_of_raw = config.get("as_of")
     try:
-        as_of = date.fromisoformat(as_of_raw) if isinstance(as_of_raw, str) else as_of_raw
+        as_of = (
+            date.fromisoformat(as_of_raw) if isinstance(as_of_raw, str) else as_of_raw
+        )
     except ValueError as exc:
         raise ResearchInputError("universe as_of must be an ISO date") from exc
     metadata = config.get("metadata", {})
@@ -233,4 +241,6 @@ def resolve_universe(config: Mapping[str, Any] | Path | str) -> Universe:
     raw_symbols = config.get("symbols", ())
     if not isinstance(raw_symbols, Sequence) or isinstance(raw_symbols, str):
         raise ResearchInputError("custom universe symbols must be a sequence")
-    return custom_universe(raw_symbols, name=name or "custom", as_of=as_of, metadata=metadata)
+    return custom_universe(
+        raw_symbols, name=name or "custom", as_of=as_of, metadata=metadata
+    )

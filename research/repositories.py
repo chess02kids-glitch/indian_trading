@@ -1,4 +1,4 @@
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 from config.database import get_supabase_client, with_retries
 from observability.logging import get_logger

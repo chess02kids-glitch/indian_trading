@@ -11,7 +11,12 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from research.contracts import MarketData, PortfolioConstructor, ResearchInputError, Strategy
+from research.contracts import (
+    MarketData,
+    PortfolioConstructor,
+    ResearchInputError,
+    Strategy,
+)
 
 from .engine import BacktestResult, VectorBTResearchEngine
 from .metrics import PerformanceMetrics, compute_performance_metrics
@@ -105,7 +110,9 @@ def combinatorial_purged_cv(
     """
     index = _validate_index(index)
     if n_groups < 2 or not 1 <= n_test_groups < n_groups:
-        raise ResearchInputError("n_groups must exceed n_test_groups, both at least one")
+        raise ResearchInputError(
+            "n_groups must exceed n_test_groups, both at least one"
+        )
     if n_groups > len(index) or embargo < 0:
         raise ResearchInputError(
             "n_groups cannot exceed observations and embargo cannot be negative"
@@ -115,7 +122,9 @@ def combinatorial_purged_cv(
     for fold, test_group_numbers in enumerate(
         itertools.combinations(range(n_groups), n_test_groups)
     ):
-        test_positions = np.concatenate([positions[number] for number in test_group_numbers])
+        test_positions = np.concatenate(
+            [positions[number] for number in test_group_numbers]
+        )
         test_positions.sort()
         test_set = set(int(position) for position in test_positions)
         purged = {
@@ -177,7 +186,9 @@ def deflated_sharpe_ratio(
 ) -> DeflatedSharpeResult:
     """Estimate the probability a Sharpe survives multiple-testing correction."""
     if trials < 1 or observations < 2:
-        raise ResearchInputError("trials must be positive and observations at least two")
+        raise ResearchInputError(
+            "trials must be positive and observations at least two"
+        )
     values = (observed_sharpe, skewness, kurtosis)
     if not all(math.isfinite(value) for value in values):
         raise ResearchInputError("Sharpe distribution inputs must be finite")
@@ -186,12 +197,12 @@ def deflated_sharpe_ratio(
         expected_max = 0.0
     else:
         gamma = 0.5772156649015329
-        expected_max = (1 - gamma) * normal.inv_cdf(1 - 1 / trials) + gamma * normal.inv_cdf(
-            1 - 1 / (trials * math.e)
-        )
-    variance = (1 - skewness * observed_sharpe + (kurtosis - 1) / 4 * observed_sharpe**2) / (
-        observations - 1
-    )
+        expected_max = (1 - gamma) * normal.inv_cdf(
+            1 - 1 / trials
+        ) + gamma * normal.inv_cdf(1 - 1 / (trials * math.e))
+    variance = (
+        1 - skewness * observed_sharpe + (kurtosis - 1) / 4 * observed_sharpe**2
+    ) / (observations - 1)
     if variance <= 0 or not math.isfinite(variance):
         raise ResearchInputError("Sharpe distribution variance is not positive")
     standard_error = math.sqrt(variance)
@@ -219,7 +230,9 @@ def deflated_sharpe_from_returns(
         raise ResearchInputError("returns must be a pandas Series")
     values = pd.to_numeric(returns, errors="coerce")
     if values.isna().any() or len(values) < 2:
-        raise ResearchInputError("returns must contain at least two numeric observations")
+        raise ResearchInputError(
+            "returns must contain at least two numeric observations"
+        )
     standard_deviation = float(values.std(ddof=1))
     sharpe = float(values.mean() / standard_deviation * math.sqrt(periods_per_year))
     if not math.isfinite(sharpe):
@@ -272,7 +285,9 @@ def bootstrap_sharpe_confidence_interval(
 ) -> BootstrapConfidenceInterval:
     """Estimate a deterministic percentile bootstrap interval for annualized Sharpe."""
     if samples < 100 or not 0 < confidence < 1 or periods_per_year < 1:
-        raise ResearchInputError("samples, confidence, and periods_per_year are invalid")
+        raise ResearchInputError(
+            "samples, confidence, and periods_per_year are invalid"
+        )
     if not isinstance(seed, int):
         raise ResearchInputError("seed must be an integer")
     if not isinstance(returns, pd.Series):
@@ -282,7 +297,9 @@ def bootstrap_sharpe_confidence_interval(
         raise ResearchInputError("returns must not contain missing values")
     values = numeric_returns.to_numpy(dtype=float)
     if len(values) < 2 or not np.isfinite(values).all():
-        raise ResearchInputError("returns must contain at least two finite observations")
+        raise ResearchInputError(
+            "returns must contain at least two finite observations"
+        )
     standard_deviation = float(values.std(ddof=1))
     estimate = (
         float(values.mean() / standard_deviation * math.sqrt(periods_per_year))
@@ -360,12 +377,18 @@ def run_walk_forward(
         )
         for window in windows
     )
-    aggregate_returns = pd.concat([result.returns for result in fold_results]).sort_index()
-    aggregate_returns = aggregate_returns[~aggregate_returns.index.duplicated(keep="first")]
+    aggregate_returns = pd.concat(
+        [result.returns for result in fold_results]
+    ).sort_index()
+    aggregate_returns = aggregate_returns[
+        ~aggregate_returns.index.duplicated(keep="first")
+    ]
     aggregate_turnover = pd.concat(
         [result.trades["turnover"] for result in fold_results]
     ).sort_index()
-    aggregate_turnover = aggregate_turnover[~aggregate_turnover.index.duplicated(keep="first")]
+    aggregate_turnover = aggregate_turnover[
+        ~aggregate_turnover.index.duplicated(keep="first")
+    ]
     metrics = compute_performance_metrics(
         aggregate_returns,
         aggregate_turnover,

@@ -37,9 +37,14 @@ def test_walk_forward_rolling_and_expanding_splits() -> None:
 
 def test_combinatorial_purged_cv_has_expected_number_of_paths() -> None:
     """CPCV emits n-choose-k paths and purges observations around test groups."""
-    windows = combinatorial_purged_cv(_index(40), n_groups=4, n_test_groups=2, embargo=1)
+    windows = combinatorial_purged_cv(
+        _index(40), n_groups=4, n_test_groups=2, embargo=1
+    )
     assert len(windows) == 6
-    assert all(not set(window.train_index).intersection(window.test_index) for window in windows)
+    assert all(
+        not set(window.train_index).intersection(window.test_index)
+        for window in windows
+    )
     assert all(len(window.train_index) > 0 for window in windows)
 
 
@@ -83,7 +88,9 @@ class _PositiveSignalStrategy(Strategy):
 
     def generate_signals(self, data: MarketData) -> Signal:
         """Signal equally for every supplied asset."""
-        return Signal(pd.DataFrame(1.0, index=data.close.index, columns=data.close.columns))
+        return Signal(
+            pd.DataFrame(1.0, index=data.close.index, columns=data.close.columns)
+        )
 
 
 def test_run_walk_forward_returns_fold_results() -> None:

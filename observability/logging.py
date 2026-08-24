@@ -9,7 +9,9 @@ class JSONFormatter(logging.Formatter):
 
     def format(self, record: logging.LogRecord) -> str:
         log_obj: Dict[str, Any] = {
-            "timestamp": datetime.fromtimestamp(record.created, tz=timezone.utc).isoformat(),
+            "timestamp": datetime.fromtimestamp(
+                record.created, tz=timezone.utc
+            ).isoformat(),
             "severity": record.levelname,
             "module": record.name,
             "message": record.getMessage(),
@@ -54,7 +56,11 @@ class ContextLogger:
         self.operation = operation
 
     def _log(
-        self, level: int, msg: str, context: Optional[Dict[str, Any]] = None, **kwargs: Any
+        self,
+        level: int,
+        msg: str,
+        context: Optional[Dict[str, Any]] = None,
+        **kwargs: Any,
     ) -> None:
         extra = {
             "symbol": self.symbol,
@@ -63,14 +69,22 @@ class ContextLogger:
         }
         self.logger.log(level, msg, extra=extra, **kwargs)
 
-    def info(self, msg: str, context: Optional[Dict[str, Any]] = None, **kwargs: Any) -> None:
+    def info(
+        self, msg: str, context: Optional[Dict[str, Any]] = None, **kwargs: Any
+    ) -> None:
         self._log(logging.INFO, msg, context, **kwargs)
 
-    def error(self, msg: str, context: Optional[Dict[str, Any]] = None, **kwargs: Any) -> None:
+    def error(
+        self, msg: str, context: Optional[Dict[str, Any]] = None, **kwargs: Any
+    ) -> None:
         self._log(logging.ERROR, msg, context, **kwargs)
 
-    def warning(self, msg: str, context: Optional[Dict[str, Any]] = None, **kwargs: Any) -> None:
+    def warning(
+        self, msg: str, context: Optional[Dict[str, Any]] = None, **kwargs: Any
+    ) -> None:
         self._log(logging.WARNING, msg, context, **kwargs)
 
-    def debug(self, msg: str, context: Optional[Dict[str, Any]] = None, **kwargs: Any) -> None:
+    def debug(
+        self, msg: str, context: Optional[Dict[str, Any]] = None, **kwargs: Any
+    ) -> None:
         self._log(logging.DEBUG, msg, context, **kwargs)

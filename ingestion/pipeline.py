@@ -50,7 +50,9 @@ class IngestionPipeline:
 
     def ingest_universe(self, symbols: List[str], period: str = "max") -> None:
         """Pipeline for a universe of symbols."""
-        self.logger.info(f"Starting ingestion pipeline for universe of {len(symbols)} symbols")
+        self.logger.info(
+            f"Starting ingestion pipeline for universe of {len(symbols)} symbols"
+        )
 
         success_count = 0
         for symbol in symbols:

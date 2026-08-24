@@ -34,7 +34,9 @@ def check_outliers(df: pd.DataFrame) -> pd.Series:
 
     threshold = settings.validation.volatility_threshold
     # Valid if absolute return is within mean +/- threshold * std
-    valid_returns = (returns >= mean - threshold * std) & (returns <= mean + threshold * std)
+    valid_returns = (returns >= mean - threshold * std) & (
+        returns <= mean + threshold * std
+    )
 
     # First row is always true since return is NaN
     result = pd.Series([True] * len(df), index=df.index)
@@ -101,4 +103,6 @@ class ValidationEngine:
             return validated_df
         except pa.errors.SchemaErrors as err:
             self.logger.error(f"Validation failed: {err.failure_cases}")
-            raise ValueError(f"Data validation failed for {self.symbol}: {err.failure_cases}")
+            raise ValueError(
+                f"Data validation failed for {self.symbol}: {err.failure_cases}"
+            )

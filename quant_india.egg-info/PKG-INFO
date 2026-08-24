@@ -8,6 +8,12 @@ Requires-Dist: duckdb>=1.0.0
 Requires-Dist: pandas>=2.0.0
 Requires-Dist: pyarrow>=15.0.0
 Requires-Dist: pandera>=0.18.0
+Requires-Dist: supabase>=2.3.0
+Requires-Dist: psycopg2-binary>=2.9.9
+Requires-Dist: mlflow<4.0,>=2.15
+Requires-Dist: numpy<3.0,>=1.26
+Requires-Dist: vectorbt<1.0,>=0.26
+Requires-Dist: cryptography>=41.0.0
 Provides-Extra: dev
 Requires-Dist: pytest; extra == "dev"
 Requires-Dist: pytest-mock; extra == "dev"

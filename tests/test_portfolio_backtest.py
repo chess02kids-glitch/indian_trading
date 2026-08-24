@@ -63,7 +63,8 @@ def test_portfolio_constructors_and_constraints() -> None:
     data = MarketData(prices)
     assert EqualWeightConstructor(constraints).construct(signals, data).equals(equal)
     assert (
-        InverseVolatilityConstructor(20, constraints).construct(signals, data).shape == prices.shape
+        InverseVolatilityConstructor(20, constraints).construct(signals, data).shape
+        == prices.shape
     )
 
 
@@ -85,8 +86,12 @@ def test_allocation_constraints_reject_infeasible_bounds() -> None:
 
 def test_risk_contributions_and_risk_parity() -> None:
     """Risk contribution utilities return aligned fractional contributions."""
-    covariance = pd.DataFrame([[0.04, 0.01], [0.01, 0.01]], index=["A", "B"], columns=["A", "B"])
-    contributions = risk_contributions(pd.Series([0.5, 0.5], index=["A", "B"]), covariance)
+    covariance = pd.DataFrame(
+        [[0.04, 0.01], [0.01, 0.01]], index=["A", "B"], columns=["A", "B"]
+    )
+    contributions = risk_contributions(
+        pd.Series([0.5, 0.5], index=["A", "B"]), covariance
+    )
     weights = risk_parity_weights(covariance)
     assert contributions.sum() == pytest.approx(1.0)
     assert weights.sum() == pytest.approx(1.0)
@@ -157,7 +162,9 @@ def test_metrics_and_benchmark_suite_are_standardized() -> None:
     engine = VectorBTResearchEngine(config)
     benchmarks = benchmark_suite(prices, strategy_weights, engine=engine)
     assert tuple(benchmarks) == BENCHMARK_NAMES
-    comparison = compare_results({"strategy": engine.run(prices, strategy_weights), **benchmarks})
+    comparison = compare_results(
+        {"strategy": engine.run(prices, strategy_weights), **benchmarks}
+    )
     assert "sharpe" in comparison.columns
     assert len(comparison) == 6
 
@@ -186,4 +193,6 @@ def test_invalid_backtest_inputs_are_rejected() -> None:
     with pytest.raises(ResearchInputError):
         VectorBTResearchEngine().run(prices.iloc[::-1], weights.iloc[::-1])
     with pytest.raises(ResearchInputError):
-        compute_performance_metrics(pd.Series([-2.0], index=pd.date_range("2024-01-01", periods=1)))
+        compute_performance_metrics(
+            pd.Series([-2.0], index=pd.date_range("2024-01-01", periods=1))
+        )

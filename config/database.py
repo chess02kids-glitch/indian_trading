@@ -36,7 +36,9 @@ def get_supabase_client() -> Client:
         url = config.supabase_url
         key = config.supabase_key
         if not url or not key:
-            raise ValueError("SUPABASE_URL and SUPABASE_KEY must be set in the environment.")
+            raise ValueError(
+                "SUPABASE_URL and SUPABASE_KEY must be set in the environment."
+            )
         _client_instance = create_client(url, key)
     return _client_instance
 
@@ -72,7 +74,9 @@ def with_retries(max_retries: int = 3, backoff_factor: float = 0.5) -> Callable:
                         f"Database operation '{func.__name__}' failed (attempt {attempt}/{max_retries}): {e}"
                     )
                     time.sleep(backoff_factor * attempt)
-            logger.error(f"Database operation '{func.__name__}' failed after {max_retries} attempts.")
+            logger.error(
+                f"Database operation '{func.__name__}' failed after {max_retries} attempts."
+            )
             if last_exception:
                 raise last_exception
             raise RuntimeError("Unknown error during retries")

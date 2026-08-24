@@ -1,1 +1,5 @@
-from .construction import EqualWeightConstructor, InverseVolatilityConstructor, AllocationConstraints
+from .construction import (
+    AllocationConstraints,
+    EqualWeightConstructor,
+    InverseVolatilityConstructor,
+)

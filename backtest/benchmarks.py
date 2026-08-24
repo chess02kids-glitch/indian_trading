@@ -34,7 +34,9 @@ def _validate_prices(prices: pd.DataFrame) -> pd.DataFrame:
         or (numeric <= 0).any().any()
         or not np.isfinite(numeric.to_numpy()).all()
     ):
-        raise ResearchInputError("prices must be finite and strictly positive numeric values")
+        raise ResearchInputError(
+            "prices must be finite and strictly positive numeric values"
+        )
     return numeric.astype(float)
 
 
@@ -89,9 +91,9 @@ def benchmark_suite(
 ) -> dict[str, BacktestResult]:
     """Run all required benchmarks with the same engine and cost assumptions."""
     validated = _validate_prices(prices)
-    if not validated.index.equals(strategy_weights.index) or not validated.columns.equals(
-        strategy_weights.columns
-    ):
+    if not validated.index.equals(
+        strategy_weights.index
+    ) or not validated.columns.equals(strategy_weights.columns):
         raise ResearchInputError("prices and strategy_weights must align")
     runner = engine or VectorBTResearchEngine(config=config)
     benchmark_weights = {

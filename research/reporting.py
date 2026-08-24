@@ -78,7 +78,9 @@ class ResearchReport:
 
     def to_json(self) -> str:
         """Serialize the report as deterministic JSON."""
-        return json.dumps(self.to_dict(), sort_keys=True, separators=(",", ":"), default=str)
+        return json.dumps(
+            self.to_dict(), sort_keys=True, separators=(",", ":"), default=str
+        )
 
     def to_markdown(self) -> str:
         """Render a concise human-readable report."""
@@ -94,11 +96,17 @@ class ResearchReport:
         ]
         for name, value in self.metrics.items():
             lines.append(f"| {name} | {value} |")
-        lines.extend(["", "## Benchmark comparison", "", "| Name | Metrics |", "| --- | --- |"])
+        lines.extend(
+            ["", "## Benchmark comparison", "", "| Name | Metrics |", "| --- | --- |"]
+        )
         for name, metrics in self.benchmark_comparison.items():
-            lines.append(f"| {name} | `{json.dumps(metrics, sort_keys=True, default=str)}` |")
+            lines.append(
+                f"| {name} | `{json.dumps(metrics, sort_keys=True, default=str)}` |"
+            )
         lines.extend(["", "## Allocation summary", ""])
-        lines.append(f"```json\n{json.dumps(self.allocation_summary, indent=2, default=str)}\n```")
+        lines.append(
+            f"```json\n{json.dumps(self.allocation_summary, indent=2, default=str)}\n```"
+        )
         if self.validation:
             lines.extend(
                 [
@@ -152,7 +160,9 @@ def generate_report(
         metrics=result.metrics.to_dict(),
         cumulative_returns=_series_records(cumulative),
         drawdowns=_series_records(drawdown(result.equity_curve)),
-        rolling_sharpes=_series_records(rolling_sharpe(result.returns, window=rolling_window)),
+        rolling_sharpes=_series_records(
+            rolling_sharpe(result.returns, window=rolling_window)
+        ),
         turnover=_series_records(result.trades["turnover"]),
         allocation_summary=allocation,
         benchmark_comparison=comparison.to_dict(orient="index"),

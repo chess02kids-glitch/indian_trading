@@ -31,7 +31,9 @@ class AllocationConstraints:
         if self.max_gross_leverage <= 0:
             raise AllocationError("max_gross_leverage must be positive")
         if self.long_only and self.max_gross_leverage < 1:
-            raise AllocationError("long-only allocations require max_gross_leverage >= 1")
+            raise AllocationError(
+                "long-only allocations require max_gross_leverage >= 1"
+            )
 
 
 def _validate_weight_panel(weights: pd.DataFrame) -> pd.DataFrame:
@@ -47,7 +49,9 @@ def _validate_weight_panel(weights: pd.DataFrame) -> pd.DataFrame:
     return numeric.astype(float)
 
 
-def _project_long_only(values: np.ndarray, constraints: AllocationConstraints) -> np.ndarray:
+def _project_long_only(
+    values: np.ndarray, constraints: AllocationConstraints
+) -> np.ndarray:
     active = values > 0
     count = int(active.sum())
     output = np.zeros_like(values, dtype=float)
@@ -141,7 +145,9 @@ def inverse_volatility(
             index=validated_prices.index,
             columns=validated_prices.columns,
         )
-    volatility = validated_prices.pct_change().shift(1).rolling(window, min_periods=window).std()
+    volatility = (
+        validated_prices.pct_change().shift(1).rolling(window, min_periods=window).std()
+    )
     raw = active.astype(float) / volatility.replace(0, np.nan)
     raw = raw.replace([np.inf, -np.inf], np.nan).fillna(0.0)
     fallback = active.astype(float)
@@ -189,7 +195,9 @@ def risk_contributions(
     matrix = covariance.to_numpy(dtype=float)
     variance = float(vector @ matrix @ vector)
     if variance <= 0 or not np.isfinite(variance):
-        raise AllocationError("covariance must produce positive finite portfolio variance")
+        raise AllocationError(
+            "covariance must produce positive finite portfolio variance"
+        )
     marginal = matrix @ vector
     contributions = vector * marginal / variance
     return pd.Series(contributions, index=weights.index, dtype=float)

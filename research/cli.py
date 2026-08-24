@@ -24,7 +24,11 @@ def _load_prices(path: Path) -> MarketData:
     if not path.is_file():
         raise ResearchInputError(f"price file does not exist: {path}")
     try:
-        frame = pd.read_parquet(path) if path.suffix.lower() == ".parquet" else pd.read_csv(path)
+        frame = (
+            pd.read_parquet(path)
+            if path.suffix.lower() == ".parquet"
+            else pd.read_csv(path)
+        )
     except (OSError, ValueError) as exc:
         raise ResearchInputError(f"could not read price file: {path}") from exc
     if {"date", "symbol", "close"}.issubset(frame.columns):
@@ -56,7 +60,9 @@ def _common_price_argument(parser: argparse.ArgumentParser) -> None:
 
 def build_parser() -> argparse.ArgumentParser:
     """Build the ``quant-india`` research command parser."""
-    parser = argparse.ArgumentParser(prog="quant-india", description="Quant India research CLI")
+    parser = argparse.ArgumentParser(
+        prog="quant-india", description="Quant India research CLI"
+    )
     domains = parser.add_subparsers(dest="domain")
     research = domains.add_parser("research", help="run research workflows")
     research_commands = research.add_subparsers(dest="command")
@@ -65,14 +71,20 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--strategy", default="momentum")
     _common_price_argument(run)
     run.add_argument("--output-dir", type=Path, default=Path("reports/generated"))
-    run.add_argument("--tracking-dir", type=Path, default=Path("reports/generated/experiments"))
+    run.add_argument(
+        "--tracking-dir", type=Path, default=Path("reports/generated/experiments")
+    )
 
-    compare = research_commands.add_parser("compare", help="compare a strategy with benchmarks")
+    compare = research_commands.add_parser(
+        "compare", help="compare a strategy with benchmarks"
+    )
     compare.add_argument("--strategy", default="momentum")
     _common_price_argument(compare)
     compare.add_argument("--output-dir", type=Path, default=Path("reports/generated"))
 
-    validate = research_commands.add_parser("validate", help="run walk-forward validation")
+    validate = research_commands.add_parser(
+        "validate", help="run walk-forward validation"
+    )
     validate.add_argument("--strategy", default="momentum")
     _common_price_argument(validate)
     validate.add_argument("--train-size", type=int, default=252)
@@ -83,14 +95,18 @@ def build_parser() -> argparse.ArgumentParser:
 
     experiments = domains.add_parser("experiments", help="inspect tracked experiments")
     experiment_commands = experiments.add_subparsers(dest="command")
-    list_command = experiment_commands.add_parser("list", help="list local experiment records")
+    list_command = experiment_commands.add_parser(
+        "list", help="list local experiment records"
+    )
     list_command.add_argument(
         "--tracking-dir", type=Path, default=Path("reports/generated/experiments")
     )
 
     report = domains.add_parser("report", help="generate research reports")
     report_commands = report.add_subparsers(dest="command")
-    generate = report_commands.add_parser("generate", help="generate JSON and Markdown output")
+    generate = report_commands.add_parser(
+        "generate", help="generate JSON and Markdown output"
+    )
     generate.add_argument("--strategy", default="momentum")
     _common_price_argument(generate)
     generate.add_argument("--output-dir", type=Path, default=Path("reports/generated"))
@@ -137,7 +153,11 @@ def cli_main(argv: Sequence[str] | None = None) -> int:
         records = ExperimentManager(
             mlflow_module=None, tracking_dir=args.tracking_dir
         ).list_records()
-        print(json.dumps([record.to_dict() for record in records], default=str, sort_keys=True))
+        print(
+            json.dumps(
+                [record.to_dict() for record in records], default=str, sort_keys=True
+            )
+        )
         return 0
     if args.domain == "research" and args.command in {"run", "compare"}:
         strategy, data, run = _strategy_run(args)
@@ -178,7 +198,11 @@ def cli_main(argv: Sequence[str] | None = None) -> int:
         _, _, run = _strategy_run(args)
         report = generate_report(run.result, run.benchmarks)
         paths = report.write(args.output_dir)
-        print(json.dumps({"json": str(paths[0]), "markdown": str(paths[1])}, sort_keys=True))
+        print(
+            json.dumps(
+                {"json": str(paths[0]), "markdown": str(paths[1])}, sort_keys=True
+            )
+        )
         return 0
     parser.error("a supported subcommand is required")
     return 2

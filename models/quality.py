@@ -30,7 +30,9 @@ class QualityFactor(ABC):
     def validate_fundamentals(fundamentals: pd.DataFrame) -> pd.DataFrame:
         """Validate and copy a non-empty fundamental input frame."""
         if not isinstance(fundamentals, pd.DataFrame) or fundamentals.empty:
-            raise ResearchInputError("fundamentals must be a non-empty pandas DataFrame")
+            raise ResearchInputError(
+                "fundamentals must be a non-empty pandas DataFrame"
+            )
         if not isinstance(fundamentals.index, pd.DatetimeIndex):
             raise ResearchInputError("fundamentals must use a DatetimeIndex")
         return fundamentals.copy()

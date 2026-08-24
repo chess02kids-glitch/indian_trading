@@ -34,13 +34,22 @@ class BacktestConfig:
     use_vectorbt: bool = True
 
     def __post_init__(self) -> None:
-        if not isinstance(self.rebalance_frequency, str) or not self.rebalance_frequency.strip():
+        if (
+            not isinstance(self.rebalance_frequency, str)
+            or not self.rebalance_frequency.strip()
+        ):
             raise ResearchInputError("rebalance_frequency must be a non-empty string")
-        frequency = "ME" if self.rebalance_frequency.upper() == "M" else self.rebalance_frequency
+        frequency = (
+            "ME"
+            if self.rebalance_frequency.upper() == "M"
+            else self.rebalance_frequency
+        )
         try:
             pd.tseries.frequencies.to_offset(frequency)
         except ValueError as exc:
-            raise ResearchInputError("rebalance_frequency is not a valid pandas frequency") from exc
+            raise ResearchInputError(
+                "rebalance_frequency is not a valid pandas frequency"
+            ) from exc
         if not isfinite(self.initial_cash) or self.initial_cash <= 0:
             raise ResearchInputError("initial_cash must be finite and positive")
         if self.periods_per_year < 1:
@@ -48,7 +57,9 @@ class BacktestConfig:
         if self.volatility_target is not None and (
             not isfinite(self.volatility_target) or self.volatility_target <= 0
         ):
-            raise ResearchInputError("volatility_target must be finite and positive when supplied")
+            raise ResearchInputError(
+                "volatility_target must be finite and positive when supplied"
+            )
         if self.volatility_lookback < 2:
             raise ResearchInputError("volatility_lookback must be at least two")
         if not isfinite(self.max_leverage) or self.max_leverage <= 0:
@@ -119,14 +130,19 @@ class VectorBTResearchEngine:
         ):
             raise ResearchInputError("prices and target_weights must align exactly")
         numeric_prices = prices.apply(pd.to_numeric, errors="coerce")
-        numeric_weights = target_weights.apply(pd.to_numeric, errors="coerce").fillna(0.0)
+        numeric_weights = target_weights.apply(pd.to_numeric, errors="coerce").fillna(
+            0.0
+        )
         if (
             numeric_prices.isna().any().any()
             or (numeric_prices <= 0).any().any()
             or not np.isfinite(numeric_prices.to_numpy()).all()
         ):
             raise ResearchInputError("prices must be finite and strictly positive")
-        if numeric_weights.isna().any().any() or not np.isfinite(numeric_weights.to_numpy()).all():
+        if (
+            numeric_weights.isna().any().any()
+            or not np.isfinite(numeric_weights.to_numpy()).all()
+        ):
             raise ResearchInputError("target_weights must be finite numeric values")
         return numeric_prices.astype(float), numeric_weights.astype(float)
 
@@ -161,7 +177,10 @@ class VectorBTResearchEngine:
                     portfolio_returns.std(ddof=1) * sqrt(self.config.periods_per_year)
                 )
             scale = (
-                min(self.config.max_leverage, self.config.volatility_target / portfolio_volatility)
+                min(
+                    self.config.max_leverage,
+                    self.config.volatility_target / portfolio_volatility,
+                )
                 if portfolio_volatility > 0
                 else 1.0
             )
@@ -188,7 +207,9 @@ class VectorBTResearchEngine:
         previous_targets = targets.shift(1).fillna(0.0)
         effective_weights = previous_targets
         turnover = (targets - previous_targets).abs().sum(axis=1).where(rebalance, 0.0)
-        transaction_cost = turnover * self.config.cost_model.transaction_cost_bps / 10_000
+        transaction_cost = (
+            turnover * self.config.cost_model.transaction_cost_bps / 10_000
+        )
         slippage = turnover * self.config.cost_model.slippage_bps / 10_000
         costs = transaction_cost + slippage
         returns = (effective_weights * asset_returns).sum(axis=1) - costs
@@ -250,12 +271,18 @@ class VectorBTResearchEngine:
         prices, weights = self._validate_inputs(prices, target_weights)
         asset_returns = prices.pct_change().fillna(0.0)
         targets, rebalance = self._prepare_targets(weights, asset_returns)
-        pandas_returns, pandas_equity, trades = self._simulate_pandas(prices, targets, rebalance)
+        pandas_returns, pandas_equity, trades = self._simulate_pandas(
+            prices, targets, rebalance
+        )
         vectorbt_output = self._run_vectorbt(prices, targets)
         if vectorbt_output is None:
             returns, equity, backend = pandas_returns, pandas_equity, "pandas"
         else:
-            returns, equity, backend = vectorbt_output[0], vectorbt_output[1], "vectorbt"
+            returns, equity, backend = (
+                vectorbt_output[0],
+                vectorbt_output[1],
+                "vectorbt",
+            )
         metrics = compute_performance_metrics(
             returns,
             turnover=trades["turnover"],

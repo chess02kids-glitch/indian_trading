@@ -69,7 +69,9 @@ def _to_mapping(value: object | None) -> dict[str, Any]:
         mapped = to_dict()
         if isinstance(mapped, Mapping):
             return dict(mapped)
-    raise ExperimentTrackingError("validation output must be a mapping or expose to_dict()")
+    raise ExperimentTrackingError(
+        "validation output must be a mapping or expose to_dict()"
+    )
 
 
 def _commit_hash() -> str:
@@ -101,7 +103,9 @@ class ExperimentManager:
         if not experiment_name.strip():
             raise ExperimentTrackingError("experiment_name must be non-empty")
         if not 0 < minimum_deflated_sharpe_probability < 1:
-            raise ExperimentTrackingError("minimum DSR probability must be between zero and one")
+            raise ExperimentTrackingError(
+                "minimum DSR probability must be between zero and one"
+            )
         self.experiment_name = experiment_name.strip()
         self.tracking_uri = tracking_uri
         self.tracking_dir = Path(tracking_dir).expanduser()
@@ -172,9 +176,13 @@ class ExperimentManager:
         try:
             self.tracking_dir.mkdir(parents=True, exist_ok=True)
             with self.history_path.open("a", encoding="utf-8") as handle:
-                handle.write(json.dumps(record.to_dict(), default=str, sort_keys=True) + "\n")
+                handle.write(
+                    json.dumps(record.to_dict(), default=str, sort_keys=True) + "\n"
+                )
         except OSError as exc:
-            raise ExperimentTrackingError("local experiment history could not be written") from exc
+            raise ExperimentTrackingError(
+                "local experiment history could not be written"
+            ) from exc
 
     def list_records(self) -> tuple[ExperimentRecord, ...]:
         """Return locally persisted experiment records in insertion order."""
@@ -184,7 +192,9 @@ class ExperimentManager:
         try:
             lines = self.history_path.read_text(encoding="utf-8").splitlines()
         except OSError as exc:
-            raise ExperimentTrackingError("local experiment history could not be read") from exc
+            raise ExperimentTrackingError(
+                "local experiment history could not be read"
+            ) from exc
         for line in lines:
             if not line.strip():
                 continue
@@ -239,7 +249,9 @@ class ExperimentManager:
             metrics["deflated_sharpe_probability"] = dsr.probability
             if dsr.probability < self.minimum_deflated_sharpe_probability:
                 rejected = True
-                reason = reason or "deflated Sharpe probability below acceptance threshold"
+                reason = (
+                    reason or "deflated Sharpe probability below acceptance threshold"
+                )
         status = "rejected" if rejected else "accepted"
         record = ExperimentRecord(
             run_id="pending",
@@ -251,13 +263,17 @@ class ExperimentManager:
             started_at=started_at,
             ended_at=datetime.now(UTC),
             metrics={
-                key: value for key, value in metrics.items() if isinstance(value, int | float)
+                key: value
+                for key, value in metrics.items()
+                if isinstance(value, int | float)
             },
             validation=validation_mapping,
             benchmarks=benchmark_metrics,
             reason=reason,
         )
-        run_id = self._log_mlflow(experiment, record) if self.mlflow is not None else "local"
+        run_id = (
+            self._log_mlflow(experiment, record) if self.mlflow is not None else "local"
+        )
         record = ExperimentRecord(
             run_id=run_id,
             experiment_id=record.experiment_id,

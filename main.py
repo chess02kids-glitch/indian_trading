@@ -1,6 +1,5 @@
 import argparse
 import sys
-from typing import List
 
 from data.duckdb_manager import DuckDBManager
 from ingestion.pipeline import IngestionPipeline
@@ -12,16 +11,24 @@ def parse_args() -> argparse.Namespace:
 
     # Ingest command
     ingest_parser = subparsers.add_parser("ingest", help="Ingest market data")
-    ingest_parser.add_argument("--symbol", type=str, help="Single symbol to ingest (e.g., RELIANCE.NS)")
-    ingest_parser.add_argument("--universe", type=str, help="Comma-separated list of symbols")
-    ingest_parser.add_argument("--period", type=str, default="max", help="Period to fetch (default: max)")
+    ingest_parser.add_argument(
+        "--symbol", type=str, help="Single symbol to ingest (e.g., RELIANCE.NS)"
+    )
+    ingest_parser.add_argument(
+        "--universe", type=str, help="Comma-separated list of symbols"
+    )
+    ingest_parser.add_argument(
+        "--period", type=str, default="max", help="Period to fetch (default: max)"
+    )
 
     # Validate command
     subparsers.add_parser("validate", help="Run full database validation")
 
     # Snapshot command
     snapshot_parser = subparsers.add_parser("snapshot", help="Create a DuckDB snapshot")
-    snapshot_parser.add_argument("--name", type=str, default="market_snapshot", help="Snapshot name")
+    snapshot_parser.add_argument(
+        "--name", type=str, default="market_snapshot", help="Snapshot name"
+    )
 
     # Research command
     subparsers.add_parser("research", help="Run the research platform CLI")
@@ -49,7 +56,9 @@ def main():
             sys.exit(1)
 
     elif args.command == "validate":
-        print("Validation engine triggered (Schema validation happens during ingestion)")
+        print(
+            "Validation engine triggered (Schema validation happens during ingestion)"
+        )
         print("Full DB validation coming soon.")
         # We can implement a full db validation via DuckDB manager later
 
@@ -60,12 +69,14 @@ def main():
 
     elif args.command == "research":
         from research.cli import cli_main
+
         sys.argv.remove("research")
         sys.exit(cli_main())
 
     else:
         print("Quant India system initialized. Safe no-op entry point.")
         print("Run with --help for available commands.")
+
 
 if __name__ == "__main__":
     main()

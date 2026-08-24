@@ -19,7 +19,10 @@ def _result(periods: int = 80):
     """Create a deterministic result without requiring a provider or notebook."""
     index = pd.date_range("2022-01-03", periods=periods, freq="B")
     prices = pd.DataFrame(
-        {"A": 100 * 1.001 ** np.arange(periods), "B": 100 * 1.0005 ** np.arange(periods)},
+        {
+            "A": 100 * 1.001 ** np.arange(periods),
+            "B": 100 * 1.0005 ** np.arange(periods),
+        },
         index=index,
     )
     weights = pd.DataFrame(0.5, index=index, columns=prices.columns)
@@ -80,7 +83,9 @@ def test_experiment_manager_logs_accepted_and_rejected_records(tmp_path: Path) -
         mlflow_module=fake,
         minimum_deflated_sharpe_probability=0.0 + 1e-9,
     )
-    experiment = Experiment("H-1", "momentum", {"lookback": 20}, ["momentum_1m"], "nifty50")
+    experiment = Experiment(
+        "H-1", "momentum", {"lookback": 20}, ["momentum_1m"], "nifty50"
+    )
     record = manager.log_experiment(
         experiment,
         result=_result(),

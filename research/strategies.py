@@ -99,7 +99,9 @@ class CrossoverStrategy(Strategy):
 
     def generate_signals(self, data: MarketData) -> Signal:
         """Generate binary crossover signals."""
-        factor = MovingAverageCrossoverFactor(self.fast_window, self.slow_window, self.method)
+        factor = MovingAverageCrossoverFactor(
+            self.fast_window, self.slow_window, self.method
+        )
         return Signal(
             factor.compute(data),
             metadata={"strategy": self.name, "factor": factor.metadata.to_dict()},
@@ -116,7 +118,9 @@ class MeanReversionStrategy(Strategy):
 
     def __post_init__(self) -> None:
         if self.entry_zscore >= 0:
-            raise ResearchInputError("entry_zscore must be negative for a long-only strategy")
+            raise ResearchInputError(
+                "entry_zscore must be negative for a long-only strategy"
+            )
 
     @property
     def name(self) -> str:
@@ -135,7 +139,9 @@ class MeanReversionStrategy(Strategy):
     def generate_signals(self, data: MarketData) -> Signal:
         """Generate positive signals when the selected deviation is sufficiently low."""
         factor = (
-            BollingerDeviationFactor(self.window) if self.bollinger else ZScoreFactor(self.window)
+            BollingerDeviationFactor(self.window)
+            if self.bollinger
+            else ZScoreFactor(self.window)
         )
         values = factor.compute(data)
         signals = (-values).where(values < self.entry_zscore, 0.0)

@@ -67,7 +67,9 @@ class YFinanceClient:
 
         return pd.DataFrame()
 
-    def fetch_batch(self, symbols: List[str], period: str = "max") -> Dict[str, pd.DataFrame]:
+    def fetch_batch(
+        self, symbols: List[str], period: str = "max"
+    ) -> Dict[str, pd.DataFrame]:
         """Fetches historical OHLCV data for a batch of symbols."""
         self.logger.info(f"Fetching batch of {len(symbols)} symbols")
         results = {}

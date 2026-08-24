@@ -20,7 +20,14 @@ class StorageManager:
     ) -> Path:
         """Get the specific file path for a monthly partition."""
         # e.g., data/raw/yfinance/NSE/RELIANCE/2023/10.parquet
-        return self.data_dir / source / exchange / symbol / str(year) / f"{month:02d}.parquet"
+        return (
+            self.data_dir
+            / source
+            / exchange
+            / symbol
+            / str(year)
+            / f"{month:02d}.parquet"
+        )
 
     def save_historical_data(
         self, df: pd.DataFrame, source: str, exchange: str, symbol: str
@@ -46,11 +53,13 @@ class StorageManager:
                         col_rename[col] = "date"
                 df = df.rename(columns=col_rename)
             else:
-                raise ValueError("DataFrame must contain a 'date' column or a DatetimeIndex.")
+                raise ValueError(
+                    "DataFrame must contain a 'date' column or a DatetimeIndex."
+                )
 
         # Ensure date is datetime
         df["date"] = pd.to_datetime(df["date"])
-        
+
         # Add metadata columns
         df["source"] = source
         df["exchange"] = exchange
@@ -60,7 +69,9 @@ class StorageManager:
         df = df.sort_values(by="date")
 
         # Group by Year and Month to save in partitions
-        for (year, month), group in df.groupby([df["date"].dt.year, df["date"].dt.month]):
+        for (year, month), group in df.groupby(
+            [df["date"].dt.year, df["date"].dt.month]
+        ):
             path = self._get_partition_path(source, exchange, symbol, year, month)
             path.parent.mkdir(parents=True, exist_ok=True)
 
