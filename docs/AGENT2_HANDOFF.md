@@ -221,3 +221,7 @@ extra can be merged back into base deps.
 - All execution stays in RESEARCH / PAPER / SANDBOX. No live capital.
 - LIMIT orders only. Human approval gate stays fail closed.
 - Unknown ≠ safe. The system halts on unknown safety-relevant inputs.
+
+---
+
+_Consistency check: this file is maintained alongside pyproject.toml dependency notes._
