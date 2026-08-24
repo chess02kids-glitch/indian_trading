@@ -1,0 +1,15 @@
+Metadata-Version: 2.4
+Name: quant-india
+Version: 0.1.0
+Summary: Production repository foundation for Indian Trading
+Requires-Python: <3.13,>=3.12
+Requires-Dist: yfinance>=0.2.0
+Requires-Dist: duckdb>=1.0.0
+Requires-Dist: pandas>=2.0.0
+Requires-Dist: pyarrow>=15.0.0
+Requires-Dist: pandera>=0.18.0
+Provides-Extra: dev
+Requires-Dist: pytest; extra == "dev"
+Requires-Dist: pytest-mock; extra == "dev"
+Requires-Dist: ruff; extra == "dev"
+Requires-Dist: pre-commit; extra == "dev"

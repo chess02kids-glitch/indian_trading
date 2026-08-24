@@ -7,7 +7,13 @@ name = "quant-india"
 version = "0.1.0"
 description = "Production repository foundation for Indian Trading"
 requires-python = ">=3.12,<3.13"
-dependencies = []
+dependencies = [
+    "yfinance>=0.2.0",
+    "duckdb>=1.0.0",
+    "pandas>=2.0.0",
+    "pyarrow>=15.0.0",
+    "pandera>=0.18.0"
+]
 
 [project.scripts]
 quant-india = "main:main"
@@ -15,6 +21,7 @@ quant-india = "main:main"
 [project.optional-dependencies]
 dev = [
     "pytest",
+    "pytest-mock",
     "ruff",
     "pre-commit"
 ]

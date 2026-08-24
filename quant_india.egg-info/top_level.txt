@@ -1,0 +1,15 @@
+agents
+backtest
+config
+dashboard
+execution
+ingestion
+main
+models
+observability
+orchestration
+portfolio
+reconciliation
+reports
+research
+risk_kill

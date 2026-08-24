@@ -1,0 +1,11 @@
+yfinance>=0.2.0
+duckdb>=1.0.0
+pandas>=2.0.0
+pyarrow>=15.0.0
+pandera>=0.18.0
+
+[dev]
+pytest
+pytest-mock
+ruff
+pre-commit
