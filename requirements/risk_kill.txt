@@ -1,0 +1,4 @@
+-r base.txt
+
+# Runtime dependencies owned by risk_kill.
+# Intentionally empty until the module is implemented.

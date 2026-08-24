@@ -1,0 +1,4 @@
+-r base.txt
+
+# Runtime dependencies owned by config.
+# Intentionally empty until the module is implemented.

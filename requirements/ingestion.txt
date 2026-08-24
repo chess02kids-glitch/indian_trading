@@ -1,0 +1,8 @@
+-r base.txt
+
+# Market-data ingestion and analytical storage.
+duckdb>=1.1,<2.0
+pandas>=2.2,<3.0
+pandera>=0.20,<0.27
+pyarrow>=17,<22
+yfinance>=0.2.40,<1.0

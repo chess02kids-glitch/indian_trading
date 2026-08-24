@@ -23,6 +23,9 @@ def parse_args() -> argparse.Namespace:
     snapshot_parser = subparsers.add_parser("snapshot", help="Create a DuckDB snapshot")
     snapshot_parser.add_argument("--name", type=str, default="market_snapshot", help="Snapshot name")
 
+    # Research command
+    subparsers.add_parser("research", help="Run the research platform CLI")
+
     return parser.parse_args()
 
 
@@ -54,6 +57,11 @@ def main():
         db = DuckDBManager()
         path = db.create_snapshot(args.name)
         print(f"Snapshot created at {path}")
+
+    elif args.command == "research":
+        from research.cli import cli_main
+        sys.argv.remove("research")
+        sys.exit(cli_main())
 
     else:
         print("Quant India system initialized. Safe no-op entry point.")
