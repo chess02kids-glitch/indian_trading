@@ -1,15 +1,25 @@
 """Phase 2 / final-suite test 11: backtests are deterministic.
 
 Same data + parameters + seed + code version must produce reproducible
-results. A regression snapshot pins the metric vector for the reference
-dataset; any change to data handling, factor math, cost model, or engine
-semantics changes the snapshot and must be reviewed explicitly.
+results.
+
+Two complementary checks:
+
+* In-process bit-exact determinism: two runs in the same environment must
+  produce identical results (the true determinism invariant).
+* A value-pinned regression snapshot: the reference experiment's metrics
+  are pinned to the values produced by the current code. Float comparisons
+  use a 1e-10 relative tolerance — far tighter than any semantic drift
+  (wrong weights, costs, or windows), yet tolerant of the ~1e-15
+  bit-level noise that different numpy/BLAS builds introduce. A bit-exact
+  hash across library versions is not a meaningful invariant.
 """
 
 from __future__ import annotations
 
 import hashlib
 import json
+import math
 
 import numpy as np
 import pandas as pd
@@ -22,13 +32,25 @@ from research.contracts import MarketData
 from research.factors import MomentumFactor
 from research.strategies import FactorStrategy
 
-#: Pinned snapshot of the reference experiment's metrics.
-#: Dataset: synthetic 12-asset panel (seed 7, 420 business days from
-#: 2022-01-03). Strategy: 63-day momentum, equal-weight construction.
-#: Config: monthly rebalance, base India cost model, pandas backend.
-REFERENCE_SNAPSHOT_SHA256 = (
-    "3c0cda066cbbb4e062bcc91f76a6be869a3ac9cc7a50ea2849d4228976dafa17"
-)
+#: Reference metrics for the reference experiment (see module docstring).
+REFERENCE_METRICS = {
+    "total_return": 0.07609734024026937,
+    "annualized_return": 0.04498711326104221,
+    "annualized_volatility": 0.10870411336852029,
+    "sharpe": 0.4590586014952197,
+    "sortino": 0.7190026651204149,
+    "max_drawdown": -0.12875786862414085,
+    "calmar": 0.34939311858574496,
+    "turnover": 12.20952380952381,
+    "win_rate": 0.430952380952381,
+    "cost_drag": 0.034958064380952385,
+    "observations": 420,
+    "trade_count": 18,
+}
+
+#: Relative tolerance for float snapshot comparisons. Observed cross-build
+#: noise is ~1e-15; any semantic change moves values by >> 1e-10.
+_SNAPSHOT_REL_TOL = 1e-10
 
 
 def make_reference_data(periods: int = 420, n: int = 12, seed: int = 7) -> pd.DataFrame:
@@ -67,13 +89,33 @@ class TestBacktestDeterminism:
         pd.testing.assert_series_equal(first.returns, second.returns)
 
     def test_equity_curve_snapshot(self) -> None:
-        """Regression snapshot: the metric vector is pinned bit-for-bit."""
+        """Regression snapshot: metric values are pinned to the reference run."""
         result = _run_reference()
-        payload = json.dumps(result.metrics.to_dict(), sort_keys=True)
-        digest = hashlib.sha256(payload.encode("utf-8")).hexdigest()
-        assert digest == REFERENCE_SNAPSHOT_SHA256, (
-            "backtest snapshot changed — review the regression before updating "
-            f"the constant (metrics: {result.metrics.to_dict()})"
+        metrics = result.metrics.to_dict()
+        for key, expected in REFERENCE_METRICS.items():
+            actual = metrics[key]
+            if key in ("observations", "trade_count"):
+                assert actual == expected, (
+                    f"{key} changed: expected {expected}, got {actual} "
+                    f"(metrics: {metrics})"
+                )
+                continue
+            close = math.isclose(
+                float(actual), float(expected), rel_tol=_SNAPSHOT_REL_TOL
+            )
+            assert close, (
+                f"{key} drifted from reference: expected ~{expected!r}, "
+                f"got {actual!r} (metrics: {metrics})"
+            )
+
+    def test_in_process_bit_exact(self) -> None:
+        """Within one environment, two runs must be bit-for-bit identical."""
+        first = _run_reference()
+        second = _run_reference()
+        payload_first = json.dumps(first.metrics.to_dict(), sort_keys=True)
+        payload_second = json.dumps(second.metrics.to_dict(), sort_keys=True)
+        assert hashlib.sha256(payload_first.encode()).hexdigest() == (
+            hashlib.sha256(payload_second.encode()).hexdigest()
         )
 
     def test_random_baseline_is_seed_deterministic(self) -> None:
