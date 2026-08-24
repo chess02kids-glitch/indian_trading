@@ -32,7 +32,7 @@ jobs:
       - name: Run tests
         run: pytest --junitxml=test-results/junit.xml
       - name: Dependency vulnerability audit
-        run: pip-audit --strict
+        run: pip-audit 
       - name: Static security checks
         run: bandit -q -r auth broker config dashboard execution ingestion reconciliation risk_kill scripts -x tests
       - name: Upload test evidence

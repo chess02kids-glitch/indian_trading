@@ -79,17 +79,25 @@ class PerformanceMetrics:
     calmar: float
     turnover: float
     observations: int
+    sortino: float = 0.0
+    win_rate: float | None = None
+    trade_count: int = 0
+    cost_drag: float = 0.0
 
-    def to_dict(self) -> dict[str, float | int]:
+    def to_dict(self) -> dict[str, float | int | None]:
         """Return metrics in a report-friendly mapping."""
         return {
             "total_return": self.total_return,
             "annualized_return": self.annualized_return,
             "annualized_volatility": self.annualized_volatility,
             "sharpe": self.sharpe,
+            "sortino": self.sortino,
             "max_drawdown": self.max_drawdown,
             "calmar": self.calmar,
             "turnover": self.turnover,
+            "win_rate": self.win_rate,
+            "trade_count": self.trade_count,
+            "cost_drag": self.cost_drag,
             "observations": self.observations,
         }
 
@@ -101,8 +109,10 @@ def compute_performance_metrics(
     risk_free_rate: float = 0.0,
     periods_per_year: int = 252,
     initial_value: float = 1.0,
+    total_cost: float | None = None,
+    trade_count: int | None = None,
 ) -> PerformanceMetrics:
-    """Compute return, risk, drawdown, Sharpe, and turnover metrics."""
+    """Compute return, risk, drawdown, Sharpe/Sortino, and turnover metrics."""
     if periods_per_year < 1:
         raise ResearchInputError("periods_per_year must be positive")
     values = _returns_series(returns)
@@ -115,11 +125,20 @@ def compute_performance_metrics(
         if standard_deviation > 0
         else 0.0
     )
+    downside = excess[excess < 0]
+    downside_deviation = float(downside.std(ddof=1)) if len(downside) > 1 else 0.0
+    sortino = (
+        float(excess.mean() / downside_deviation * sqrt(periods_per_year))
+        if downside_deviation > 0
+        else 0.0
+    )
+    win_rate = float((values > 0).mean()) if len(values) else None
     total = float(curve.iloc[-1] / initial_value - 1.0)
     annualized = float((1.0 + total) ** (periods_per_year / len(values)) - 1.0)
     max_drawdown = float(drawdown(curve).min())
     calmar = annualized / abs(max_drawdown) if max_drawdown < 0 else 0.0
     total_turnover = 0.0
+    cost_drag = 0.0
     if turnover is not None:
         if not isinstance(turnover, pd.Series) or not turnover.index.equals(
             values.index
@@ -133,13 +152,23 @@ def compute_performance_metrics(
         ):
             raise ResearchInputError("turnover must be non-negative and finite")
         total_turnover = float(numeric_turnover.sum())
+    if total_cost is not None:
+        if not isfinite(total_cost) or total_cost < 0:
+            raise ResearchInputError("total_cost must be finite and non-negative")
+        cost_drag = float(total_cost) / initial_value
+    if trade_count is not None and trade_count < 0:
+        raise ResearchInputError("trade_count must be non-negative")
     return PerformanceMetrics(
         total_return=total,
         annualized_return=annualized,
         annualized_volatility=volatility if pd.notna(volatility) else 0.0,
         sharpe=sharpe,
+        sortino=sortino,
         max_drawdown=max_drawdown,
         calmar=float(calmar),
         turnover=total_turnover,
+        win_rate=win_rate,
+        trade_count=int(trade_count) if trade_count is not None else 0,
+        cost_drag=cost_drag,
         observations=len(values),
     )

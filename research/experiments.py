@@ -7,7 +7,7 @@ import logging
 import math
 import subprocess
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -40,6 +40,10 @@ class ExperimentRecord:
     validation: Mapping[str, Any]
     benchmarks: Mapping[str, Mapping[str, float | int]]
     reason: str | None = None
+    dataset_version: str | None = None
+    cost_model: str | None = None
+    backtest_period: str | None = None
+    oos_period: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Return a JSON-compatible record."""
@@ -56,6 +60,10 @@ class ExperimentRecord:
             "validation": dict(self.validation),
             "benchmarks": {key: dict(value) for key, value in self.benchmarks.items()},
             "reason": self.reason,
+            "dataset_version": self.dataset_version,
+            "cost_model": self.cost_model,
+            "backtest_period": self.backtest_period,
+            "oos_period": self.oos_period,
         }
 
 
@@ -214,6 +222,10 @@ class ExperimentManager:
                         validation=payload.get("validation", {}),
                         benchmarks=payload.get("benchmarks", {}),
                         reason=payload.get("reason"),
+                        dataset_version=payload.get("dataset_version"),
+                        cost_model=payload.get("cost_model"),
+                        backtest_period=payload.get("backtest_period"),
+                        oos_period=payload.get("oos_period"),
                     )
                 )
             except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
@@ -231,6 +243,10 @@ class ExperimentManager:
         benchmarks: Mapping[str, Any] | None = None,
         rejected: bool = False,
         reason: str | None = None,
+        dataset_version: str | None = None,
+        cost_model: str | None = None,
+        backtest_period: str | None = None,
+        oos_period: str | None = None,
     ) -> ExperimentRecord:
         """Log an experiment, including rejected trials, to MLflow and local history."""
         started_at = datetime.now(UTC)
@@ -270,24 +286,15 @@ class ExperimentManager:
             validation=validation_mapping,
             benchmarks=benchmark_metrics,
             reason=reason,
+            dataset_version=dataset_version or experiment.dataset_version,
+            cost_model=cost_model or experiment.cost_model,
+            backtest_period=backtest_period,
+            oos_period=oos_period,
         )
         run_id = (
             self._log_mlflow(experiment, record) if self.mlflow is not None else "local"
         )
-        record = ExperimentRecord(
-            run_id=run_id,
-            experiment_id=record.experiment_id,
-            hypothesis_id=record.hypothesis_id,
-            strategy=record.strategy,
-            status=record.status,
-            commit_hash=record.commit_hash,
-            started_at=record.started_at,
-            ended_at=record.ended_at,
-            metrics=record.metrics,
-            validation=record.validation,
-            benchmarks=record.benchmarks,
-            reason=record.reason,
-        )
+        record = replace(record, run_id=run_id)
         self._append_local(record)
         self.logger.info(
             "experiment_logged",

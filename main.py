@@ -5,7 +5,7 @@ from data.duckdb_manager import DuckDBManager
 from ingestion.pipeline import IngestionPipeline
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Quant India Data Platform CLI")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
@@ -33,16 +33,16 @@ def parse_args() -> argparse.Namespace:
     # Research command
     subparsers.add_parser("research", help="Run the research platform CLI")
 
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
-def main():
+def main(argv: list[str] | None = None):
     """
     Quant India CLI Entry Point.
     Market and IOC orders are prohibited.
     Future execution must pass through risk_kill.
     """
-    args = parse_args()
+    args = parse_args(argv)
 
     if args.command == "ingest":
         pipeline = IngestionPipeline()

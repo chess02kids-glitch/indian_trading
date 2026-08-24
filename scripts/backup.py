@@ -10,7 +10,7 @@ from __future__ import annotations
 import argparse
 import os
 import shlex
-import subprocess
+import subprocess  # nosec B404
 import tarfile
 from datetime import datetime, timezone
 from pathlib import Path
@@ -40,7 +40,8 @@ def create_backup(
 def run_supabase_hook(command: str | None) -> None:
     """Run the operator-approved Supabase backup hook, if explicitly configured."""
     if command:
-        subprocess.run(shlex.split(command), check=True)
+        # Argument list from shlex.split; no shell is involved.
+        subprocess.run(shlex.split(command), check=True)  # nosec B603
 
 
 def main(argv: list[str] | None = None) -> int:

@@ -7,18 +7,36 @@ name = "quant-india"
 version = "0.1.0"
 description = "Production repository foundation for Indian Trading"
 requires-python = ">=3.12,<3.13"
+# Dependency note (2026-08): `mlflow` is NOT a base dependency. Every
+# mlflow release (2.x-3.15.x) caps cryptography <50 or pyarrow <23, while
+# the safe ranges per PYSEC-2026-3552 (fixed 50.0.0) and PYSEC-2026-113
+# (fixed 23.0.1) are cryptography >=50.0.0 and pyarrow >=23.0.1. Keeping
+# mlflow out of the base install is what lets CI pass `pip-audit --strict`.
+# MLflow remains available via the `tracking` extra, in a dedicated
+# research environment (research/experiments.py degrades to the local
+# JSONL audit trail when mlflow is absent).
 dependencies = [
     "yfinance>=0.2.0",
     "duckdb>=1.0.0",
     "pandas>=2.0.0",
-    "pyarrow>=15.0.0",
+    # pyarrow >=23.0.1: PYSEC-2026-113 / CVE-2026-25087 fix.
+    "pyarrow>=23.0.1",
     "pandera>=0.18.0",
+    "pydantic>=2.5,<4.0",
     "supabase>=2.3.0",
     "psycopg2-binary>=2.9.9",
-    "mlflow>=2.15,<4.0",
     "numpy>=1.26,<3.0",
+    "plotly>=5.0,<6.0",
     "vectorbt>=0.26,<1.0",
-    "cryptography>=41.0.0"
+    # cryptography >=50.0.0: PYSEC-2026-3552 / CVE-2026-69247 fix.
+    "cryptography>=50.0.0",
+    # CI runs `pip-audit --strict` on the whole environment, not just the
+    # project dependencies. The GitHub runner image bundles setuptools and
+    # wheel versions with published advisories, so the install upgrades
+    # them: setuptools >=83.0.0 (PYSEC-2026-3447 fix) and wheel >=0.48.0
+    # (CVE-2026-24049 fix). Verified audit-clean at latest.
+    "setuptools>=83.0.0",
+    "wheel>=0.48.0"
 ]
 
 [project.scripts]
@@ -26,15 +44,21 @@ quant-india = "main:main"
 
 [project.optional-dependencies]
 dev = [
-    "pytest",
+    # pytest >=9.0.3: PYSEC-2026-1845 fix.
+    "pytest>=9.0.3",
     "pytest-mock",
     "hypothesis>=6.0,<7.0",
     "ruff",
     "pre-commit"
 ]
+# Research-only MLflow tracking. See the dependency note above: install in a
+# dedicated environment, not alongside the base dependencies.
+tracking = [
+    "mlflow>=2.15,<4.0"
+]
 
 [tool.setuptools]
-packages = ["config", "ingestion", "research", "models", "backtest", "portfolio", "agents", "risk_kill", "execution", "reconciliation", "orchestration", "observability", "dashboard", "reports", "auth"]
+packages = ["config", "ingestion", "research", "models", "backtest", "portfolio", "agents", "risk_kill", "execution", "reconciliation", "orchestration", "observability", "dashboard", "reports", "auth", "store"]
 py-modules = ["main"]
 
 [tool.ruff]

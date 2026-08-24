@@ -6,6 +6,10 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
 
+import pandas as pd
+
+from models.quality import CompositeQualityFactor, DebtQualityFactor, RoeQualityFactor
+
 from .contracts import Factor, MarketData, ResearchInputError, Signal, Strategy
 from .factors import (
     BollingerDeviationFactor,
@@ -148,6 +152,85 @@ class MeanReversionStrategy(Strategy):
         return Signal(
             signals,
             metadata={"strategy": self.name, "factor": factor.metadata.to_dict()},
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class MomentumQualityStrategy(Strategy):
+    """Cross-sectional momentum + quality screen (the baseline strategy).
+
+    Long-only, rebalanced by the backtest engine (monthly in the standard
+    configuration). Each date keeps the top ``momentum_quantile`` of assets
+    by trailing momentum, further restricted to the top ``quality_quantile``
+    by the composite fundamental quality score. Quality observations are
+    point-in-time: the latest available fundamental date is forward-filled,
+    never a future one.
+    """
+
+    momentum_lookback: int = 63
+    momentum_quantile: float = 0.25
+    quality_quantile: float = 0.5
+    fundamentals: "pd.DataFrame | None" = None
+    strategy_name: str = "momentum_quality"
+
+    def __post_init__(self) -> None:
+        if self.momentum_lookback < 2:
+            raise ResearchInputError("momentum_lookback must be at least two")
+        if not 0 < self.momentum_quantile <= 1:
+            raise ResearchInputError("momentum_quantile must be in (0, 1]")
+        if not 0 < self.quality_quantile <= 1:
+            raise ResearchInputError("quality_quantile must be in (0, 1]")
+
+    @property
+    def name(self) -> str:
+        """Return the stable strategy name."""
+        return self.strategy_name
+
+    @property
+    def parameters(self) -> Mapping[str, Any]:
+        """Return serializable strategy parameters."""
+        return {
+            "momentum_lookback": self.momentum_lookback,
+            "momentum_quantile": self.momentum_quantile,
+            "quality_quantile": self.quality_quantile,
+            "fundamentals_rows": len(self.fundamentals)
+            if self.fundamentals is not None
+            else 0,
+        }
+
+    def generate_signals(self, data: MarketData) -> Signal:
+        """Generate momentum x quality long signals aligned with the data."""
+        momentum = MomentumFactor(self.momentum_lookback).compute(data)
+        momentum_rank = momentum.rank(axis=1, pct=True, method="first")
+        momentum_mask = momentum_rank.le(self.momentum_quantile).where(
+            momentum_rank.notna()
+        )
+        if self.fundamentals is None or self.fundamentals.empty:
+            raise ResearchInputError(
+                "momentum_quality requires a fundamentals frame "
+                "(date/symbol/roe/debt_to_equity)"
+            )
+        quality_factor = CompositeQualityFactor(
+            [RoeQualityFactor(), DebtQualityFactor()]
+        )
+        quality_panel = quality_factor.compute(self.fundamentals)
+        quality_panel = quality_panel.reindex(columns=data.close.columns)
+        daily_quality = quality_panel.reindex(data.close.index).ffill()
+        quality_rank = daily_quality.rank(axis=1, pct=True, method="first")
+        quality_mask = quality_rank.le(self.quality_quantile).where(
+            quality_rank.notna()
+        )
+        selected = momentum_rank.where(momentum_mask & quality_mask, 0.0)
+        selected = selected.fillna(0.0)
+        return Signal(
+            selected,
+            metadata={
+                "strategy": self.name,
+                "factor": MomentumFactor(self.momentum_lookback).metadata.to_dict(),
+                "quality": quality_factor.metadata.to_dict(),
+                "momentum_quantile": self.momentum_quantile,
+                "quality_quantile": self.quality_quantile,
+            },
         )
 
 
