@@ -1,5 +1,27 @@
 services:
-  app:
-    build: .
+  operational-dashboard:
+    build:
+      context: .
+    image: quant-india:rc1
+    env_file:
+      - path: .env
+        required: false
     environment:
-      - ENV=production
+      QUANT_INDIA_STATUS_FILE: /app/var/operational_status.json
+      PORT: "8080"
+    ports:
+      - "${QUANT_INDIA_PORT:-8080}:8080"
+    volumes:
+      - ./var:/app/var:ro
+      - ./logs:/app/logs
+      - ./data:/app/data:ro
+    read_only: true
+    tmpfs:
+      - /tmp
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/healthz', timeout=3).read()"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s

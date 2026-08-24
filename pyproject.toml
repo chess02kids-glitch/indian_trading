@@ -28,6 +28,7 @@ quant-india = "main:main"
 dev = [
     "pytest",
     "pytest-mock",
+    "hypothesis>=6.0,<7.0",
     "ruff",
     "pre-commit"
 ]

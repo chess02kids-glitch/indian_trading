@@ -2,29 +2,57 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main, arena/**]
   pull_request:
-    branches: [ main ]
+    branches: [main]
+
+permissions:
+  contents: read
 
 jobs:
-  build:
+  verify:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.12'
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -e .[dev]
-    - name: Run Ruff Lint
-      run: ruff check .
-    - name: Run Ruff Format
-      run: ruff format --check .
-    - name: Run Pytest
-      run: pytest
-- uses: actions/cache@v4
-- name: Docker build
-  run: docker build .
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Install application and verification tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev]' pip-audit bandit
+      - name: Lint
+        run: >-
+          ruff check dashboard scripts tests/test_operational_dashboard.py tests/test_release_backup.py tests/test_release_dry_run.py &&
+          ruff format --check dashboard scripts tests/test_operational_dashboard.py tests/test_release_backup.py tests/test_release_dry_run.py
+      - name: Verify migrations
+        run: python scripts/verify_migrations.py
+      - name: Run tests
+        run: pytest --junitxml=test-results/junit.xml
+      - name: Dependency vulnerability audit
+        run: pip-audit --strict
+      - name: Static security checks
+        run: bandit -q -r auth broker config dashboard execution ingestion reconciliation risk_kill scripts -x tests
+      - name: Upload test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: test-results/
+          if-no-files-found: warn
+          retention-days: 14
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build production image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: quant-india:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

@@ -1,0 +1,26 @@
+[Unit]
+Description=Quant India RC-1 read-only operational dashboard
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=quantindia
+Group=quantindia
+WorkingDirectory=/opt/quant-india
+EnvironmentFile=/etc/quant-india/env
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/quant-india/.venv/bin/python -m dashboard.server
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/quant-india/var /opt/quant-india/logs
+UMask=0077
+StandardOutput=append:/opt/quant-india/logs/dashboard.log
+StandardError=append:/opt/quant-india/logs/dashboard-error.log
+
+[Install]
+WantedBy=multi-user.target
