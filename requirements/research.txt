@@ -3,4 +3,6 @@
 # Research, VectorBT, and experiment tracking.
 mlflow>=2.15,<4.0
 numpy>=1.26,<3.0
+# vectorbt 0.26 is incompatible with plotly 6.x (Heatmapgl removed).
+plotly>=5.0,<6.0
 vectorbt>=0.26,<1.0

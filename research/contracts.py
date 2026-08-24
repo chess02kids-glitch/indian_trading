@@ -244,6 +244,8 @@ class Experiment:
     factor_set: Sequence[str]
     universe: str
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    dataset_version: str | None = None
+    cost_model: str | None = None
 
     def __post_init__(self) -> None:
         for value, field_name in (
@@ -253,6 +255,12 @@ class Experiment:
         ):
             if not isinstance(value, str) or not value.strip():
                 raise ResearchInputError(f"{field_name} must be non-empty")
+        for value, field_name in (
+            (self.dataset_version, "dataset_version"),
+            (self.cost_model, "cost_model"),
+        ):
+            if value is not None and (not isinstance(value, str) or not value.strip()):
+                raise ResearchInputError(f"{field_name} must be a non-empty string")
         object.__setattr__(self, "parameters", dict(self.parameters))
         object.__setattr__(self, "factor_set", tuple(self.factor_set))
 
@@ -266,6 +274,12 @@ class Experiment:
             "factor_set": self.factor_set,
             "universe": self.universe,
         }
+        # Optional provenance fields participate in the identity only when set,
+        # keeping pre-existing experiment ids stable.
+        if self.dataset_version is not None:
+            payload["dataset_version"] = self.dataset_version
+        if self.cost_model is not None:
+            payload["cost_model"] = self.cost_model
         encoded = json.dumps(
             payload, sort_keys=True, default=str, separators=(",", ":")
         )
@@ -281,4 +295,6 @@ class Experiment:
             "factor_set": list(self.factor_set),
             "universe": self.universe,
             "created_at": self.created_at.isoformat(),
+            "dataset_version": self.dataset_version,
+            "cost_model": self.cost_model,
         }

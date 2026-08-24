@@ -111,6 +111,15 @@ class VectorBTResearchEngine:
         """Return whether VectorBT imported successfully in this environment."""
         return _vectorbt is not None
 
+    def _market_cost_bps(self) -> float:
+        """Market-dependent cost rate: spread+slippage when the cost model
+        provides one (e.g. IndiaCostModel), else plain slippage_bps."""
+        cost_model = self.config.cost_model
+        market = getattr(cost_model, "market_cost_bps", None)
+        if market is not None:
+            return float(market)
+        return float(cost_model.slippage_bps)
+
     @staticmethod
     def _validate_inputs(
         prices: pd.DataFrame, target_weights: pd.DataFrame
@@ -210,7 +219,7 @@ class VectorBTResearchEngine:
         transaction_cost = (
             turnover * self.config.cost_model.transaction_cost_bps / 10_000
         )
-        slippage = turnover * self.config.cost_model.slippage_bps / 10_000
+        slippage = turnover * self._market_cost_bps() / 10_000
         costs = transaction_cost + slippage
         returns = (effective_weights * asset_returns).sum(axis=1) - costs
         returns.name = "returns"
@@ -241,7 +250,7 @@ class VectorBTResearchEngine:
                 size_type="targetpercent",
                 direction="both",
                 fees=self.config.cost_model.transaction_cost_bps / 10_000,
-                slippage=self.config.cost_model.slippage_bps / 10_000,
+                slippage=self._market_cost_bps() / 10_000,
                 init_cash=self.config.initial_cash,
                 cash_sharing=True,
                 group_by=True,
@@ -283,12 +292,32 @@ class VectorBTResearchEngine:
                 vectorbt_output[1],
                 "vectorbt",
             )
+        trade_count = int((trades["turnover"] > 0).sum())
+        total_cost = float(trades["total_cost"].sum())
         metrics = compute_performance_metrics(
             returns,
             turnover=trades["turnover"],
             periods_per_year=self.config.periods_per_year,
             initial_value=self.config.initial_cash,
+            total_cost=total_cost,
+            trade_count=trade_count,
         )
+        metadata = {
+            "backend": backend,
+            "rebalance_frequency": self.config.rebalance_frequency,
+            "initial_cash": self.config.initial_cash,
+            "transaction_cost_bps": self.config.cost_model.transaction_cost_bps,
+            "slippage_bps": self._market_cost_bps(),
+            "total_cost": total_cost,
+            "trade_count": trade_count,
+            "volatility_target": self.config.volatility_target,
+        }
+        breakdown = getattr(self.config.cost_model, "to_dict", None)
+        if callable(breakdown):
+            try:
+                metadata["cost_model"] = breakdown()
+            except Exception:  # cost metadata is optional; never fail a run
+                pass
         return BacktestResult(
             strategy_name=strategy_name,
             returns=returns,
@@ -296,12 +325,5 @@ class VectorBTResearchEngine:
             weights=targets,
             trades=trades,
             metrics=metrics,
-            metadata={
-                "backend": backend,
-                "rebalance_frequency": self.config.rebalance_frequency,
-                "initial_cash": self.config.initial_cash,
-                "transaction_cost_bps": self.config.cost_model.transaction_cost_bps,
-                "slippage_bps": self.config.cost_model.slippage_bps,
-                "volatility_target": self.config.volatility_target,
-            },
+            metadata=metadata,
         )

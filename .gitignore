@@ -14,4 +14,8 @@ data/snapshots/*
 !data/snapshots/.gitkeep
 reports/*.pdf
 reports/*.html
+reports/generated/
+var/
 logs/
+.venv/
+data/*.duckdb

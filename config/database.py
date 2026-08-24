@@ -71,11 +71,16 @@ def with_retries(max_retries: int = 3, backoff_factor: float = 0.5) -> Callable:
                 except Exception as e:
                     last_exception = e
                     logger.warning(
-                        f"Database operation '{func.__name__}' failed (attempt {attempt}/{max_retries}): {e}"
+                        "Database operation '%s' failed (attempt %s/%s): %s",
+                        getattr(func, "__name__", "<unknown>"),
+                        attempt,
+                        max_retries,
+                        e,
                     )
                     time.sleep(backoff_factor * attempt)
             logger.error(
-                f"Database operation '{func.__name__}' failed after {max_retries} attempts."
+                f"Database operation '{getattr(func, '__name__', '<unknown>')}' "
+                f"failed after {max_retries} attempts."
             )
             if last_exception:
                 raise last_exception

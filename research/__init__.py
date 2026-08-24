@@ -36,6 +36,7 @@ from .strategies import (
     CrossoverStrategy,
     FactorStrategy,
     MeanReversionStrategy,
+    MomentumQualityStrategy,
     MomentumStrategy,
     strategy_from_name,
 )
@@ -79,6 +80,7 @@ __all__ = [
     "MarketData",
     "MeanReversionStrategy",
     "Momentum1MFactor",
+    "MomentumQualityStrategy",
     "Momentum12MFactor",
     "Momentum3MFactor",
     "Momentum6MFactor",
