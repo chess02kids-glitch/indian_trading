@@ -29,7 +29,14 @@ dependencies = [
     "plotly>=5.0,<6.0",
     "vectorbt>=0.26,<1.0",
     # cryptography >=50.0.0: PYSEC-2026-3552 / CVE-2026-69247 fix.
-    "cryptography>=50.0.0"
+    "cryptography>=50.0.0",
+    # CI runs `pip-audit --strict` on the whole environment, not just the
+    # project dependencies. The GitHub runner image bundles setuptools and
+    # wheel versions with published advisories, so the install upgrades
+    # them: setuptools >=83.0.0 (PYSEC-2026-3447 fix) and wheel >=0.48.0
+    # (CVE-2026-24049 fix). Verified audit-clean at latest.
+    "setuptools>=83.0.0",
+    "wheel>=0.48.0"
 ]
 
 [project.scripts]
