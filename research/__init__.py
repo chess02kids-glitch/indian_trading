@@ -28,26 +28,32 @@ from .factors import (
     MovingAverageCrossoverFactor,
     RelativeStrengthRankFactor,
     RollingVolatilityFactor,
+    SharpeMomentumFactor,
     SMAFactor,
     ZScoreFactor,
     standard_factor_set,
 )
-from .strategies import (
-    CrossoverStrategy,
-    FactorStrategy,
-    MeanReversionStrategy,
-    MomentumQualityStrategy,
-    MomentumStrategy,
-    strategy_from_name,
-)
 from .universe import Universe, custom_universe, nifty_50, nifty_100, resolve_universe
 
+# Strategies are intentionally lazy: ``research.strategies`` imports
+# ``models.quality``, and ``models.quality`` imports ``research.contracts``.
+# Eagerly importing strategies from this package would make that a circular
+# import that depends on module load order. Resolving them lazily keeps the
+# public ``from research import MomentumQualityStrategy`` API stable.
 _LAZY_EXPORTS = {
+    "CrossoverStrategy": ("research.strategies", "CrossoverStrategy"),
+    "FactorStrategy": ("research.strategies", "FactorStrategy"),
+    "MeanReversionStrategy": ("research.strategies", "MeanReversionStrategy"),
+    "MomentumQualityStrategy": ("research.strategies", "MomentumQualityStrategy"),
+    "MomentumStrategy": ("research.strategies", "MomentumStrategy"),
+    "strategy_from_name": ("research.strategies", "strategy_from_name"),
     "ExperimentManager": ("research.experiments", "ExperimentManager"),
     "ExperimentRecord": ("research.experiments", "ExperimentRecord"),
     "ExperimentTrackingError": ("research.experiments", "ExperimentTrackingError"),
     "ResearchReport": ("research.reporting", "ResearchReport"),
+    "PeriodReport": ("research.reporting", "PeriodReport"),
     "ResearchRun": ("research.runner", "ResearchRun"),
+    "generate_periodic_reports": ("research.reporting", "generate_periodic_reports"),
     "generate_report": ("research.reporting", "generate_report"),
     "run_strategy": ("research.runner", "run_strategy"),
 }
@@ -87,12 +93,15 @@ __all__ = [
     "MomentumFactor",
     "MomentumStrategy",
     "MovingAverageCrossoverFactor",
+    "PeriodReport",
     "PortfolioConstructor",
     "ResearchInputError",
     "ResearchReport",
     "ResearchRun",
     "RelativeStrengthRankFactor",
+    "generate_periodic_reports",
     "RollingVolatilityFactor",
+    "SharpeMomentumFactor",
     "SMAFactor",
     "Signal",
     "Strategy",

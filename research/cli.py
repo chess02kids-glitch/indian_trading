@@ -111,6 +111,16 @@ def build_parser() -> argparse.ArgumentParser:
     _common_price_argument(generate)
     generate.add_argument("--output-dir", type=Path, default=Path("reports/generated"))
 
+    periods = report_commands.add_parser(
+        "periods", help="generate daily/weekly/monthly portfolio reports"
+    )
+    periods.add_argument("--strategy", default="momentum")
+    _common_price_argument(periods)
+    periods.add_argument("--output-dir", type=Path, default=Path("reports/generated"))
+    periods.add_argument(
+        "--periods", nargs="+", default=["D", "W", "M"], choices=["D", "W", "M"]
+    )
+
     return parser
 
 
@@ -203,6 +213,19 @@ def cli_main(argv: Sequence[str] | None = None) -> int:
                 {"json": str(paths[0]), "markdown": str(paths[1])}, sort_keys=True
             )
         )
+        return 0
+    if args.domain == "report" and args.command == "periods":
+        _, _, run = _strategy_run(args)
+        from research.reporting import generate_periodic_reports
+
+        period_reports = generate_periodic_reports(
+            run.result, periods=tuple(args.periods)
+        )
+        paths = {
+            period: report.write(args.output_dir)
+            for period, report in period_reports.items()
+        }
+        print(json.dumps({k: str(v) for k, v in paths.items()}, sort_keys=True))
         return 0
     parser.error("a supported subcommand is required")
     return 2

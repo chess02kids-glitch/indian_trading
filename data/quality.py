@@ -13,8 +13,8 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from datetime import datetime
-from typing import Any, Iterable
+from datetime import date, datetime
+from typing import Any, Callable, Iterable, Mapping
 
 import pandas as pd
 
@@ -23,11 +23,98 @@ from models.domain import MarketBar
 __all__ = [
     "DataQualityReport",
     "QualityIssue",
+    "TradingCalendar",
     "check_ohlcv_long_frame",
     "detect_data_staleness",
+    "detect_off_calendar_candles",
     "load_market_bars",
+    "nse_weekday_calendar",
     "validate_market_bars",
 ]
+
+#: Weekly weekday trading calendar for NSE equity (Mon-Fri).
+def _weekday_is_trading(day: date) -> bool:
+    """Return True for Monday-Friday (NSE equity trading days)."""
+    return day.weekday() < 5
+
+
+_WEEKDAY_IS_TRADING: Callable[[date], bool] = _weekday_is_trading
+
+
+class TradingCalendar:
+    """Trading-day predicate for detecting off-calendar candles.
+
+    ``is_trading_day`` defaults to weekdays; supply a ``holidays`` iterable
+    (or a custom predicate) for exchange-specific closures. A candle on a
+    non-trading day is reported — never moved or dropped.
+    """
+
+    def __init__(
+        self,
+        *,
+        holidays: Iterable[date | str] | None = None,
+        is_trading_day: Callable[[date], bool] | None = None,
+    ) -> None:
+        self._is_trading_day = is_trading_day or _WEEKDAY_IS_TRADING
+        holidays = tuple(holidays or ())
+        normalized: set[date] = set()
+        for holiday in holidays:
+            if isinstance(holiday, str):
+                holiday = pd.Timestamp(holiday).date()
+            normalized.add(holiday)
+        self.holidays = frozenset(normalized)
+
+    def is_trading_day(self, day: date | pd.Timestamp) -> bool:
+        """Return whether ``day`` is a valid exchange trading day."""
+        if isinstance(day, pd.Timestamp):
+            day = day.date()
+        if day in self.holidays:
+            return False
+        return bool(self._is_trading_day(day))
+
+    def to_dict(self) -> Mapping[str, Any]:
+        """Return a serializable description of the calendar."""
+        return {
+            "kind": "custom" if self._is_trading_day is not _WEEKDAY_IS_TRADING else "nse_weekday",
+            "holidays": sorted(h.isoformat() for h in self.holidays),
+        }
+
+
+def nse_weekday_calendar() -> TradingCalendar:
+    """Return the default NSE weekday trading calendar (no holiday table)."""
+    return TradingCalendar()
+
+
+def detect_off_calendar_candles(
+    accepted: pd.DataFrame,
+    *,
+    calendar: TradingCalendar | None = None,
+) -> list[QualityIssue]:
+    """Report candles that fall on non-trading calendar days.
+
+    A candle timestamp on a weekend (or a supplied holiday) indicates bad
+    data — the market was closed. These are reported as ``off_calendar``
+    issues; the candle is not re-labelled or removed here.
+    """
+    if accepted.empty:
+        return []
+    calendar = calendar or nse_weekday_calendar()
+    issues: list[QualityIssue] = []
+    for index, row in accepted.iterrows():
+        parsed = pd.to_datetime(row["date"], errors="coerce")
+        if pd.isna(parsed):
+            continue
+        day = parsed.date()
+        if not calendar.is_trading_day(day):
+            issues.append(
+                QualityIssue(
+                    "off_calendar",
+                    symbol=str(row["symbol"]),
+                    date=day.isoformat(),
+                    detail="candle falls on a non-trading calendar day",
+                )
+            )
+    return issues
 
 _REQUIRED_COLUMNS = ("date", "symbol", "open", "high", "low", "close")
 
@@ -398,6 +485,7 @@ def validate_market_bars(
     exchange: str = "NSE",
     reference_now: datetime | None = None,
     max_staleness_days: float = 6.0,
+    calendar: TradingCalendar | None = None,
 ) -> tuple[pd.DataFrame, DataQualityReport]:
     """Full validation pipeline: rows, staleness, gaps; never fills data."""
     accepted, report = check_ohlcv_long_frame(frame, source=source, exchange=exchange)
@@ -408,6 +496,7 @@ def validate_market_bars(
     if staleness is not None:
         extra.append(staleness)
     extra.extend(detect_missing_candles(accepted))
+    extra.extend(detect_off_calendar_candles(accepted, calendar=calendar))
     return accepted, DataQualityReport(
         total_rows=report.total_rows,
         accepted_rows=len(accepted),

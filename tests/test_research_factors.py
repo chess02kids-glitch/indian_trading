@@ -154,7 +154,7 @@ def test_standard_factor_set_and_strategy_signals() -> None:
     """The standard set and strategy implementations expose factor metadata."""
     data = _market_data()
     factors = standard_factor_set()
-    assert len(factors) == 11
+    assert len(factors) == 12
     momentum = MomentumStrategy(lookback=20).generate_signals(data)
     factor_strategy = FactorStrategy(MomentumFactor(20), strategy_name="custom_factor")
     assert momentum.values.index.equals(data.close.index)

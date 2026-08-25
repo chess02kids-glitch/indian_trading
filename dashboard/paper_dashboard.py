@@ -20,6 +20,9 @@ from typing import Any
 
 DEFAULT_STATUS_FILE = "var/operational_status.json"
 DEFAULT_SUMMARY_FILE = "reports/generated/baseline_experiment_summary.json"
+DEFAULT_REPORT_FILE = "reports/generated/momentum_quality.json"
+DEFAULT_EXPERIMENT_FILE = "reports/generated/experiments/experiments.jsonl"
+DEFAULT_PERIOD_FILE = "reports/generated/momentum_quality_report_M.json"
 
 _HEALTH_COLORS = {
     "HEALTHY": "green",
@@ -74,7 +77,59 @@ def summarize_status(status: dict[str, Any] | None) -> dict[str, Any]:
     }
 
 
-def render(status_path: str | Path, summary_path: str | Path) -> None:
+def load_experiment_history(path: str | Path) -> list[dict[str, Any]]:
+    """Read the JSONL experiment history into a list of records."""
+    path = Path(path)
+    if not path.is_file():
+        return []
+    records: list[dict[str, Any]] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        try:
+            payload = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(payload, dict):
+            records.append(payload)
+    return records
+
+
+def summarize_report(report: dict[str, Any] | None) -> dict[str, Any]:
+    """Reduce a research report to dashboard portfolio fields."""
+    if not report:
+        return {}
+    metrics = report.get("metrics") or {}
+    allocation = report.get("allocation_summary") or {}
+    return {
+        "metrics": metrics,
+        "average_weights": allocation.get("average_weights"),
+        "final_weights": allocation.get("final_weights"),
+        "turnover_total": allocation.get("turnover_total"),
+        "drawdowns": report.get("drawdowns"),
+    }
+
+
+def summarize_period_report(period: dict[str, Any] | None) -> dict[str, Any]:
+    """Reduce a monthly period report to exposure/factor fields."""
+    if not period:
+        return {}
+    periods = period.get("periods") or []
+    last = periods[-1] if periods else {}
+    return {
+        "last_period": last,
+        "period_count": len(periods),
+    }
+
+
+def render(
+    status_path: str | Path,
+    summary_path: str | Path,
+    *,
+    report_path: str | Path = DEFAULT_REPORT_FILE,
+    experiment_path: str | Path = DEFAULT_EXPERIMENT_FILE,
+    period_path: str | Path = DEFAULT_PERIOD_FILE,
+) -> None:
     """Render the dashboard (called by ``streamlit run``)."""
     import streamlit as st
 
@@ -83,7 +138,12 @@ def render(status_path: str | Path, summary_path: str | Path) -> None:
 
     status = load_json(status_path)
     summary = load_json(summary_path)
+    report = load_json(report_path)
+    period = load_json(period_path)
+    experiments = load_experiment_history(experiment_path)
     view = summarize_status(status)
+    report_view = summarize_report(report)
+    period_view = summarize_period_report(period)
 
     st.subheader("System health")
     col1, col2, col3, col4 = st.columns(4)
@@ -117,6 +177,55 @@ def render(status_path: str | Path, summary_path: str | Path) -> None:
             st.dataframe(metrics)
     else:
         st.info("No research summary found yet.")
+
+    st.subheader("Portfolio & risk")
+    metrics = report_view.get("metrics") or {}
+    if metrics:
+        st.dataframe(metrics)
+        if report_view.get("drawdowns"):
+            st.line_chart(
+                {"max_drawdown": [dd["value"] for dd in report_view["drawdowns"]]}
+            )
+    else:
+        st.info("No portfolio metrics available yet.")
+
+    st.subheader("Signals / allocations")
+    weights = report_view.get("final_weights")
+    if weights:
+        st.json(weights)
+    else:
+        st.info("No allocation summary available yet.")
+
+    st.subheader("Factor exposure (monthly)")
+    last_period = period_view.get("last_period")
+    if last_period:
+        st.json(
+            {
+                "period_start": last_period.get("period_start"),
+                "period_end": last_period.get("period_end"),
+                "factor_exposure": last_period.get("factor_exposure"),
+                "num_holdings": last_period.get("num_holdings"),
+                "exposure": last_period.get("exposure"),
+            }
+        )
+    else:
+        st.info("No periodic report found yet.")
+
+    st.subheader("Experiment history")
+    if experiments:
+        st.dataframe(
+            [
+                {
+                    "hypothesis_id": e.get("hypothesis_id"),
+                    "status": e.get("status"),
+                    "strategy": e.get("strategy"),
+                    "reason": e.get("reason"),
+                }
+                for e in experiments
+            ]
+        )
+    else:
+        st.info("No experiment history found yet.")
 
     st.subheader("Paper positions")
     if view["positions"]:

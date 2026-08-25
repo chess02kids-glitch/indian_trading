@@ -11,7 +11,7 @@ from backtest.engine import BacktestConfig, BacktestResult, VectorBTResearchEngi
 from portfolio.construction import EqualWeightConstructor
 
 from .contracts import MarketData, PortfolioConstructor, Strategy
-from .universe import Universe
+from .universe import Universe, ensure_universe_period_covers
 
 
 @dataclass(frozen=True, slots=True)
@@ -41,6 +41,13 @@ def run_strategy(
     universe: Universe | None = None,
 ) -> ResearchRun:
     """Generate signals, construct allocations, run the strategy, and compare benchmarks."""
+    if universe is not None:
+        # Refuse backtesting over dates the historical universe does not cover.
+        ensure_universe_period_covers(
+            universe,
+            start=data.close.index[0].date(),
+            end=data.close.index[-1].date(),
+        )
     research_data = data.select(universe.symbols) if universe is not None else data
     portfolio_constructor = constructor or EqualWeightConstructor()
     backtest_engine = engine or VectorBTResearchEngine(config=config)
