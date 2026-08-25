@@ -32,6 +32,7 @@ __all__ = [
     "ReconciliationRepository",
     "ResearchRepository",
     "RunRepository",
+    "IdempotencyRepository",
 ]
 
 
@@ -61,6 +62,15 @@ class PositionRepository(Protocol):
     def get_position(self, symbol: str) -> Position | None: ...
 
     def list_positions(self) -> list[Position]: ...
+
+
+@runtime_checkable
+class IdempotencyRepository(Protocol):
+    """Persistence for idempotency keys."""
+
+    def claim(self, key: str) -> bool: ...
+    def is_completed(self, key: str) -> bool: ...
+    def get_accepted_keys(self) -> dict[str, bool]: ...
 
 
 @runtime_checkable

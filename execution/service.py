@@ -236,6 +236,22 @@ class ExecutionService:
                     validated.idempotency_key, self.registry.accepted_keys()
                 )
                 if duplicate is not None:
+                    # Check if this duplicate is an in-flight order from a crash
+                    if not self.registry.accepted_keys().get(validated.idempotency_key):
+                        existing = self.order_repository.find_by_idempotency_key(validated.idempotency_key)
+                        if existing:
+                            try:
+                                record = self.broker.get_order_status(existing.internal_order_id)
+                                if record:
+                                    from broker.reconciler import record_to_result
+                                    recovered_result = record_to_result(record)
+                                    self.order_repository.save_result(recovered_result)
+                                    if recovered_result.status in (OrderStatus.FILLED, OrderStatus.PARTIALLY_FILLED, OrderStatus.REJECTED, OrderStatus.CANCELLED, OrderStatus.EXPIRED):
+                                        self.registry.mark_completed(validated.idempotency_key)
+                                    summary.submitted.append(recovered_result)
+                                    continue
+                            except Exception:
+                                pass # Network issue, fallback to skipping
                     summary.skipped.append(
                         {
                             "symbol": intent.symbol,

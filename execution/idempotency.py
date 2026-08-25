@@ -90,15 +90,27 @@ class IdempotencyRegistry:
       order must not create a new order either.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, repository: Any = None) -> None:
         self._lock = threading.Lock()
         # key -> True once completed; False while in flight
         self._states: dict[str, bool] = {}
+        self._repository = repository
 
     def claim(self, key: str) -> IdempotencyResult:
         if not isinstance(key, str) or not key.strip():
             return IdempotencyResult(False, key or "", "empty idempotency key")
         with self._lock:
+            # Check DB if repository is provided
+            if self._repository:
+                completed = self._repository.is_completed(key)
+                if completed:
+                    self._states[key] = True
+                    return IdempotencyResult(False, key, "already completed")
+                
+                accepted = self._repository.claim(key)
+                if not accepted:
+                    return IdempotencyResult(False, key, "in flight")
+
             state = self._states.get(key)
             if state is None:
                 self._states[key] = False
@@ -115,6 +127,12 @@ class IdempotencyRegistry:
     def accepted_keys(self) -> dict[str, bool]:
         """Snapshot of key -> completed, usable by the risk guard duplicate check."""
         with self._lock:
+            if self._repository:
+                # Merge DB state with memory state
+                db_states = self._repository.get_accepted_keys()
+                for k, v in db_states.items():
+                    if k not in self._states:
+                        self._states[k] = v
             return dict(self._states)
 
     def clear(self) -> None:
