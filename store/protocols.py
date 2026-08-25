@@ -77,7 +77,7 @@ class IdempotencyRepository(Protocol):
 class RunRepository(Protocol):
     """Persistence for orchestration runs with an atomic claim primitive."""
 
-    def claim_run(self, run_id: str) -> bool:
+    def claim_run(self, run_id: str, *, resume_awaiting_approval: bool = False) -> bool:
         """Atomically claim a run id. Returns True for exactly one caller."""
         ...
 

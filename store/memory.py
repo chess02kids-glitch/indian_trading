@@ -94,8 +94,14 @@ class InMemoryRunRepository:
         self._runs: dict[str, dict[str, Any]] = {}
         self._claimed: set[str] = set()
 
-    def claim_run(self, run_id: str) -> bool:
+    def claim_run(self, run_id: str, *, resume_awaiting_approval: bool = False) -> bool:
         with self._lock:
+            if (
+                resume_awaiting_approval
+                and self._runs.get(run_id, {}).get("status") == "awaiting_approval"
+            ):
+                self._runs[run_id]["status"] = "claimed"
+                return True
             if not run_id or run_id in self._claimed:
                 return False
             self._claimed.add(run_id)

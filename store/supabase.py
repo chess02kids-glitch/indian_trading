@@ -442,9 +442,11 @@ class SupabaseBrokerAccountRepository:
             "environment": environment,
             "status": "ACTIVE",
         }
-        res = self.client.table("broker_accounts").upsert(
-            data, on_conflict="user_id, broker, environment"
-        ).execute()
+        res = (
+            self.client.table("broker_accounts")
+            .upsert(data, on_conflict="user_id, broker, environment")
+            .execute()
+        )
         return res.data[0]["id"]
 
 

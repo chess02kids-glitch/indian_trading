@@ -335,7 +335,9 @@ class DailyPipeline:
                 self.approval_gate.grant_approval(run_id)
 
         # 0) run claim: concurrent executions cannot duplicate the run.
-        if not self.run_repository.claim_run(run_id):
+        if not self.run_repository.claim_run(
+            run_id, resume_awaiting_approval=bool(approved_by)
+        ):
             self.alerts.warning("duplicate_run_rejected", run_id=run_id)
             return DailyRunResult(
                 run_id=run_id,
