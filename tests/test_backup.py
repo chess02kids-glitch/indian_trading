@@ -21,12 +21,14 @@ def test_backup_success(mock_run, tmp_path, caplog):
 
     with patch("os.getenv") as mock_getenv:
 
-        def mock_env(key):
+        def mock_env(key, default=None):
+            # os.getenv is called with a default for BACKUP_RETENTION_DAYS;
+            # the side effect must accept (and honour) the second argument.
             if key == "DATABASE_URL":
                 return "postgres://dummy"
             if key == "BACKUP_ENCRYPTION_KEY":
                 return "f1K1fP3nF9mPzY2aD1qQ9wR7sT5vB2cU8xH4jG6kM3o="
-            return None
+            return default
 
         mock_getenv.side_effect = mock_env
 

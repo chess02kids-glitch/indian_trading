@@ -1,5 +1,7 @@
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
+
 from scripts.verify_audit_log import verify_audit_log
 
 
@@ -24,4 +26,4 @@ def test_verify_audit_chain_empty():
         mock_cursor.fetchone.side_effect = fetchone_side_effect
 
         with patch("os.getenv", return_value="postgresql://dummy"):
-            verify_audit_log() # Should not raise SystemExit
+            verify_audit_log()  # Should not raise SystemExit
