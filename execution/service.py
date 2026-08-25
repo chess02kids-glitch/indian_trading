@@ -91,6 +91,8 @@ class ExecutionService:
         risk_guard: RiskGuard,
         idempotency_registry: IdempotencyRegistry | None = None,
         rebalance_date: date | None = None,
+        health_service: Any = None,
+        alert_service: Any = None,
     ) -> None:
         self.broker = broker
         self.order_repository = order_repository
@@ -98,6 +100,8 @@ class ExecutionService:
         self.risk_guard = risk_guard
         self.registry = idempotency_registry or IdempotencyRegistry()
         self._rebalance_date = rebalance_date
+        self.health_service = health_service
+        self.alert_service = alert_service
         self._lock = threading.Lock()
 
     def _current_position(self, symbol: str) -> int:
@@ -176,6 +180,28 @@ class ExecutionService:
         with self._lock:
             decision: RiskDecision = self.risk_guard.evaluate(risk_context)
             if decision.state is not RiskState.NOMINAL:
+                if self.health_service:
+                    from observability.health import SystemHealth
+                    if decision.state == RiskState.HALTED:
+                        self.health_service.set_state(SystemHealth.HALTED, reason=f"Risk state {decision.state.value}")
+                    elif decision.state == RiskState.LOCKED:
+                        self.health_service.set_state(SystemHealth.LOCKED, reason=f"Risk state {decision.state.value}")
+                    elif decision.state == RiskState.WARNING:
+                        self.health_service.set_state(SystemHealth.WARNING, reason=f"Risk state {decision.state.value}")
+                
+                if self.alert_service:
+                    if decision.state in (RiskState.HALTED, RiskState.LOCKED):
+                        self.alert_service.critical(
+                            f"risk_{decision.state.value.lower()}", 
+                            message=f"Risk guard triggered: {decision.state.value}", 
+                            run_id=run_id
+                        )
+                    else:
+                        self.alert_service.warning(
+                            f"risk_{decision.state.value.lower()}", 
+                            message=f"Risk guard warned: {decision.state.value}", 
+                            run_id=run_id
+                        )
                 return ExecutionSummary(
                     run_id=run_id,
                     risk_state=decision.state.value,
@@ -239,6 +265,26 @@ class ExecutionService:
                     self.registry.mark_completed(validated.idempotency_key)
                 summary.submitted.append(result)
             self._sync_positions(target)
+            
+            if self.health_service:
+                self.health_service.write_extended_status({
+                    "latest_run": run_id,
+                    "risk_state": decision.state.value,
+                    "open_orders": [
+                        {
+                            "internal_order_id": r.internal_order_id, 
+                            "symbol": r.symbol, 
+                            "status": r.status.value, 
+                            "filled_quantity": r.filled_quantity
+                        } 
+                        for r in summary.submitted if r.status in (OrderStatus.PENDING, OrderStatus.PARTIALLY_FILLED)
+                    ],
+                    "paper_positions": [
+                        {"symbol": p.symbol, "quantity": p.quantity} 
+                        for p in self.position_repository.list_positions()
+                    ]
+                })
+            
             return summary
 
     def _sync_positions(self, target: PortfolioTarget) -> None:
