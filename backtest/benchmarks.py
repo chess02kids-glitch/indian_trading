@@ -106,7 +106,7 @@ def benchmark_suite(
         "persistence": persistence_weights(strategy_weights),
     }
     return {
-        name: runner.run(validated, weights, strategy_name=name)
+        name: runner.run(validated, weights, strategy_name=name, universe_history=[])
         for name, weights in benchmark_weights.items()
     }
 

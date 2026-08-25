@@ -34,6 +34,7 @@ __all__ = [
     "ReconciliationResult",
     "ResearchResult",
     "Signal",
+    "UniverseMembership",
     "VALID_EXCHANGES",
 ]
 
@@ -404,6 +405,9 @@ class ResearchResult(_FrozenModel):
     cost_model: str | None = None
     run_id: str | None = None
     created_at: datetime | None = None
+    dataset_fingerprint: str | None = None
+    config_fingerprint: str | None = None
+    code_fingerprint: str | None = None
 
     @field_validator("metrics")
     @classmethod
@@ -415,3 +419,25 @@ class ResearchResult(_FrozenModel):
                 raise ValueError(f"metric {key} must be finite")
             metrics[str(key)] = number
         return metrics
+
+class UniverseMembership(_FrozenModel):
+    """Historical universe membership to prevent survivorship bias."""
+
+    symbol: str
+    index_name: str
+    valid_from: date
+    valid_to: date | None = None
+
+    @field_validator("symbol", "index_name")
+    @classmethod
+    def _non_empty(cls, value: str) -> str:
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError("must be a non-empty string")
+        return value
+
+    def is_member(self, target_date: date) -> bool:
+        if target_date < self.valid_from:
+            return False
+        if self.valid_to is not None and target_date > self.valid_to:
+            return False
+        return True

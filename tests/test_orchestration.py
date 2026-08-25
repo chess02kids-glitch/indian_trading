@@ -360,6 +360,7 @@ class TestDashboardPaper:
 
     def test_status_path_environment(self, monkeypatch) -> None:
         from dashboard.paper_dashboard import status_file_path
+        from pathlib import Path
 
         monkeypatch.setenv("QUANT_INDIA_PAPER_STATUS", "/tmp/custom.json")
-        assert str(status_file_path()) == "/tmp/custom.json"
+        assert status_file_path() == Path("/tmp/custom.json")

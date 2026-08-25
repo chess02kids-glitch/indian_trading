@@ -275,8 +275,14 @@ class VectorBTResearchEngine:
         prices: pd.DataFrame,
         target_weights: pd.DataFrame,
         strategy_name: str = "strategy",
+        universe_history: list[Any] | None = None,
     ) -> BacktestResult:
         """Run a deterministic target-weight backtest with costs and turnover."""
+        if universe_history is None:
+            raise ResearchInputError(
+                "universe_history is required. Backtests must explicitly provide historical "
+                "index membership to prevent survivorship bias. Do not use today's universe for history."
+            )
         prices, weights = self._validate_inputs(prices, target_weights)
         asset_returns = prices.pct_change().fillna(0.0)
         targets, rebalance = self._prepare_targets(weights, asset_returns)

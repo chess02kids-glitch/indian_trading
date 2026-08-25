@@ -28,7 +28,7 @@ def _result(periods: int = 80):
     weights = pd.DataFrame(0.5, index=index, columns=prices.columns)
     return VectorBTResearchEngine(
         BacktestConfig(use_vectorbt=False, cost_model=CostModel(1, 1))
-    ).run(prices, weights, strategy_name="momentum")
+    ).run(prices, weights, strategy_name="momentum", universe_history=[])
 
 
 class _RunContext:

@@ -50,6 +50,7 @@ def run_strategy(
         research_data.close,
         weights,
         strategy_name=strategy.name,
+        universe_history=universe.history if universe is not None else [],
     )
     benchmarks = benchmark_suite(
         research_data.close,

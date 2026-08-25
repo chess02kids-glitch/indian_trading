@@ -111,7 +111,7 @@ class TestEngineIntegration:
                 cost_model=IndiaCostModel(scenario="pessimistic"),
             )
         )
-        result = engine.run(prices, weights, strategy_name="costs")
+        result = engine.run(prices, weights, strategy_name="costs", universe_history=[])
         # Pessimistic market cost must be visible in metadata.
         assert result.metadata["cost_model"]["scenario"] == "pessimistic"
         assert result.metrics.cost_drag >= 0
@@ -131,7 +131,7 @@ class TestEngineIntegration:
                     cost_model=IndiaCostModel(scenario=scenario),
                 )
             )
-            results[scenario] = engine.run(prices, weights, strategy_name=scenario)
+            results[scenario] = engine.run(prices, weights, strategy_name=scenario, universe_history=[])
         assert (
             results["pessimistic"].metrics.cost_drag
             > results["optimistic"].metrics.cost_drag
@@ -147,7 +147,7 @@ class TestEngineIntegration:
         engine = VectorBTResearchEngine(
             BacktestConfig(use_vectorbt=False, cost_model=CostModel(5, 2))
         )
-        result = engine.run(prices, weights, strategy_name="legacy")
+        result = engine.run(prices, weights, strategy_name="legacy", universe_history=[])
         assert result.metrics.cost_drag >= 0
 
     def test_cost_model_serializable_in_metadata(self) -> None:
@@ -156,6 +156,6 @@ class TestEngineIntegration:
         engine = VectorBTResearchEngine(
             BacktestConfig(use_vectorbt=False, cost_model=IndiaCostModel())
         )
-        result = engine.run(prices, weights, strategy_name="meta")
+        result = engine.run(prices, weights, strategy_name="meta", universe_history=[])
         payload = result.to_dict()
         assert payload["metadata"]["cost_model"]["model"] == "india_cost_model"

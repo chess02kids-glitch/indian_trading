@@ -25,17 +25,47 @@ def run_migrations() -> None:
     conn = None
     try:
         conn = psycopg2.connect(db_url)
-        with conn:  # Transaction safety block
+        with conn:
             with conn.cursor() as cur:
+                # Ensure the tracking table exists
+                cur.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS public.schema_migrations (
+                        version VARCHAR(255) PRIMARY KEY,
+                        applied_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                    );
+                    """
+                )
+                
+                # Fetch applied migrations
+                cur.execute("SELECT version FROM public.schema_migrations;")
+                applied_migrations = {row[0] for row in cur.fetchall()}
+
                 for sql_file in sql_files:
-                    logger.info(f"Applying migration: {sql_file.name}")
+                    migration_name = sql_file.name
+                    if migration_name in applied_migrations:
+                        logger.info(f"Skipping already applied migration: {migration_name}")
+                        continue
+                        
+                    logger.info(f"Applying migration: {migration_name}")
                     with open(sql_file, "r") as f:
                         sql = f.read()
+                    
                     try:
+                        # Use a savepoint/nested transaction block for each file
+                        # Since we are already in `with conn`, everything is one big transaction,
+                        # but psycopg2 handles nested blocks cleanly if we just execute.
+                        # Wait, the requirement says "fully transactional with schema_migrations".
+                        # If a single file fails, the whole transaction rolls back, which is exactly
+                        # what `with conn:` provides.
                         cur.execute(sql)
-                        logger.info(f"Successfully applied {sql_file.name}")
+                        cur.execute(
+                            "INSERT INTO public.schema_migrations (version) VALUES (%s);",
+                            (migration_name,)
+                        )
+                        logger.info(f"Successfully applied {migration_name}")
                     except Exception as e:
-                        logger.error(f"Failed to apply {sql_file.name}: {e}")
+                        logger.error(f"Failed to apply {migration_name}: {e}")
                         raise
     except Exception as e:
         logger.error(f"Migration runner failed: {e}")

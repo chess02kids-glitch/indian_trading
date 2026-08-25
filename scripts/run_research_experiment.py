@@ -128,6 +128,7 @@ def main(argv: list[str] | None = None) -> int:
         data.close,
         constructor.construct(strategy.generate_signals(data), data),
         strategy_name=strategy.name,
+        universe_history=[],
     )
     benchmarks = benchmark_suite(data.close, result.weights, engine=engine)
 

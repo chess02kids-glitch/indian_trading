@@ -110,7 +110,7 @@ def test_backtest_rebalances_and_applies_costs() -> None:
         use_vectorbt=False,
     )
     engine = VectorBTResearchEngine(config)
-    result = engine.run(prices, weights, strategy_name="unit")
+    result = engine.run(prices, weights, strategy_name="unit", universe_history=[])
     assert result.returns.index.equals(prices.index)
     assert result.equity_curve.iloc[-1] > 1.0
     assert result.trades["rebalance"].sum() > 1
@@ -123,7 +123,7 @@ def test_backtest_vectorbt_backend_is_available_or_falls_back() -> None:
     """The named engine exposes a deterministic backend result."""
     prices = _prices(80)
     weights = equal_weight_weights(prices)
-    result = VectorBTResearchEngine(BacktestConfig()).run(prices, weights)
+    result = VectorBTResearchEngine(BacktestConfig()).run(prices, weights, universe_history=[])
     assert result.metadata["backend"] in {"vectorbt", "pandas"}
     assert len(result.returns) == len(prices)
 
@@ -141,7 +141,7 @@ def test_backtest_volatility_targeting_hook() -> None:
             use_vectorbt=False,
         )
     )
-    result = engine.run(prices, weights)
+    result = engine.run(prices, weights, universe_history=[])
     assert result.weights.abs().sum(axis=1).max() <= 1.0 + 1e-8
 
 
@@ -163,7 +163,7 @@ def test_metrics_and_benchmark_suite_are_standardized() -> None:
     benchmarks = benchmark_suite(prices, strategy_weights, engine=engine)
     assert tuple(benchmarks) == BENCHMARK_NAMES
     comparison = compare_results(
-        {"strategy": engine.run(prices, strategy_weights), **benchmarks}
+        {"strategy": engine.run(prices, strategy_weights, universe_history=[]), **benchmarks}
     )
     assert "sharpe" in comparison.columns
     assert len(comparison) == 6
@@ -191,7 +191,7 @@ def test_invalid_backtest_inputs_are_rejected() -> None:
     prices = _prices(5)
     weights = equal_weight_weights(prices)
     with pytest.raises(ResearchInputError):
-        VectorBTResearchEngine().run(prices.iloc[::-1], weights.iloc[::-1])
+        VectorBTResearchEngine().run(prices.iloc[::-1], weights.iloc[::-1], universe_history=[])
     with pytest.raises(ResearchInputError):
         compute_performance_metrics(
             pd.Series([-2.0], index=pd.date_range("2024-01-01", periods=1))

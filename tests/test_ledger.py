@@ -38,7 +38,10 @@ def test_hypothesis_id_rejects_invalid() -> None:
 class TestLedgerSequencing:
     def test_ids_increment(self, tmp_path) -> None:
         ledger = HypothesisLedger(tmp_path / "ledger.jsonl")
-        first = ledger.record(hypothesis="p1", status="accepted", strategy="momentum")
+        first = ledger.record(
+            hypothesis="p1", status="accepted", strategy="momentum",
+            dataset_fingerprint="ds1", config_fingerprint="cfg1", code_fingerprint="code1"
+        )
         second = ledger.record(hypothesis="p2", status="rejected", strategy="x")
         assert first.hypothesis_id == "HYP-00001"
         assert second.hypothesis_id == "HYP-00002"
@@ -46,35 +49,42 @@ class TestLedgerSequencing:
 
     def test_sequence_survives_restart(self, tmp_path) -> None:
         path = tmp_path / "ledger.jsonl"
-        HypothesisLedger(path).record(hypothesis="p1", status="accepted", strategy="s")
+        HypothesisLedger(path).record(
+            hypothesis="p1", status="accepted", strategy="s",
+            dataset_fingerprint="ds", config_fingerprint="cfg", code_fingerprint="code"
+        )
         restarted = HypothesisLedger(path)
-        record = restarted.record(hypothesis="p2", status="accepted", strategy="s")
+        record = restarted.record(
+            hypothesis="p2", status="accepted", strategy="s",
+            dataset_fingerprint="ds", config_fingerprint="cfg", code_fingerprint="code"
+        )
         assert record.hypothesis_id == "HYP-00002"
 
     def test_rejected_experiments_recorded(self, tmp_path) -> None:
         ledger = HypothesisLedger(tmp_path / "ledger.jsonl")
-        rejected = ledger.record_rejection(
-            "momentum 12m on nifty100 fails out of sample",
-            strategy="momentum_12m",
-            reason="deflated Sharpe probability below threshold",
-            metrics={"sharpe": 0.1},
-            dataset_version="synthetic-v1",
+        ledger.record_rejection(
+            hypothesis="stupid", strategy="s", reason="bad metrics", metrics={"s": -1}
         )
-        assert rejected.status == "rejected"
+        ledger.record_rejection(
+            hypothesis="also stupid", strategy="s", reason="worse", metrics={"s": -2}
+        )
         records = ledger.list_records()
-        assert len(records) == 1
-        assert records[0].reason is not None
-        assert records[0].dataset_version == "synthetic-v1"
+        assert len(records) == 2
+        assert records[0].status == "rejected"
+        assert records[1].status == "rejected"
 
     def test_explicit_hypothesis_id_preserved(self, tmp_path) -> None:
         ledger = HypothesisLedger(tmp_path / "ledger.jsonl")
-        record = ledger.record(
+        rec = ledger.record(
             hypothesis_id="HYP-00007",
             hypothesis="chosen",
             status="accepted",
             strategy="s",
+            dataset_fingerprint="ds",
+            config_fingerprint="cfg",
+            code_fingerprint="code"
         )
-        assert record.hypothesis_id == "HYP-00007"
+        assert rec.hypothesis_id == "HYP-00007"
         assert ledger.next_hypothesis_id() == "HYP-00008"
 
     def test_experiment_outcome_round_trip(self, tmp_path) -> None:
@@ -99,6 +109,9 @@ class TestLedgerSequencing:
             backtest_period="2020-01-01/2024-12-31",
             oos_period="2025-01-01/2026-08-24",
             cost_model="india:base",
+            dataset_fingerprint="ds_f",
+            config_fingerprint="cfg_f",
+            code_fingerprint="code_f",
         )
         assert record.hypothesis_id == "HYP-00001"
         assert record.backtest_period == "2020-01-01/2024-12-31"

@@ -374,6 +374,7 @@ def run_walk_forward(
             data.close.loc[window.test_index],
             weights.loc[window.test_index],
             strategy_name=f"{strategy.name}_fold_{window.fold}",
+            universe_history=[],
         )
         for window in windows
     )

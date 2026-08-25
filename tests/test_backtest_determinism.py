@@ -78,7 +78,7 @@ def _run_reference(use_vectorbt: bool = False) -> "object":
             rebalance_frequency="M",
         )
     )
-    return engine.run(prices, weights, strategy_name="momentum63")
+    return engine.run(prices, weights, strategy_name="momentum63", universe_history=[])
 
 
 class TestBacktestDeterminism:

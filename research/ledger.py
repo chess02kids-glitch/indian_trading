@@ -59,6 +59,9 @@ class HypothesisRecord:
         "metrics",
         "reason",
         "recorded_at",
+        "dataset_fingerprint",
+        "config_fingerprint",
+        "code_fingerprint",
     )
 
     def __init__(self, **fields: Any) -> None:
@@ -83,7 +86,16 @@ class HypothesisRecord:
             "metrics": dict(fields.get("metrics") or {}),
             "reason": fields.get("reason"),
             "recorded_at": fields.get("recorded_at") or _now().isoformat(),
+            "dataset_fingerprint": fields.get("dataset_fingerprint"),
+            "config_fingerprint": fields.get("config_fingerprint"),
+            "code_fingerprint": fields.get("code_fingerprint"),
         }
+        
+        # Enforce exact reproducibility fingerprints on accepted experiments
+        if self.fields["status"] == "accepted":
+            missing = [k for k in ("dataset_fingerprint", "config_fingerprint", "code_fingerprint") if not self.fields.get(k)]
+            if missing:
+                raise ResearchInputError(f"Accepted experiments require fingerprints for exact reproducibility: {missing}")
 
     def __getattr__(self, name: str) -> Any:
         if name in ("fields",):
@@ -136,8 +148,11 @@ class HypothesisLedger:
     def record(self, **fields: Any) -> HypothesisRecord:
         """Append one entry, allocating a hypothesis id when not supplied."""
         with self._lock:
+            existing = {rec.hypothesis_id for rec in self._read_records()}
             if "hypothesis_id" not in fields or not fields.get("hypothesis_id"):
                 fields["hypothesis_id"] = self.next_hypothesis_id()
+            elif fields["hypothesis_id"] in existing:
+                raise ResearchInputError(f"Duplicate hypothesis_id: {fields['hypothesis_id']}")
             record = HypothesisRecord(**fields)
             self.path.parent.mkdir(parents=True, exist_ok=True)
             with self.path.open("a", encoding="utf-8") as handle:
@@ -186,6 +201,9 @@ class HypothesisLedger:
         backtest_period: str | None = None,
         oos_period: str | None = None,
         cost_model: str | None = None,
+        dataset_fingerprint: str | None = None,
+        config_fingerprint: str | None = None,
+        code_fingerprint: str | None = None,
     ) -> HypothesisRecord:
         """Record an :class:`Experiment` outcome using its own hypothesis id."""
         return self.record(
@@ -201,4 +219,7 @@ class HypothesisLedger:
             cost_model=cost_model,
             metrics=dict(metrics or {}),
             reason=reason,
+            dataset_fingerprint=dataset_fingerprint,
+            config_fingerprint=config_fingerprint,
+            code_fingerprint=code_fingerprint,
         )
