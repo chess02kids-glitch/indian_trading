@@ -191,16 +191,23 @@ class CleanDataCatalog:
 
     @staticmethod
     def _frame_fingerprint(frame: pd.DataFrame) -> str:
-        """Return a stable SHA-256 over the sorted long frame."""
+        """Return a stable SHA-256 over the sorted long frame.
+
+        The serialisation must be a pure function of the frame *content*:
+        the previous implementation hashed ``to_records().tobytes()``,
+        which embeds heap addresses for object (string) columns and so
+        produced different digests for identical data in different
+        processes — breaking the v0.7 §14 contract that a re-run detects
+        dataset *changes* (and only changes).
+        """
         payload = frame.copy()
         payload["date"] = pd.to_datetime(payload["date"]).astype("int64")
         for column in payload.columns:
             if payload[column].dtype == object:
-                payload[column] = payload[column].astype(str)
-        bytes_ = (
-            payload.sort_values(["symbol", "date"]).to_records(index=False).tobytes()
-        )
-        return hashlib.sha256(bytes_).hexdigest()
+                payload[column] = payload[column].astype(str).fillna("")
+        payload = payload.sort_values(["symbol", "date"], kind="stable")
+        blob = payload.to_json(orient="split").encode("utf-8")
+        return hashlib.sha256(blob).hexdigest()
 
     def dataset_fingerprint(
         self, symbols: Sequence[str], source: str = "yfinance"

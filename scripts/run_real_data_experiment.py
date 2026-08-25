@@ -1,16 +1,26 @@
-"""Run the baseline research experiment end to end.
+"""Run the EXACT frozen v0.6 baseline on real NSE data (v0.7).
 
-Candidate: cross-sectional 3M momentum + fundamental quality screen on the
-frozen Nifty 100 research snapshot, monthly rebalance, long-only,
-inverse-volatility weights, 15% volatility target, base India cost model.
-Baselines: buy-and-hold, equal weight, inverse volatility, persistence,
-and a seeded random placebo — all under the same universe, rebalance
-frequency, and cost model.
+Same strategy, parameters, rebalance schedule, cost assumptions,
+holdout/walk-forward/CPCV methodology, DSR calculation and research gate
+as ``scripts/run_research_experiment.py`` (v0.6, locked — not modified).
+Only the *data* differs:
 
-Deterministic: synthetic data is generated from a fixed seed (no network),
-so repeated runs produce identical results. Everything is written under
-``reports/generated`` (git-ignored): research reports, the hypothesis
-ledger, and the local MLflow store.
+* prices: validated eod2_data panel (split/bonus-adjusted, NSE official
+  daily reports mirror) over the maximum clean overlapping period;
+* universe: point-in-time Nifty 100 membership (CC BY 4.0 source) — the
+  frozen cross-sectional screens rank only within each date's actual
+  members (``MomentumQualityStrategy.active_members``);
+* fundamentals: operator bundle (yfinance quarterly ROE / debt-to-equity,
+  one-quarter conservative publication lag).
+
+The frozen configuration is asserted explicitly against the locked v0.6
+values before any engine run; any drift aborts the experiment.
+
+Deterministic given the data snapshot, the committed PIT universe, the
+operator bundle and the code commit. Outputs under
+``reports/generated/real_data`` (git-ignored); the ledger entry is
+appended to the shared ``reports/generated/experiments/ledger.jsonl``
+(next id after the v0.6 HYP-00001 entry — never overwritten).
 """
 
 from __future__ import annotations
@@ -21,7 +31,6 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -38,8 +47,15 @@ from backtest.validation import (  # noqa: E402
     run_holdout_protocol,
     validation_consistency,
 )
-from data.universe import load_universe_dataset  # noqa: E402
+from data.dataset import CleanDataCatalog  # noqa: E402
+from data.universe import UniverseDataset  # noqa: E402
+from ingestion.eod2_adapter import Eod2SourceSpec  # noqa: E402
+from ingestion.nse_membership_adapter import (  # noqa: E402
+    NseMembershipSpec,
+    membership_fingerprint,
+)
 from portfolio.construction import InverseVolatilityConstructor  # noqa: E402
+from research import realdata  # noqa: E402
 from research.contracts import Experiment, MarketData  # noqa: E402
 from research.diagnostics import (  # noqa: E402
     FactorDiagnostics,
@@ -55,122 +71,251 @@ from research.experiments import (  # noqa: E402
 from research.factors import MomentumFactor  # noqa: E402
 from research.gate import ResearchGate, generate_placebo_results  # noqa: E402
 from research.ledger import HypothesisLedger  # noqa: E402
+from research.realdata import (  # noqa: E402
+    build_active_membership_panel,
+    build_market_panels,
+    load_fundamentals_bundle,
+    real_data_dataset_version,
+)
 from research.reporting import (  # noqa: E402
     generate_advanced_report,
     generate_periodic_reports,
     generate_report,
 )
 from research.strategies import MomentumQualityStrategy  # noqa: E402
-from research.universe import nifty_100  # noqa: E402
+from research.universe import build_universe_from_dataset  # noqa: E402
+
+# Frozen configuration helpers — imported from the v0.6 script itself so
+# the fingerprint definitions can never drift.
+from scripts.run_research_experiment import (  # noqa: E402
+    _config_fingerprint,
+    _dataset_fingerprint,
+    _gate_reason,
+)
+
+#: The locked v0.6 baseline values (v0.7 §1/§11). Asserted, not assumed.
+FROZEN = {
+    "momentum_lookback": 63,
+    "momentum_quantile": 0.25,
+    "quality_quantile": 0.5,
+    "rebalance_frequency": "M",
+    "initial_cash": 1_000_000.0,
+    "cost_scenario": "base",
+    "volatility_target": 0.15,
+    "max_leverage": 1.0,
+    "constructor_window": 20,
+    "holdout_size": 252,
+    "train_size": 252,
+    "test_size": 63,
+    "purge": 20,
+    "embargo": 5,
+    "cpcv_n_groups": 6,
+    "cpcv_n_test_groups": 2,
+    "acceptance_threshold": 0.5,
+    "random_seed": 20260824,
+}
 
 
-def make_synthetic_dataset(
-    symbols: tuple[str, ...],
-    periods: int = 756,
-    start: str = "2023-01-02",
-    seed: int = 20260824,
-) -> pd.DataFrame:
-    """Deterministic synthetic daily close prices for the universe."""
-    rng = np.random.default_rng(seed)
-    index = pd.date_range(start, periods=periods, freq="B")
-    drift = rng.normal(0.0002, 0.0005, size=len(symbols))
-    vol = rng.uniform(0.012, 0.028, size=len(symbols))
-    returns = rng.normal(drift, vol, size=(periods, len(symbols)))
-    close = 100.0 * np.exp(np.cumsum(returns, axis=0))
-    return pd.DataFrame(close, index=index, columns=list(symbols))
-
-
-def make_synthetic_fundamentals(
-    symbols: tuple[str, ...],
-    prices: pd.DataFrame,
-    seed: int = 777,
-) -> pd.DataFrame:
-    """Deterministic quarterly fundamentals (ROE, debt/equity) per symbol."""
-    rng = np.random.default_rng(seed)
-    quarter_ends = prices.index[::63]
-    rows = []
-    for date in quarter_ends:
-        for symbol in symbols:
-            rows.append(
-                {
-                    "date": date,
-                    "symbol": symbol,
-                    "roe": float(rng.normal(0.12, 0.06)),
-                    "debt_to_equity": float(abs(rng.normal(0.8, 0.35))),
-                }
-            )
-    return pd.DataFrame(rows)
-
-
-def _dataset_fingerprint(prices: pd.DataFrame) -> str:
-    """Stable content fingerprint of the price panel used by a run."""
-    import hashlib
-
-    payload = prices.round(12).to_json(orient="split", date_format="iso")
-    return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:24]
-
-
-def _config_fingerprint(config: BacktestConfig, strategy: object) -> str:
-    """Stable fingerprint of engine configuration plus strategy parameters."""
-    import hashlib
-
-    payload = {
-        "rebalance_frequency": config.rebalance_frequency,
-        "initial_cash": config.initial_cash,
-        "cost_model": getattr(config.cost_model, "to_dict", lambda: {})()
-        if callable(getattr(config.cost_model, "to_dict", None))
-        else str(config.cost_model),
-        "volatility_target": config.volatility_target,
-        "max_leverage": config.max_leverage,
-        "strategy": getattr(strategy, "name", ""),
-        "parameters": dict(getattr(strategy, "parameters", {}) or {}),
+def _assert_frozen_config(
+    engine_config: BacktestConfig,
+    strategy: MomentumQualityStrategy,
+    constructor: InverseVolatilityConstructor,
+) -> None:
+    """Refuse to run if any locked v0.6 parameter drifted."""
+    checks = {
+        "momentum_lookback": (strategy.momentum_lookback, FROZEN["momentum_lookback"]),
+        "momentum_quantile": (strategy.momentum_quantile, FROZEN["momentum_quantile"]),
+        "quality_quantile": (strategy.quality_quantile, FROZEN["quality_quantile"]),
+        "rebalance_frequency": (
+            engine_config.rebalance_frequency,
+            FROZEN["rebalance_frequency"],
+        ),
+        "initial_cash": (engine_config.initial_cash, FROZEN["initial_cash"]),
+        "cost_scenario": (
+            engine_config.cost_model.scenario,
+            FROZEN["cost_scenario"],
+        ),
+        "volatility_target": (
+            engine_config.volatility_target,
+            FROZEN["volatility_target"],
+        ),
+        "max_leverage": (engine_config.max_leverage, FROZEN["max_leverage"]),
+        "constructor_window": (constructor.window, FROZEN["constructor_window"]),
     }
-    encoded = json.dumps(payload, sort_keys=True, default=str, separators=(",", ":"))
-    return hashlib.sha256(encoded.encode("utf-8")).hexdigest()[:24]
+    drifted = {
+        name: {"actual": actual, "frozen": frozen}
+        for name, (actual, frozen) in checks.items()
+        if actual != frozen
+    }
+    if drifted:
+        raise SystemExit(f"frozen v0.6 configuration drifted: {drifted}")
 
 
-def _gate_reason(decision: object) -> str:
-    """Human-readable gate failure reason for ledger/metadata."""
-    failures = getattr(decision, "failures", ()) or ()
-    if failures:
-        return "; ".join(check.message for check in failures)
-    return f"research gate verdict: {getattr(decision, 'verdict', 'unknown')}"
+def _load_real_data(
+    *,
+    as_of: str,
+    window_start: str,
+    bundle_dir: Path,
+    universe_dir: Path,
+) -> dict:
+    """Load panel + PIT universe + active-membership mask + fundamentals."""
+    catalog = CleanDataCatalog()
+    if not (universe_dir / "nifty100.csv").is_file():
+        raise SystemExit(
+            "point-in-time universe missing; run: "
+            "python scripts/ingest_real_data.py --local ..."
+        )
+    dataset = UniverseDataset.from_dir(universe_dir)
+    requested = realdata.requested_constituents(
+        dataset, window_start=window_start, as_of=as_of
+    )
+    panels = build_market_panels(
+        catalog,
+        requested,
+        source="eod2_data",
+        window_start=window_start,
+        window_end=as_of,
+    )
+    active_members = build_active_membership_panel(
+        dataset,
+        "nifty100",
+        calendar=panels.window.index,
+        symbols=panels.symbols,
+    )
+    try:
+        fundamentals, fundamentals_provenance = load_fundamentals_bundle(
+            bundle_dir, as_of=as_of
+        )
+    except FileNotFoundError as exc:
+        raise SystemExit(
+            "INSUFFICIENT_DATA: "
+            f"{exc}\n"
+            "The frozen baseline's quality screen requires real quarterly "
+            "fundamentals, which cannot be fetched from Arena (network is "
+            "restricted to PyPI/GitHub). Operator action (single "
+            "external-data command, see docs/real_data.md):\n"
+            "  python scripts/ingest_real_data.py --fetch-fundamentals\n"
+            "then re-run this script (or merge with --from-bundle first)."
+        ) from exc
+
+    membership_csv = universe_dir / "nifty100.csv"
+    provenance = {}
+    provenance_path = universe_dir / "provenance.json"
+    if provenance_path.is_file():
+        provenance = json.loads(provenance_path.read_text(encoding="utf-8"))
+    membership_spec = NseMembershipSpec(
+        commit=str(provenance.get("source", {}).get("commit", ""))
+    )
+
+    # eod2 source pin: from the completeness report written by the local
+    # ingestion step (degrades to "unknown" if the report is absent).
+    eod2_commit = ""
+    completeness_path = (
+        ROOT / "reports" / "generated" / "real_data" / "completeness_report.json"
+    )
+    if completeness_path.is_file():
+        try:
+            payload = json.loads(completeness_path.read_text(encoding="utf-8"))
+            eod2_commit = str(
+                payload.get("prices", {}).get("source", {}).get("commit", "")
+            )
+        except (json.JSONDecodeError, OSError):
+            eod2_commit = ""
+    eod2_spec = Eod2SourceSpec(commit=eod2_commit)
+    return {
+        "catalog": catalog,
+        "dataset": dataset,
+        "panels": panels,
+        "active_members": active_members,
+        "fundamentals": fundamentals,
+        "fundamentals_provenance": fundamentals_provenance,
+        "eod2_spec": eod2_spec,
+        "membership_spec": membership_spec,
+        "membership_fingerprint": membership_fingerprint(pd.read_csv(membership_csv)),
+    }
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--output-dir", type=Path, default=ROOT / "reports" / "generated"
+        "--output-dir",
+        type=Path,
+        default=ROOT / "reports" / "generated" / "real_data",
     )
-    parser.add_argument("--periods", type=int, default=756)
-    parser.add_argument("--holdout-size", type=int, default=252)
-    parser.add_argument("--vol-target", type=float, default=0.15)
+    parser.add_argument("--as-of", default="2026-08-25")
+    parser.add_argument("--window-start", default="2023-01-02")
+    parser.add_argument(
+        "--universe-dir",
+        type=Path,
+        default=ROOT / "data" / "universe" / "nifty100-pit",
+    )
+    parser.add_argument(
+        "--bundle-dir",
+        type=Path,
+        default=ROOT / "data" / "bundle",
+    )
+    parser.add_argument(
+        "--ledger-path",
+        type=Path,
+        default=ROOT / "reports" / "generated" / "experiments" / "ledger.jsonl",
+    )
+    parser.add_argument("--holdout-size", type=int, default=FROZEN["holdout_size"])
+    parser.add_argument("--vol-target", type=float, default=FROZEN["volatility_target"])
     parser.add_argument("--use-vectorbt", action="store_true")
-    parser.add_argument("--seed", type=int, default=20260824)
+    parser.add_argument("--seed", type=int, default=FROZEN["random_seed"])
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="load + validate everything, assert the frozen config, print the "
+        "run plan — do not execute the backtest",
+    )
     args = parser.parse_args(argv)
 
     output_dir: Path = args.output_dir
     output_dir.mkdir(parents=True, exist_ok=True)
-    # Versioned universe: the frozen research snapshot must match the
-    # versioned constituent CSV (data/universe/nifty100.csv), and the
-    # snapshot validity window is recorded in every experiment artifact.
-    universe_dataset = load_universe_dataset()
-    snapshot_start, _ = universe_dataset.valid_window("nifty100")
-    universe = nifty_100(as_of=snapshot_start)
-    if set(universe.symbols) != set(universe_dataset.all_symbols("nifty100")):
+
+    if args.holdout_size != FROZEN["holdout_size"]:
         raise SystemExit(
-            "frozen nifty100 research snapshot does not match the versioned "
-            "constituent CSV; refusing to run on an ambiguous universe"
+            f"--holdout-size {args.holdout_size} != frozen {FROZEN['holdout_size']}"
         )
-    universe_version = f"nifty100-snapshot-{snapshot_start.isoformat()}"
-    prices = make_synthetic_dataset(
-        universe.symbols, periods=args.periods, seed=args.seed
+    if args.vol_target != FROZEN["volatility_target"]:
+        raise SystemExit(
+            f"--vol-target {args.vol_target} != frozen {FROZEN['volatility_target']}"
+        )
+    if args.seed != FROZEN["random_seed"]:
+        raise SystemExit(f"--seed {args.seed} != frozen {FROZEN['random_seed']}")
+
+    # -- real data assembly -------------------------------------------------
+    context = _load_real_data(
+        as_of=args.as_of,
+        window_start=args.window_start,
+        bundle_dir=args.bundle_dir,
+        universe_dir=args.universe_dir,
     )
-    fundamentals = make_synthetic_fundamentals(universe.symbols, prices)
-    data = MarketData(close=prices)
-    dataset_version = (
-        f"synthetic-nifty100-v1 (seed={args.seed}, periods={args.periods})"
+    panels = context["panels"]
+    dataset = context["dataset"]
+    active_members = context["active_members"]
+    fundamentals = context["fundamentals"]
+
+    universe = build_universe_from_dataset(
+        dataset,
+        "nifty100",
+        as_of=panels.window.start,
+        metadata={
+            "universe_kind": "point_in_time",
+            "membership_fingerprint": context["membership_fingerprint"],
+        },
     )
+    universe_version = f"nifty100-pit-{context['membership_fingerprint'][:12]}"
+    price_fp = panels.close.round(12)
+    dataset_version = real_data_dataset_version(
+        context["eod2_spec"],
+        context["membership_spec"],
+        fundamentals_fingerprint=context["fundamentals_provenance"].get(
+            "bundle_fingerprint", "unknown"
+        ),
+    )
+    data = MarketData(close=panels.close)
 
     cost_model = IndiaCostModel(scenario="base")
     cost_name = f"india:{cost_model.scenario}"
@@ -187,24 +332,38 @@ def main(argv: list[str] | None = None) -> int:
         momentum_quantile=0.25,
         quality_quantile=0.5,
         fundamentals=fundamentals,
+        active_members=active_members,
     )
     constructor = InverseVolatilityConstructor(window=20)
+    _assert_frozen_config(engine_config, strategy, constructor)
 
+    plan = {
+        "status": "dry_run" if args.dry_run else "running",
+        "dataset_version": dataset_version,
+        "universe_version": universe_version,
+        "window": panels.window.to_dict(),
+        "panel_symbols": len(panels.symbols),
+        "excluded_symbols": dict(panels.excluded),
+        "fundamentals_rows": int(len(fundamentals)),
+        "fundamentals_symbols": int(fundamentals["symbol"].nunique()),
+        "holdout_size": args.holdout_size,
+        "frozen_config": FROZEN,
+        "frozen_config_asserted": True,
+    }
+    if args.dry_run:
+        print(json.dumps(plan, indent=2, default=str))
+        return 0
+
+    # -- EXACT v0.6 baseline (same code path as the frozen script) ----------
+    universe_history = dataset.to_frame().to_dict("records")
     result = engine.run(
         data.close,
         constructor.construct(strategy.generate_signals(data), data),
         strategy_name=strategy.name,
-        universe_history=universe.history,
+        universe_history=universe_history,
     )
-    # Full-period benchmarks (report context; the gate compares holdout
-    # slices below so every comparison is on the same locked evidence).
     benchmarks = benchmark_suite(data.close, result.weights, engine=engine)
 
-    # -- locked holdout protocol (TRAIN -> VALIDATION -> LOCKED HOLDOUT) ----
-    # The trailing ``--holdout-size`` observations are locked before any
-    # validation runs: walk-forward and CPCV only ever see the development
-    # prefix (guarded explicitly), and the candidate receives exactly one
-    # final evaluation on the untouched holdout slice.
     protocol = run_holdout_protocol(
         strategy,
         data,
@@ -217,7 +376,7 @@ def main(argv: list[str] | None = None) -> int:
         embargo=5,
         cpcv_n_groups=6,
         cpcv_n_test_groups=2,
-        universe_history=universe.history,
+        universe_history=universe_history,
     )
     split = protocol.split
     walk_forward = protocol.walk_forward
@@ -232,10 +391,7 @@ def main(argv: list[str] | None = None) -> int:
     dev_period = (
         f"{split.dev_start.date().isoformat()}/{split.dev_end.date().isoformat()}"
     )
-    holdout_period = (
-        f"{split.holdout_start.date().isoformat()}/"
-        f"{split.holdout_end.date().isoformat()}"
-    )
+    holdout_period = f"{split.holdout_start.date().isoformat()}/{split.holdout_end.date().isoformat()}"
     oos_returns = holdout_result.returns
     oos_period = holdout_period
 
@@ -248,15 +404,12 @@ def main(argv: list[str] | None = None) -> int:
         samples=1000,
         seed=args.seed,
     )
-    # Like-for-like holdout comparisons: every benchmark and placebo is
-    # evaluated on the same locked holdout slice, same cost model, same
-    # rebalance schedule, and same position constraints as the candidate.
     holdout_benchmarks = {
         name: engine.run(
             holdout_prices,
             benchmark_result.weights.loc[split.holdout_index],
             strategy_name=f"{name}_holdout",
-            universe_history=universe.history,
+            universe_history=universe_history,
         )
         for name, benchmark_result in benchmarks.items()
     }
@@ -291,7 +444,7 @@ def main(argv: list[str] | None = None) -> int:
         encoding="utf-8",
     )
 
-    acceptance_threshold = 0.5
+    acceptance_threshold = FROZEN["acceptance_threshold"]
     rejected = dsr.probability < acceptance_threshold
     reason = None
     if rejected:
@@ -302,25 +455,37 @@ def main(argv: list[str] | None = None) -> int:
     if reason is None and gate_decision.verdict == "FAIL":
         reason = _gate_reason(gate_decision)
 
-    # -- report warnings and limitations (spec: explicit, machine-readable) -
-    # Warnings: gate checks that passed with caveats (never silent).
-    # Limitations: fixed, honest dataset/universe caveats — no alpha claim.
     warnings = [
         check.message for check in gate_decision.checks if check.status == "warn"
     ]
     limitations = [
-        "synthetic price dataset: results validate the research pipeline, "
-        "they are not evidence about real Indian equities",
-        f"universe is a single-date snapshot ({universe_version}): results "
-        "carry a survivorship-bias limitation",
-        "historical corporate-action adjustment is not wired to a real data source",
-        "no alpha or statistical-significance claim is made",
+        "real-data run: results are evidence about the research framework on "
+        "real Indian equities, but NOT an alpha claim (a pass would still "
+        "require independent review per the research gate)",
+        "price source eod2_data carries no license file (research-only usage "
+        "of a mirror of NSE official public daily reports; see "
+        "docs/real_data.md)",
+        "daily/ series is split/bonus-adjusted per the upstream README; the "
+        "independent yfinance cross-check lives in the operator bundle "
+        "(data/bundle/crosscheck_yfinance.json) — review its mismatches",
+        "HDFC (member 2023-01-01→2023-07-13) has no price file in the "
+        "source (delisted at the HDFC/HDFC Bank merger); excluded with "
+        "reason, HDFCBANK (a member throughout) covers the bank exposure",
+        "seven post-window-start IPOs (JIOFIN, BAJAJHFL, HYUNDAI, SWIGGY, "
+        "ENRIN, TATACAP, TMCV) lack pre-listing prices inside the window; "
+        "they are members in the PIT universe but not in the rectangular "
+        "price panel (excluded with reason)",
+        "point-in-time membership is stable after 2026-03-31 (next NSE "
+        "reconstitution October 2026); the source coverage date is "
+        "2026-05-15 (recorded, verified against the upstream snapshot)",
+        "fundamentals use a conservative one-quarter publication lag "
+        "(availability at next quarter end) — no publication look-ahead, "
+        "but availability is coarser than reality",
+        "synthetic v0.6 results are a framework test only; the synthetic "
+        "and real results are NOT comparable performance estimates",
     ]
 
-    # -- cost-scenario survival table (OPTIMISTIC / BASE / PESSIMISTIC) -----
-    # Reporting only: the gate above evaluates the pre-declared base
-    # scenario. The same weights are re-simulated under each scenario's
-    # spread/slippage assumptions so cost fragility is visible per period.
+    # -- cost-scenario survival table (reporting only, as in v0.6) ----------
     scenario_results = {}
     for scenario in ("optimistic", "base", "pessimistic"):
         scenario_model = IndiaCostModel(scenario=scenario)
@@ -340,7 +505,7 @@ def main(argv: list[str] | None = None) -> int:
                 data.close,
                 result.weights,
                 strategy_name=f"{strategy.name}_{scenario}",
-                universe_history=universe.history,
+                universe_history=universe_history,
             )
         )
         scenario_holdout = (
@@ -350,7 +515,7 @@ def main(argv: list[str] | None = None) -> int:
                 holdout_prices,
                 result.weights.loc[split.holdout_index],
                 strategy_name=f"{strategy.name}_{scenario}_holdout",
-                universe_history=universe.history,
+                universe_history=universe_history,
             )
         )
         scenario_results[scenario] = {
@@ -359,7 +524,7 @@ def main(argv: list[str] | None = None) -> int:
             "holdout": scenario_holdout.metrics.to_dict(),
         }
 
-    # -- reports, diagnostics, and artifacts (before tracking) --------------
+    # -- reports, diagnostics, artifacts (same structure as v0.6) -----------
     from research.experiments import _commit_hash
 
     code_commit = _commit_hash()
@@ -380,8 +545,10 @@ def main(argv: list[str] | None = None) -> int:
         metadata={
             "strategy_parameters": strategy.parameters,
             "universe": universe.name,
+            "universe_kind": "point_in_time",
             "universe_version": universe_version,
-            "universe_symbols": list(universe.symbols),
+            "universe_symbols_panel": list(panels.symbols),
+            "universe_excluded": dict(panels.excluded),
             "dataset_version": dataset_version,
             "cost_model": cost_model.to_dict(),
             "backtest_period": backtest_period,
@@ -395,12 +562,12 @@ def main(argv: list[str] | None = None) -> int:
             "random_seed": args.seed,
             "code_commit": code_commit,
             "mlflow_run_id": "pending",
+            "frozen_config": FROZEN,
+            "config_fingerprint": _config_fingerprint(engine_config, strategy),
         },
     )
     json_path, markdown_path = report.write(output_dir)
 
-    # Periodic (daily/weekly/monthly) portfolio reports with exposure,
-    # turnover, drawdown, and factor exposure of held positions.
     momentum_panel = MomentumFactor(strategy.momentum_lookback).compute(data)
     period_reports = generate_periodic_reports(
         result, factor_values=momentum_panel, periods=("D", "W", "M")
@@ -437,12 +604,11 @@ def main(argv: list[str] | None = None) -> int:
                 "limitations": limitations,
                 "random_seed": args.seed,
                 "code_commit": code_commit,
-                "dataset_fingerprint": _dataset_fingerprint(prices),
+                "dataset_fingerprint": _dataset_fingerprint(price_fp),
             },
         )
         advanced_paths[frequency] = str(advanced.write(output_dir)[0])
 
-    # Factor diagnostics for the researched factor panel.
     factor_values = MomentumFactor(strategy.momentum_lookback).compute(data)
     diagnostics = FactorDiagnostics(
         factor_decay=factor_decay(
@@ -457,16 +623,23 @@ def main(argv: list[str] | None = None) -> int:
     diagnostics_path = output_dir / "factor_diagnostics.json"
     diagnostics_path.write_text(diagnostics.to_json() + "\n", encoding="utf-8")
 
-    # -- persistence: MLflow + ledger -----------------------------------------
+    # -- persistence: MLflow + shared ledger (HYP continues after v0.6) ----
     manager = ExperimentManager(
-        experiment_name="quant-india-baseline",
+        experiment_name="quant-india-baseline-realdata",
         tracking_dir=output_dir / "experiments",
     )
-    ledger = HypothesisLedger(output_dir / "experiments" / "ledger.jsonl")
-    # Allocate the next incremental hypothesis id (HYP-00001, HYP-00002, ...)
-    # so every run — including re-runs — records a distinct, auditable
-    # experiment instead of overwriting the previous one.
+    ledger_path = args.ledger_path
+    ledger = HypothesisLedger(ledger_path)
     hypothesis = ledger.next_hypothesis_id()
+    if hypothesis == "HYP-00001":
+        raise SystemExit(
+            "refusing to allocate HYP-00001 for the v0.7 real-data "
+            "experiment: the shared ledger does not yet contain the v0.6 "
+            "entry. Run `python scripts/run_research_experiment.py` first "
+            "(reproduces HYP-00001), then re-run this script so the real-"
+            "data entry is recorded as HYP-00002 (v0.7 §21: never overwrite "
+            "the v0.6 entry)."
+        )
     experiment = Experiment(
         hypothesis_id=hypothesis,
         strategy=strategy.name,
@@ -477,8 +650,6 @@ def main(argv: list[str] | None = None) -> int:
         cost_model=cost_name,
     )
 
-    # MLflow artifact set (equity, drawdown, CIs, validation, weights,
-    # diagnostics, report).
     artifacts = build_research_artifacts(
         result,
         artifact_dir=output_dir / "experiments" / "artifacts",
@@ -529,7 +700,7 @@ def main(argv: list[str] | None = None) -> int:
         },
         validation_method="walk_forward",
         random_seed=args.seed,
-        dataset_fingerprint=_dataset_fingerprint(prices),
+        dataset_fingerprint=_dataset_fingerprint(price_fp),
         gate_result=gate_decision,
         artifacts=artifacts,
     )
@@ -538,7 +709,9 @@ def main(argv: list[str] | None = None) -> int:
         experiment,
         status=record.status,
         hypothesis_text=(
-            "3M momentum + quality on Nifty 100, monthly, long-only, vol-targeted"
+            "v0.7: frozen v0.6 baseline (3M momentum + quality, monthly, "
+            "long-only, vol-targeted) re-run on real NSE data with "
+            "point-in-time Nifty 100 membership"
         ),
         metrics={
             "oos_sharpe_probability": dsr.probability,
@@ -563,7 +736,7 @@ def main(argv: list[str] | None = None) -> int:
         holdout_period=holdout_period,
         universe_version=universe_version,
         cost_model=cost_name,
-        dataset_fingerprint=_dataset_fingerprint(prices),
+        dataset_fingerprint=_dataset_fingerprint(price_fp),
         config_fingerprint=_config_fingerprint(engine_config, strategy),
         code_fingerprint=record.commit_hash,
         run_id=record.run_id,
@@ -577,6 +750,7 @@ def main(argv: list[str] | None = None) -> int:
     summary = {
         "strategy": strategy.name,
         "universe": universe.name,
+        "universe_kind": "point_in_time",
         "universe_version": universe_version,
         "dataset_version": dataset_version,
         "cost_model": cost_model.to_dict(),
@@ -608,11 +782,17 @@ def main(argv: list[str] | None = None) -> int:
         "holdout_comparison": holdout_comparison.to_dict(orient="index"),
         "warnings": warnings,
         "limitations": limitations,
+        "frozen_config": FROZEN,
+        "config_fingerprint": _config_fingerprint(engine_config, strategy),
+        "panel_symbols": len(panels.symbols),
+        "excluded_symbols": dict(panels.excluded),
         "reports": [str(json_path), str(markdown_path)],
         "periodic_reports": {k: str(v) for k, v in period_paths.items()},
         "advanced_reports": {k: str(v) for k, v in advanced_paths.items()},
         "factor_diagnostics": str(diagnostics_path),
         "artifacts": artifacts,
+        "ledger_path": str(ledger_path),
+        "hypothesis_id": hypothesis,
         "generated_at": datetime.now(UTC).isoformat(),
     }
     summary_path = output_dir / "baseline_experiment_summary.json"

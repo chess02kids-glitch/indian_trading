@@ -1,0 +1,1071 @@
+{
+  "excluded_symbols": [],
+  "index": "Nifty 100",
+  "index_id": 219,
+  "membership_fingerprint": "bf24b76f4350dab9909836e49bb7822b3badc3a262633f24ad9db39b001dbfeb",
+  "retrieved_at": "2026-08-25T16:18:12.573575+00:00",
+  "row_provenance": {
+    "ABBOTINDIA|2020-06-26": {
+      "notes": "closed by ind_prs23082021.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs10062020.pdf"
+    },
+    "ABB|2023-03-31": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs17022023_1.pdf"
+    },
+    "ABCAPITAL|2018-04-02": {
+      "notes": "closed by ind_prs25022019.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs21022018.pdf"
+    },
+    "ABIRLANUVO|2014-01-01": {
+      "notes": "closed by ind_prs18092015.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "ACC|2014-01-01": {
+      "notes": "closed by ind_prs17082023.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "ADANIENSOL|2020-03-27": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs18022020.pdf"
+    },
+    "ADANIENT|2021-03-31": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs23022021.pdf"
+    },
+    "ADANIGREEN|2020-09-25": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs20082020.pdf"
+    },
+    "ADANIPORTS|2014-01-01": {
+      "notes": "nan",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "ADANIPOWER|2024-03-28": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs28022024.pdf"
+    },
+    "ALKEM|2020-09-25": {
+      "notes": "closed by ind_prs23082021.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs20082020.pdf"
+    },
+    "AMBUJACEM|2014-01-01": {
+      "notes": "nan",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "APOLLOHOSP|2014-01-01": {
+      "notes": "closed by ind_prs16022017.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "APOLLOHOSP|2021-03-31": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs23022021.pdf"
+    },
+    "ASHOKLEY|2015-09-28": {
+      "notes": "closed by ind_prs10062020.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs24082015.pdf"
+    },
+    "ASIANPAINT|2014-01-01": {
+      "notes": "nan",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "ATGL|2022-09-30": {
+      "notes": "closed by ind_prs21022025.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs01092022.pdf"
+    },
+    "AUROPHARMA|2014-09-19": {
+      "notes": "closed by ind_prs24022022_1.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs20082014.pdf"
+    },
+    "AWL|2023-03-31": {
+      "notes": "closed by ind_prs28022024.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs17022023_1.pdf"
+    },
+    "AXISBANK|2014-01-01": {
+      "notes": "nan",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "BAJAJ-AUTO|2014-01-01": {
+      "notes": "nan",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "BAJAJFINSV|2014-01-01": {
+      "notes": "nan",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "BAJAJHFL|2025-03-28": {
+      "notes": "closed by ind_prs23022026.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs21022025.pdf"
+    },
+    "BAJAJHLDNG|2019-03-29": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs25022019.pdf"
+    },
+    "BAJFINANCE|2014-01-01": {
+      "notes": "nan",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "BANDHANBNK|2018-09-28": {
+      "notes": "closed by ind_prs17022023_1.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs28082018.pdf"
+    },
+    "BANKBARODA|2014-01-01": {
+      "notes": "closed by ind_prs23022021.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "BANKBARODA|2021-09-30": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs23082021.pdf"
+    },
+    "BEL|2014-01-01": {
+      "notes": "closed by ind_prs25022019.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "BEL|2022-09-30": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs01092022.pdf"
+    },
+    "BERGEPAINT|2019-09-27": {
+      "notes": "closed by ind_prs23082024.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs28082019.pdf"
+    },
+    "BHARATFORG|2014-01-01": {
+      "notes": "closed by ind_prs16022017.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "BHARTIARTL|2014-01-01": {
+      "notes": "nan",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "BHEL|2014-01-01": {
+      "notes": "closed by ind_prs28082019.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "BHEL|2024-09-30": {
+      "notes": "closed by ind_prs21022025.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs23082024.pdf"
+    },
+    "BIOCON|2018-09-28": {
+      "notes": "closed by ind_prs17022023_1.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs28082018.pdf"
+    },
+    "BOSCHLTD|2014-01-01": {
+      "notes": "nan",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "BPCL|2014-01-01": {
+      "notes": "nan",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "BRITANNIA|2014-01-01": {
+      "notes": "nan",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "CANBK|2023-03-31": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs17022023_1.pdf"
+    },
+    "CASTROLIND|2014-01-01": {
+      "notes": "closed by ind_prs16022017.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "CGPOWER|2025-03-28": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs21022025.pdf"
+    },
+    "CHOLAFIN|2021-09-30": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs23082021.pdf"
+    },
+    "CIPLA|2014-01-01": {
+      "notes": "nan",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "COALINDIA|2014-01-01": {
+      "notes": "nan",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "COLPAL|2014-01-01": {
+      "notes": "closed by ind_prs23082024.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "CONCOR|2014-01-01": {
+      "notes": "closed by ind_prs23022021.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "CROMPGREAV|2014-01-01": {
+      "notes": "closed by ind_prs24082015.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "CUMMINSIND|2014-01-01": {
+      "notes": "closed by ind_prs28082018.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "CUMMINSIND|2026-03-30": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs23022026.pdf"
+    },
+    "DABUR|2014-01-01": {
+      "notes": "closed by ind_prs22082025.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "DIVISLAB|2014-01-01": {
+      "notes": "closed by ind_prs28082017.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "DIVISLAB|2019-03-29": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs25022019.pdf"
+    },
+    "DLF|2014-01-01": {
+      "notes": "closed by ind_prs20022015.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "DLF|2026-03-31": {
+      "notes": "inferred-include: in NSE current snapshot, no PR found (opened at most-recent semi-annual review)",
+      "source": "snapshot",
+      "source_url": "nan"
+    },
+    "DMART|2017-09-29": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs28082017.pdf"
+    },
+    "DRREDDY|2014-01-01": {
+      "notes": "nan",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "EICHERMOT|2014-01-01": {
+      "notes": "nan",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "EMAMILTD|2014-01-01": {
+      "notes": "closed by ind_prs28082018.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "ENRIN|2025-09-30": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs22082025.pdf"
+    },
+    "ETERNAL|2022-03-31": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs24022022_1.pdf"
+    },
+    "GAIL|2014-01-01": {
+      "notes": "nan",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "GICRE|2018-04-02": {
+      "notes": "closed by ind_prs23022021.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs21022018.pdf"
+    },
+    "GLAND|2021-06-30": {
+      "notes": "closed by ind_prs17022023_1.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs15062021.pdf"
+    },
+    "GLAXO|2014-01-01": {
+      "notes": "closed by ind_prs21022018.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "GLENMARK|2014-01-01": {
+      "notes": "closed by ind_prs21022018.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "GODREJCP|2014-01-01": {
+      "notes": "nan",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "GRASIM|2014-01-01": {
+      "notes": "closed by ind_prs27042017.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "GRASIM|2018-04-02": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs21022018.pdf"
+    },
+    "GSKCONS|2014-01-01": {
+      "notes": "closed by ind_prs21022018.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "HAL|2022-09-30": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs01092022.pdf"
+    },
+    "HAVELLS|2014-01-01": {
+      "notes": "closed by ind_prs23022026.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "HCLTECH|2014-01-01": {
+      "notes": "nan",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "HDFCAMC|2019-03-29": {
+      "notes": "closed by ind_prs17082023.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs25022019.pdf"
+    },
+    "HDFCAMC|2026-03-30": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs23022026.pdf"
+    },
+    "HDFCBANK|2014-01-01": {
+      "notes": "nan",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "HDFCLIFE|2018-09-28": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs28082018.pdf"
+    },
+    "HDFC|2014-01-01": {
+      "notes": "closed by ind_prs04072023.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "HEROMOTOCO|2014-01-01": {
+      "notes": "closed by ind_prs22082025.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "HINDALCO|2014-01-01": {
+      "notes": "nan",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "HINDPETRO|2014-01-01": {
+      "notes": "closed by ind_prs24022022_1.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "HINDUNILVR|2014-01-01": {
+      "notes": "nan",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "HINDZINC|2014-01-01": {
+      "notes": "closed by ind_prs23022021.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "HINDZINC|2025-09-30": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs22082025.pdf"
+    },
+    "HYUNDAI|2025-03-28": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs21022025.pdf"
+    },
+    "ICICIBANK|2014-01-01": {
+      "notes": "nan",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "ICICIGI|2018-09-28": {
+      "notes": "closed by ind_prs23022026.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs28082018.pdf"
+    },
+    "ICICIPRULI|2017-03-31": {
+      "notes": "closed by ind_prs22082025.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs16022017.pdf"
+    },
+    "IDBI|2014-01-01": {
+      "notes": "closed by ind_prs27022014.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "IDBI|2020-03-27": {
+      "notes": "inferred-exclude: not in NSE current snapshot, no PR found (closed at next semi-annual review)",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs18022020.pdf"
+    },
+    "IDEA|2014-01-01": {
+      "notes": "closed by ind_prs10062020.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "IGL|2020-06-26": {
+      "notes": "closed by ind_prs24022022_1.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs10062020.pdf"
+    },
+    "INDHOTEL|2025-03-28": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs21022025.pdf"
+    },
+    "INDIGO|2014-01-01": {
+      "notes": "nan",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "INDUSINDBK|2014-01-01": {
+      "notes": "closed by ind_prs22082025.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "INDUSTOWER|2014-03-28": {
+      "notes": "closed by ind_prs17082023.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs27022014.pdf"
+    },
+    "INFY|2014-01-01": {
+      "notes": "nan",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "INGVYSYABK|2014-03-28": {
+      "notes": "inferred-exclude: not in NSE current snapshot, no PR found (closed at next semi-annual review)",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs27022014.pdf"
+    },
+    "IOC|2015-10-19": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs18092015.pdf"
+    },
+    "IRCTC|2022-09-30": {
+      "notes": "closed by ind_prs21022025.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs01092022.pdf"
+    },
+    "IRFC|2024-03-28": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs28022024.pdf"
+    },
+    "ITC|2014-01-01": {
+      "notes": "nan",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "JINDALSTEL|2014-01-01": {
+      "notes": "closed by ind_prs20022015.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "JINDALSTEL|2021-09-30": {
+      "notes": "closed by ind_prs24022022_1.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs23082021.pdf"
+    },
+    "JINDALSTEL|2023-07-13": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs04072023.pdf"
+    },
+    "JIOFIN|2024-03-28": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs28022024.pdf"
+    },
+    "JPASSOCIAT|2014-01-01": {
+      "notes": "closed by ind_prs27022014.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "JSWENERGY|2024-09-30": {
+      "notes": "closed by ind_prs23022026.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs23082024.pdf"
+    },
+    "JSWSTEEL|2014-01-01": {
+      "notes": "nan",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "JUBLFOOD|2021-03-31": {
+      "notes": "closed by ind_prs01092022.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs23022021.pdf"
+    },
+    "KOTAKBANK|2014-01-01": {
+      "notes": "nan",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "LICHSGFIN|2014-01-01": {
+      "notes": "closed by ind_prs25022019.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "LICI|2022-08-08": {
+      "notes": "closed by ind_prs23022026.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs11072022.pdf"
+    },
+    "LODHA|2024-09-30": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs23082024.pdf"
+    },
+    "LTF|2018-04-02": {
+      "notes": "closed by ind_prs10062020.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs21022018.pdf"
+    },
+    "LTM|2022-11-14": {
+      "notes": "nan",
+      "source": "merger",
+      "source_url": "https://www.nseindia.com/companies-listing/corporate-filings-actions"
+    },
+    "LT|2014-01-01": {
+      "notes": "nan",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "LUPIN|2014-01-01": {
+      "notes": "closed by ind_prs01092022.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "M&M|2014-01-01": {
+      "notes": "nan",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "MARICO|2015-09-28": {
+      "notes": "closed by ind_prs23082024.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs12082015.pdf"
+    },
+    "MARUTI|2014-01-01": {
+      "notes": "nan",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "MAXHEALTH|2025-09-30": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs22082025.pdf"
+    },
+    "MAZDOCK|2025-09-30": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs22082025.pdf"
+    },
+    "MCDOWELL-N|2014-01-01": {
+      "notes": "closed by ind_prs20082014.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "MCDOWELL-N|2015-03-27": {
+      "notes": "inferred-exclude: not in NSE current snapshot, no PR found (closed at next semi-annual review)",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs20022015.pdf"
+    },
+    "MOTHERSON|2014-09-19": {
+      "notes": "closed by ind_prs15062021.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs20082014.pdf"
+    },
+    "MOTHERSON|2022-09-30": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs01092022.pdf"
+    },
+    "MPHASIS|2014-01-01": {
+      "notes": "closed by ind_prs20082014.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "MPHASIS|2022-09-30": {
+      "notes": "closed by ind_prs17022023_1.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs01092022.pdf"
+    },
+    "MRF|2017-09-29": {
+      "notes": "closed by ind_prs28082019.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs28082017.pdf"
+    },
+    "MRF|2021-03-31": {
+      "notes": "inferred-exclude: not in NSE current snapshot, no PR found (closed at next semi-annual review)",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs23022021.pdf"
+    },
+    "MUTHOOTFIN|2020-06-26": {
+      "notes": "closed by ind_prs28022024.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs10062020.pdf"
+    },
+    "MUTHOOTFIN|2026-03-30": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs23022026.pdf"
+    },
+    "NAUKRI|2020-06-26": {
+      "notes": "closed by ind_prs23022026.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs10062020.pdf"
+    },
+    "NESTLEIND|2019-09-27": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs28082019.pdf"
+    },
+    "NHPC|2014-01-01": {
+      "notes": "closed by ind_prs20082020.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "NHPC|2024-09-30": {
+      "notes": "closed by ind_prs21022025.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs23082024.pdf"
+    },
+    "NIACL|2018-09-28": {
+      "notes": "closed by ind_prs10062020.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs28082018.pdf"
+    },
+    "NMDC|2014-01-01": {
+      "notes": "closed by ind_prs11072022.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "NTPC|2014-01-01": {
+      "notes": "nan",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "NYKAA|2022-03-31": {
+      "notes": "closed by ind_prs17082023.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs24022022_1.pdf"
+    },
+    "OFSS|2014-01-01": {
+      "notes": "closed by ind_prs23022021.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "OIL|2014-01-01": {
+      "notes": "closed by ind_prs25022019.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "ONGC|2014-01-01": {
+      "notes": "nan",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "PAGEIND|2019-03-29": {
+      "notes": "closed by ind_prs20082020.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs25022019.pdf"
+    },
+    "PAGEIND|2023-03-31": {
+      "notes": "closed by ind_prs17082023.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs17022023_1.pdf"
+    },
+    "PAYTM|2022-03-31": {
+      "notes": "closed by ind_prs17022023_1.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs24022022_1.pdf"
+    },
+    "PEL|2014-01-01": {
+      "notes": "closed by ind_prs11072022.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "PETRONET|2017-03-31": {
+      "notes": "closed by ind_prs23082021.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs16022017.pdf"
+    },
+    "PFC|2014-01-01": {
+      "notes": "closed by ind_prs28082018.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "PFC|2019-09-27": {
+      "notes": "closed by ind_prs23022021.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs28082019.pdf"
+    },
+    "PFC|2024-03-28": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs28022024.pdf"
+    },
+    "PGHH|2014-01-01": {
+      "notes": "closed by ind_prs28022024.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "PIDILITIND|2014-01-01": {
+      "notes": "nan",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "PIIND|2021-09-30": {
+      "notes": "closed by ind_prs28022024.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs23082021.pdf"
+    },
+    "PNB|2014-01-01": {
+      "notes": "closed by ind_prs28082018.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "PNB|2019-09-27": {
+      "notes": "closed by ind_prs01092022.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs28082019.pdf"
+    },
+    "PNB|2023-09-29": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs17082023.pdf"
+    },
+    "POWERGRID|2014-01-01": {
+      "notes": "nan",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "RECLTD|2017-03-31": {
+      "notes": "closed by ind_prs28082018.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs16022017.pdf"
+    },
+    "RECLTD|2024-03-28": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs28022024.pdf"
+    },
+    "RELIANCE|2014-01-01": {
+      "notes": "nan",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "RPOWER|2014-01-01": {
+      "notes": "closed by ind_prs12082015.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "SAIL|2014-01-01": {
+      "notes": "closed by ind_prs28082019.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "SAIL|2021-09-30": {
+      "notes": "closed by ind_prs01092022.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs23082021.pdf"
+    },
+    "SAMMAANCAP|2015-03-27": {
+      "notes": "closed by ind_prs10062020.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs20022015.pdf"
+    },
+    "SBICARD|2020-07-31": {
+      "notes": "closed by ind_prs23082024.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs02072020_1.pdf"
+    },
+    "SBILIFE|2018-04-02": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs21022018.pdf"
+    },
+    "SBIN|2014-01-01": {
+      "notes": "nan",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "SHREECEM|2014-01-01": {
+      "notes": "nan",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "SHRIRAMFIN|2014-01-01": {
+      "notes": "closed by ind_prs20082020.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "SHRIRAMFIN|2023-09-29": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs17082023.pdf"
+    },
+    "SIEMENS|2014-01-01": {
+      "notes": "nan",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "SOLARINDS|2025-09-30": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs22082025.pdf"
+    },
+    "SRF|2022-03-31": {
+      "notes": "closed by ind_prs23082024.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs24022022_1.pdf"
+    },
+    "SUNDARMFIN|2015-09-28": {
+      "notes": "inferred-exclude: not in NSE current snapshot, no PR found (closed at next semi-annual review)",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs12082015.pdf"
+    },
+    "SUNPHARMA|2014-01-01": {
+      "notes": "nan",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "SUNTV|2017-05-26": {
+      "notes": "closed by ind_prs25022019.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs27042017.pdf"
+    },
+    "SWIGGY|2025-03-28": {
+      "notes": "closed by ind_prs22082025.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs21022025.pdf"
+    },
+    "TATACAP|2026-03-30": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs23022026.pdf"
+    },
+    "TATACONSUM|2020-09-25": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs20082020.pdf"
+    },
+    "TATAPOWER|2014-01-01": {
+      "notes": "closed by ind_prs21022018.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "TATAPOWER|2022-08-08": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs11072022.pdf"
+    },
+    "TATASTEEL|2014-01-01": {
+      "notes": "nan",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "TCS|2014-01-01": {
+      "notes": "nan",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "TECHM|2014-01-01": {
+      "notes": "nan",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "TITAN|2014-01-01": {
+      "notes": "nan",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "TMCV|2026-03-30": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs23022026.pdf"
+    },
+    "TMPV|2014-01-01": {
+      "notes": "nan",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "TORNTPHARM|2014-01-01": {
+      "notes": "closed by ind_prs21022018.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "TORNTPHARM|2020-06-26": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs10062020.pdf"
+    },
+    "TRENT|2023-09-29": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs17082023.pdf"
+    },
+    "TVSMOTOR|2023-09-29": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs17082023.pdf"
+    },
+    "UBL|2014-01-01": {
+      "notes": "closed by ind_prs28082017.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "UBL|2019-03-29": {
+      "notes": "inferred-exclude: not in NSE current snapshot, no PR found (closed at next semi-annual review)",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs25022019.pdf"
+    },
+    "ULTRACEMCO|2014-01-01": {
+      "notes": "nan",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "UNIONBANK|2014-01-01": {
+      "notes": "closed by ind_prs12082015.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "UNIONBANK|2024-09-30": {
+      "notes": "closed by ind_prs21022025.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs23082024.pdf"
+    },
+    "UNIONBANK|2026-03-30": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs23022026.pdf"
+    },
+    "UNITDSPR|2014-01-01": {
+      "notes": "nan",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "UPL|2014-01-01": {
+      "notes": "closed by ind_prs28022024.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "VBL|2023-03-31": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs17022023_1.pdf"
+    },
+    "VEDL|2014-01-01": {
+      "notes": "closed by ind_prs02072020_1.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "VEDL|2021-03-31": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs23022021.pdf"
+    },
+    "WIPRO|2014-01-01": {
+      "notes": "nan",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "YESBANK|2014-01-01": {
+      "notes": "closed by ind_prs18022020.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "YESBANK|2021-03-31": {
+      "notes": "closed by ind_prs24022022_1.pdf",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs23022021.pdf"
+    },
+    "ZEEL|2014-01-01": {
+      "notes": "closed by ind_prs20082020.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "ZYDUSLIFE|2014-01-01": {
+      "notes": "closed by ind_prs01092022.pdf",
+      "source": "snapshot_floor",
+      "source_url": "nan"
+    },
+    "ZYDUSLIFE|2023-09-29": {
+      "notes": "nan",
+      "source": "press_release",
+      "source_url": "https://niftyindices.com/Press_Release/ind_prs17082023.pdf"
+    }
+  },
+  "rows": 210,
+  "source": {
+    "attribution": "Point-in-time NSE index membership from github.com/aditya-jha/nse-historical-membership (data: CC BY 4.0); underlying source: NSE index press releases / NSE exchange circulars (publicly published)",
+    "commit": "0e9f58c4d457faf0e7ad3db4f4c1449e697e23e0",
+    "coverage_note": "membership data through 2026-05-15 (upstream coverage); no NSE reconstitution occurred between 2026-05-15 and the next scheduled October 2026 review, so membership is stable through the as-of date (verified against upstream current_snapshot)",
+    "data_license": "CC BY 4.0",
+    "repo": "aditya-jha/nse-historical-membership",
+    "source": "nse-historical-membership"
+  },
+  "source_csv_sha256": "75ebfac3b5d1fb2285d7efadd264df239cf228f6de7dd7e2f84d853546e01152",
+  "symbols_ever": 175,
+  "universe": "nifty100-pit"
+}

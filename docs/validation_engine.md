@@ -59,7 +59,50 @@ observations within `purge` rows of any test group are removed and
 
 `validation_consistency` summarizes a walk-forward/CPCV run: the fraction of
 folds with positive Sharpe, best/worst fold Sharpe, the dispersion of fold
-Sharpes, and the aggregate multiple-testing-corrected probability.
+Sharpes (0.0 for a single-fold run, which has no dispersion), and the
+aggregate multiple-testing-corrected probability.
+
+## Locked holdout protocol
+
+The minimum defensible evaluation structure is chronological and
+hierarchical:
+
+```
+TRAIN
+  ↓
+VALIDATION / WALK-FORWARD        (development prefix only)
+  ↓
+LOCKED HOLDOUT                   (single final candidate evaluation)
+```
+
+`holdout_split(index, holdout_size)` partitions a sorted timeline into the
+development prefix and the trailing locked holdout. The split is a pure
+function of the index: identical inputs always produce identical
+boundaries, and the development observations end strictly before the
+holdout starts.
+
+`run_holdout_protocol(strategy, data, constructor, engine, holdout_size,
+*, train_size, test_size, ...)` executes the protocol:
+
+1. **Validate on development data only.** Walk-forward (and optional CPCV)
+   runs against the development prefix, with an explicit guard that raises
+   if any training or test window reaches into the holdout. The holdout is
+   structurally invisible to validation.
+2. **Evaluate the candidate exactly once on the locked holdout.** Signals
+   are computed from the full point-in-time panel so trailing look-backs
+   that begin before the holdout still work, but no weight at a holdout
+   date ever uses information after that date. The holdout backtest covers
+   the holdout slice exactly and nothing else.
+
+`HoldoutProtocolResult.to_dict()` records the explicit boundaries
+(`dev_start`, `dev_end`, `holdout_start`, `holdout_end`, sizes), the
+walk-forward/CPCV fold results, and the holdout metrics — no wall-clock
+fields, so the result is hash-stable.
+
+Benchmarks and placebo families must be evaluated on the **same holdout
+slice** to keep gate comparisons like-for-like (same universe, rebalance
+schedule, position constraints, and cost model). The baseline experiment
+(`scripts/run_research_experiment.py`) wires this up end to end.
 
 ## Bootstrap confidence intervals
 

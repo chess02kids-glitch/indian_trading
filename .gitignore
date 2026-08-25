@@ -12,6 +12,8 @@ data/features/*
 !data/features/.gitkeep
 data/snapshots/*
 !data/snapshots/.gitkeep
+data/bundle/*
+!data/bundle/.gitkeep
 reports/*.pdf
 reports/*.html
 reports/generated/
