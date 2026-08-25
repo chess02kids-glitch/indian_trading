@@ -1,0 +1,10 @@
+/opt/quant-india/logs/daily-paper*.log {
+    daily
+    rotate 14
+    missingok
+    notifempty
+    compress
+    delaycompress
+    copytruncate
+    su quantindia quantindia
+}

@@ -106,7 +106,7 @@ class IdempotencyRegistry:
                 if completed:
                     self._states[key] = True
                     return IdempotencyResult(False, key, "already completed")
-                
+
                 accepted = self._repository.claim(key)
                 if not accepted:
                     return IdempotencyResult(False, key, "in flight")

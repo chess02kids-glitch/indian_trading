@@ -171,11 +171,19 @@ class SQLiteRunRepository:
     def __init__(self, connection: _Connection) -> None:
         self._conn = connection
 
-    def claim_run(self, run_id: str) -> bool:
-        """Atomic claim via INSERT OR IGNORE on the primary key."""
+    def claim_run(self, run_id: str, *, resume_awaiting_approval: bool = False) -> bool:
+        """Atomically claim a new run or explicitly resume approval-pending work."""
         if not run_id:
             return False
         with self._conn.lock, self._conn.conn:
+            if resume_awaiting_approval:
+                cursor = self._conn.conn.execute(
+                    "UPDATE runs SET status = 'claimed' WHERE run_id = ? "
+                    "AND status = 'awaiting_approval'",
+                    (run_id,),
+                )
+                if cursor.rowcount == 1:
+                    return True
             cursor = self._conn.conn.execute(
                 "INSERT OR IGNORE INTO runs (run_id, status, details_json) "
                 "VALUES (?, 'claimed', NULL)",

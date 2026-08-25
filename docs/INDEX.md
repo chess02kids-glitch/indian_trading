@@ -42,3 +42,5 @@
 - `001_initial_schema.sql`: Core tables (users, orders, executions, positions).
 - `002_rls_policies.sql`: Row-level security for multi-tenant safety.
 - `003_audit_log.sql`: Triggers for immutable ledger history.
+
+- [Daily PAPER forward-testing loop](daily_forward_testing.md)

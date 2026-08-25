@@ -40,6 +40,30 @@ from .validation import validate_order_intent
 __all__ = ["ExecutionService", "ExecutionSummary"]
 
 
+def _recovered_order_result(record: Any) -> OrderResult:
+    """Convert a duck-typed adapter status record without coupling execution
+    to the broker package. Adapters may expose their own record class."""
+    return OrderResult.model_validate(
+        {
+            "internal_order_id": getattr(record, "tag", None) or record.order_id,
+            "idempotency_key": getattr(record, "idempotency_key", None)
+            or getattr(record, "tag", None)
+            or record.order_id,
+            "broker_order_id": record.order_id,
+            "symbol": record.symbol,
+            "side": record.side,
+            "status": record.status,
+            "requested_quantity": record.quantity,
+            "filled_quantity": record.filled_quantity,
+            "average_fill_price": getattr(record, "average_price", None),
+            "timestamp": getattr(record, "updated_at", None)
+            or getattr(record, "placed_at", None)
+            or datetime.now(UTC),
+            "reason": getattr(record, "message", None),
+        }
+    )
+
+
 def _order_id_for(target: PortfolioTarget, symbol: str, side: str) -> str:
     """Deterministic internal order id for one target/symbol/side."""
     basis = (
@@ -238,20 +262,40 @@ class ExecutionService:
                 if duplicate is not None:
                     # Check if this duplicate is an in-flight order from a crash
                     if not self.registry.accepted_keys().get(validated.idempotency_key):
-                        existing = self.order_repository.find_by_idempotency_key(validated.idempotency_key)
+                        existing = self.order_repository.find_by_idempotency_key(
+                            validated.idempotency_key
+                        )
                         if existing:
                             try:
-                                record = self.broker.get_order_status(existing.internal_order_id)
+                                record = self.broker.get_order_status(
+                                    existing.internal_order_id
+                                )
                                 if record:
-                                    from broker.reconciler import record_to_result
-                                    recovered_result = record_to_result(record)
+                                    recovered_result = _recovered_order_result(record)
                                     self.order_repository.save_result(recovered_result)
-                                    if recovered_result.status in (OrderStatus.FILLED, OrderStatus.PARTIALLY_FILLED, OrderStatus.REJECTED, OrderStatus.CANCELLED, OrderStatus.EXPIRED):
-                                        self.registry.mark_completed(validated.idempotency_key)
+                                    if recovered_result.status in (
+                                        OrderStatus.FILLED,
+                                        OrderStatus.PARTIALLY_FILLED,
+                                        OrderStatus.REJECTED,
+                                        OrderStatus.CANCELLED,
+                                        OrderStatus.EXPIRED,
+                                    ):
+                                        self.registry.mark_completed(
+                                            validated.idempotency_key
+                                        )
                                     summary.submitted.append(recovered_result)
                                     continue
-                            except Exception:
-                                pass # Network issue, fallback to skipping
+                            except Exception as exc:
+                                summary.skipped.append(
+                                    {
+                                        "symbol": intent.symbol,
+                                        "reason": (
+                                            "duplicate recovery lookup failed: "
+                                            f"{type(exc).__name__}"
+                                        ),
+                                    }
+                                )
+                                continue
                     summary.skipped.append(
                         {
                             "symbol": intent.symbol,

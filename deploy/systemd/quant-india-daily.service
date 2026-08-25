@@ -1,0 +1,21 @@
+[Unit]
+Description=Quant India daily PAPER forward-test batch
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=quantindia
+Group=quantindia
+WorkingDirectory=/opt/quant-india
+EnvironmentFile=/etc/quant-india/env
+Environment=PYTHONUNBUFFERED=1
+# Approval is deliberately absent: unattended runs fail closed awaiting approval.
+ExecStart=/opt/quant-india/.venv/bin/python scripts/run_daily.py --data /opt/quant-india/data/daily/latest.parquet
+StandardOutput=append:/opt/quant-india/logs/daily-paper.log
+StandardError=append:/opt/quant-india/logs/daily-paper-error.log
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/quant-india/var /opt/quant-india/logs
+UMask=0077

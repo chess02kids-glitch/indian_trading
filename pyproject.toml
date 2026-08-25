@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "quant-india"
-version = "0.1.0"
+version = "0.5.0"
 description = "Production repository foundation for Indian Trading"
 requires-python = ">=3.12,<3.13"
 # Dependency note (2026-08): `mlflow` is NOT a base dependency. Every
