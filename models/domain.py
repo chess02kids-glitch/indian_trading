@@ -420,6 +420,7 @@ class ResearchResult(_FrozenModel):
             metrics[str(key)] = number
         return metrics
 
+
 class UniverseMembership(_FrozenModel):
     """Historical universe membership to prevent survivorship bias."""
 

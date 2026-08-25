@@ -114,6 +114,8 @@ def test_research_report_is_machine_and_human_readable(tmp_path: Path) -> None:
     assert payload["drawdowns"]
     assert payload["rolling_sharpes"][0]["value"] is None
     assert payload["turnover"]
+    assert payload["metadata"]["backend"] == "pandas"
+    assert "Reproducibility metadata" in report.to_markdown()
     assert "Benchmark comparison" in report.to_markdown()
     json_path, markdown_path = report.write(tmp_path / "reports")
     assert json_path.is_file()

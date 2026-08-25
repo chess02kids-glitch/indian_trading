@@ -23,17 +23,30 @@ def _small_dataset() -> UniverseDataset:
     return UniverseDataset(
         [
             UniverseMembership(
-                "RELIANCE", "nifty100", date(2020, 1, 1), isin="INE002A01018",
-                sector="Energy", exchange="NSE",
+                "RELIANCE",
+                "nifty100",
+                date(2020, 1, 1),
+                isin="INE002A01018",
+                sector="Energy",
+                exchange="NSE",
             ),
             UniverseMembership(
-                "TCS", "nifty100", date(2020, 1, 1), isin="INE467B01029",
-                sector="IT", exchange="NSE",
+                "TCS",
+                "nifty100",
+                date(2020, 1, 1),
+                isin="INE467B01029",
+                sector="IT",
+                exchange="NSE",
             ),
             # Former constituent with finite valid_to (survivorship-safe).
             UniverseMembership(
-                "RCOM", "nifty100", date(2020, 1, 1), date(2022, 6, 30),
-                sector="Telecom", exchange="NSE", delisted=True,
+                "RCOM",
+                "nifty100",
+                date(2020, 1, 1),
+                date(2022, 6, 30),
+                sector="Telecom",
+                exchange="NSE",
+                delisted=True,
             ),
         ]
     )
@@ -42,7 +55,9 @@ def _small_dataset() -> UniverseDataset:
 def test_members_at_resolves_point_in_time() -> None:
     dataset = _small_dataset()
     assert dataset.members_at("nifty100", date(2021, 6, 1)) == (
-        "RCOM", "RELIANCE", "TCS",
+        "RCOM",
+        "RELIANCE",
+        "TCS",
     )
     # After RCOM left the index it no longer appears.
     assert dataset.members_at("nifty100", date(2023, 1, 1)) == ("RELIANCE", "TCS")

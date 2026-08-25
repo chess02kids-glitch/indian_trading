@@ -51,9 +51,7 @@ def test_detect_off_calendar_candles() -> None:
     frame = _frame(["2024-01-08", "2024-01-06"])  # Monday + Saturday
     issues = detect_off_calendar_candles(frame)
     assert any(i.kind == "off_calendar" for i in issues)
-    calendar_issues = [
-        i for i in issues if i.kind == "off_calendar"
-    ]
+    calendar_issues = [i for i in issues if i.kind == "off_calendar"]
     assert calendar_issues[0].date == "2024-01-06"
 
 

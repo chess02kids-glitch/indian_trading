@@ -40,7 +40,7 @@ def run_strategy(
     random_seed: int = 42,
     universe: Universe | None = None,
 ) -> ResearchRun:
-    """Generate signals, construct allocations, run the strategy, and compare benchmarks."""
+    """Generate signals, construct allocations, run strategy, and compare benchmarks."""
     if universe is not None:
         # Refuse backtesting over dates the historical universe does not cover.
         ensure_universe_period_covers(

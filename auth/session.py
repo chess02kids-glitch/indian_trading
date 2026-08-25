@@ -55,7 +55,7 @@ class SessionManager:
     def get_valid_session(self, broker: str) -> Optional[Dict[str, Any]]:
         """Retrieve a valid session, automatically renewing if expired and possible."""
         # 1. Check local secure storage first for speed
-        local_data = secrets.load_secure_token(broker)
+        secrets.load_secure_token(broker)
 
         # 2. Check Database for expiry and sync
         db_session = self.repo.get_active_session(self.user_id, broker)

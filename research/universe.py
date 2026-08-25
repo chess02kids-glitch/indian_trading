@@ -285,9 +285,7 @@ def _as_date(value: Any, field_name: str) -> date | None:
     try:
         return pd.Timestamp(value).date()
     except (TypeError, ValueError) as exc:
-        raise ResearchInputError(
-            f"universe {field_name} is not a valid date"
-        ) from exc
+        raise ResearchInputError(f"universe {field_name} is not a valid date") from exc
 
 
 def build_universe_from_dataset(
@@ -314,9 +312,7 @@ def build_universe_from_dataset(
         raise ResearchInputError(
             "dataset must be a data.universe.UniverseDataset instance"
         )
-    canonical_index = str(index_name).strip().lower().replace("_", "").replace(
-        " ", ""
-    )
+    canonical_index = str(index_name).strip().lower().replace("_", "").replace(" ", "")
     if canonical_index not in {"nifty50", "nifty100", "nifty500"}:
         raise ResearchInputError(f"unsupported index: {index_name}")
 
@@ -342,8 +338,11 @@ def build_universe_from_dataset(
     }
     if metadata:
         merged.update(dict(metadata))
+    universe_size = (
+        100 if "100" in canonical_index else 500 if "500" in canonical_index else 50
+    )
     return Universe.from_symbols(
-        f"nifty{100 if '100' in canonical_index else (500 if '500' in canonical_index else 50)}",
+        f"nifty{universe_size}",
         symbols,
         as_of=target,
         metadata=merged,

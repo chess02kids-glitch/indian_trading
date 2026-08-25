@@ -90,12 +90,23 @@ class HypothesisRecord:
             "config_fingerprint": fields.get("config_fingerprint"),
             "code_fingerprint": fields.get("code_fingerprint"),
         }
-        
+
         # Enforce exact reproducibility fingerprints on accepted experiments
         if self.fields["status"] == "accepted":
-            missing = [k for k in ("dataset_fingerprint", "config_fingerprint", "code_fingerprint") if not self.fields.get(k)]
+            missing = [
+                k
+                for k in (
+                    "dataset_fingerprint",
+                    "config_fingerprint",
+                    "code_fingerprint",
+                )
+                if not self.fields.get(k)
+            ]
             if missing:
-                raise ResearchInputError(f"Accepted experiments require fingerprints for exact reproducibility: {missing}")
+                raise ResearchInputError(
+                    "Accepted experiments require fingerprints for exact "
+                    f"reproducibility: {missing}"
+                )
 
     def __getattr__(self, name: str) -> Any:
         if name in ("fields",):
@@ -152,7 +163,9 @@ class HypothesisLedger:
             if "hypothesis_id" not in fields or not fields.get("hypothesis_id"):
                 fields["hypothesis_id"] = self.next_hypothesis_id()
             elif fields["hypothesis_id"] in existing:
-                raise ResearchInputError(f"Duplicate hypothesis_id: {fields['hypothesis_id']}")
+                raise ResearchInputError(
+                    f"Duplicate hypothesis_id: {fields['hypothesis_id']}"
+                )
             record = HypothesisRecord(**fields)
             self.path.parent.mkdir(parents=True, exist_ok=True)
             with self.path.open("a", encoding="utf-8") as handle:

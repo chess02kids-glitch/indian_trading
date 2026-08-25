@@ -4,7 +4,7 @@ import argparse
 import json
 import sys
 from collections.abc import Sequence
-from typing import Optional, Sequence
+from typing import Optional
 
 from auth.health import AuthHealthMonitor
 from auth.session import SessionManager
@@ -27,22 +27,18 @@ def build_auth_parser(
     auth_subparsers = parser.add_subparsers(dest="auth_command", help="Auth commands")
 
     # Upstox Login
-    upstox_parser = auth_subparsers.add_parser(
-        "upstox", help="Initiate Upstox OAuth login"
-    )
+    auth_subparsers.add_parser("upstox", help="Initiate Upstox OAuth login")
 
     # Dhan Login
-    dhan_parser = auth_subparsers.add_parser(
-        "dhan", help="Initiate Dhan authentication"
-    )
+    auth_subparsers.add_parser("dhan", help="Initiate Dhan authentication")
 
     # Status
-    status_parser = auth_subparsers.add_parser(
+    auth_subparsers.add_parser(
         "status", help="Check current session and connectivity status"
     )
 
     # Validate
-    validate_parser = auth_subparsers.add_parser(
+    auth_subparsers.add_parser(
         "validate", help="Validate static IPs and environment secrets"
     )
 

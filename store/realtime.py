@@ -2,11 +2,12 @@
 
 import logging
 import threading
-from typing import Callable, Any, Dict
+from typing import Any, Callable, Dict
 
 from config.database import get_supabase_client
 
 logger = logging.getLogger(__name__)
+
 
 class RealtimeClient:
     """Manages Supabase realtime subscriptions for dashboard and experiment sync."""
@@ -16,7 +17,9 @@ class RealtimeClient:
         self.subscriptions: Dict[str, Any] = {}
         self._lock = threading.Lock()
 
-    def subscribe(self, table: str, event: str, callback: Callable[[dict], None]) -> None:
+    def subscribe(
+        self, table: str, event: str, callback: Callable[[dict], None]
+    ) -> None:
         """Subscribe to a specific table and event (*, INSERT, UPDATE, DELETE)."""
         with self._lock:
             channel_name = f"public:{table}"
@@ -35,11 +38,11 @@ class RealtimeClient:
 
             # Register the event listener
             channel.on(
-                "postgres_changes", 
-                event=event, 
-                schema="public", 
-                table=table, 
-                callback=wrapped_callback
+                "postgres_changes",
+                event=event,
+                schema="public",
+                table=table,
+                callback=wrapped_callback,
             )
 
     def start_listening(self) -> None:
@@ -57,8 +60,10 @@ class RealtimeClient:
                 logger.info(f"Unsubscribed from realtime channel: {channel_name}")
             self.subscriptions.clear()
 
+
 # Singleton instance
 _realtime_client = None
+
 
 def get_realtime_client() -> RealtimeClient:
     global _realtime_client
@@ -66,14 +71,11 @@ def get_realtime_client() -> RealtimeClient:
         _realtime_client = RealtimeClient()
     return _realtime_client
 
+
 def heartbeat(service_name: str, status: str, metadata: dict | None = None) -> None:
     """Update health_state table to persist system status for realtime sync."""
     client = get_supabase_client()
-    data = {
-        "service_name": service_name,
-        "status": status,
-        "metadata": metadata or {}
-    }
+    data = {"service_name": service_name, "status": status, "metadata": metadata or {}}
     try:
         client.table("health_state").upsert(data, on_conflict="service_name").execute()
     except Exception as e:

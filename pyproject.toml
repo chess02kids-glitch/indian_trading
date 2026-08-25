@@ -67,3 +67,6 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I"]
+# Formatting is enforced separately by `ruff format --check`; E501 duplicates
+# that check while flagging deliberate long SQL, URLs, and user-facing strings.
+ignore = ["E501"]

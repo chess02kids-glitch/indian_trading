@@ -231,6 +231,18 @@ def main(argv: list[str] | None = None) -> int:
             "bootstrap_ci": bootstrap.to_dict(),
             "oos_period": oos_period,
         },
+        metadata={
+            "strategy_parameters": strategy.parameters,
+            "universe": universe.name,
+            "universe_symbols": list(universe.symbols),
+            "dataset_version": dataset_version,
+            "cost_model": cost_model.to_dict(),
+            "backtest_period": backtest_period,
+            "oos_period": oos_period,
+            "random_seed": args.seed,
+            "code_commit": record.commit_hash,
+            "mlflow_run_id": record.run_id,
+        },
     )
     json_path, markdown_path = report.write(output_dir)
 

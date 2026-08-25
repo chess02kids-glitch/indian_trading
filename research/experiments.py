@@ -143,7 +143,8 @@ class ExperimentManager:
     def _log_mlflow(self, experiment: Experiment, record: ExperimentRecord) -> str:
         if self.mlflow is None:
             raise ExperimentTrackingError(
-                "MLflow is not installed; install the research requirements before tracking"
+                "MLflow is not installed; install the research requirements "
+                "before tracking"
             )
         try:
             self.mlflow.set_experiment(self.experiment_name)

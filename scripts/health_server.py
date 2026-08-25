@@ -2,14 +2,14 @@
 """Minimal HTTP server exposing a /health endpoint for deployment probes."""
 
 import json
+import logging
 from http.server import BaseHTTPRequestHandler, HTTPServer
-import threading
 
 from config.env_validator import validate_database_health
 from config.logging import setup_logging
-import logging
 
 logger = logging.getLogger(__name__)
+
 
 class HealthCheckHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -17,7 +17,7 @@ class HealthCheckHandler(BaseHTTPRequestHandler):
             try:
                 # Runs the full connectivity and RLS validation checks
                 validate_database_health()
-                
+
                 self.send_response(200)
                 self.send_header("Content-Type", "application/json")
                 self.end_headers()
@@ -27,18 +27,20 @@ class HealthCheckHandler(BaseHTTPRequestHandler):
                 self.send_response(503)
                 self.send_header("Content-Type", "application/json")
                 self.end_headers()
-                self.wfile.write(json.dumps({
-                    "status": "unhealthy", 
-                    "error": str(e)
-                }).encode("utf-8"))
+                self.wfile.write(
+                    json.dumps({"status": "unhealthy", "error": str(e)}).encode("utf-8")
+                )
         else:
             self.send_response(404)
             self.end_headers()
 
+
 def run_health_server(port: int = 8080) -> None:
-    server = HTTPServer(("0.0.0.0", port), HealthCheckHandler)
+    # The container health probe must be reachable through its exposed port.
+    server = HTTPServer(("0.0.0.0", port), HealthCheckHandler)  # nosec B104
     logger.info(f"Health server listening on port {port}")
     server.serve_forever()
+
 
 if __name__ == "__main__":
     setup_logging()

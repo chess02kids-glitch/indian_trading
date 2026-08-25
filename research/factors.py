@@ -189,7 +189,10 @@ class ZScoreFactor(Factor):
         return FactorMetadata(
             name="zscore",
             family="mean_reversion",
-            description="Distance of close from its rolling mean in rolling standard deviations.",
+            description=(
+                "Distance of close from its rolling mean in rolling "
+                "standard deviations."
+            ),
             parameters={"window": self.window},
         )
 
@@ -217,7 +220,9 @@ class BollingerDeviationFactor(Factor):
         return FactorMetadata(
             name="bollinger_deviation",
             family="mean_reversion",
-            description="Close deviation from rolling mean scaled by Bollinger band width.",
+            description=(
+                "Close deviation from rolling mean scaled by Bollinger band width."
+            ),
             parameters={"window": self.window, "num_std": self.num_std},
         )
 
@@ -332,12 +337,9 @@ class SharpeMomentumFactor(Factor):
     def compute(self, data: MarketData) -> pd.DataFrame:
         """Compute volatility-scaled trailing momentum without look-ahead."""
         momentum = data.close.pct_change(self.lookback)
-        volatility = (
-            data.close.pct_change()
-            .rolling(self.vol_window, min_periods=self.vol_window)
-            .std()
-            * sqrt(self.annualization)
-        )
+        volatility = data.close.pct_change().rolling(
+            self.vol_window, min_periods=self.vol_window
+        ).std() * sqrt(self.annualization)
         return (momentum / volatility).replace([pd.NA, float("inf")], pd.NA)
 
 

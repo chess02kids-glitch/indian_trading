@@ -31,10 +31,18 @@ from research.universe import (
 
 NAMES = ["W1", "W2", "W3", "M1", "M2", "M3", "F1", "F2", "F3", "L1", "L2", "L3"]
 DRIFT = {
-    "W1": 0.0020, "W2": 0.0019, "W3": 0.0018,
-    "M1": 0.0006, "M2": 0.0005, "M3": 0.0004,
-    "F1": 0.0, "F2": -0.0001, "F3": -0.0002,
-    "L1": -0.0012, "L2": -0.0013, "L3": -0.0014,
+    "W1": 0.0020,
+    "W2": 0.0019,
+    "W3": 0.0018,
+    "M1": 0.0006,
+    "M2": 0.0005,
+    "M3": 0.0004,
+    "F1": 0.0,
+    "F2": -0.0001,
+    "F3": -0.0002,
+    "L1": -0.0012,
+    "L2": -0.0013,
+    "L3": -0.0014,
 }
 
 
@@ -58,8 +66,9 @@ def make_fundamentals(prices: pd.DataFrame) -> pd.DataFrame:
                 roe, debt = 0.25, 1.8
             else:
                 roe, debt = 0.10, 1.5
-            rows.append({"date": day, "symbol": name, "roe": roe,
-                         "debt_to_equity": debt})
+            rows.append(
+                {"date": day, "symbol": name, "roe": roe, "debt_to_equity": debt}
+            )
     return pd.DataFrame(rows)
 
 
@@ -121,17 +130,22 @@ class TestProductionStrategy:
         constructor = InverseVolatilityConstructor(window=20)
         engine = build_engine()
         weights = constructor.construct(strategy.generate_signals(data), data)
-        result = engine.run(data.close, weights, strategy_name=strategy.name,
-                            universe_history=[])
+        result = engine.run(
+            data.close, weights, strategy_name=strategy.name, universe_history=[]
+        )
         benchmarks = benchmark_suite(data.close, weights, engine=engine)
         comparison = compare_results({strategy.name: result, **benchmarks})
-        candidates = {strategy.name, "buy_and_hold", "equal_weight",
-                      "inverse_volatility", "random"}
+        candidates = {
+            strategy.name,
+            "buy_and_hold",
+            "equal_weight",
+            "inverse_volatility",
+            "random",
+        }
         for name in candidates - {strategy.name}:
-            assert (
-                result.metrics.total_return
-                > comparison.loc[name, "total_return"]
-            ), name
+            assert result.metrics.total_return > comparison.loc[name, "total_return"], (
+                name
+            )
             assert result.metrics.sharpe >= comparison.loc[name, "sharpe"], name
 
     def test_all_benchmarks_present(self) -> None:
@@ -140,11 +154,17 @@ class TestProductionStrategy:
         constructor = InverseVolatilityConstructor(window=20)
         engine = build_engine()
         weights = constructor.construct(strategy.generate_signals(data), data)
-        engine.run(data.close, weights, strategy_name=strategy.name,
-                   universe_history=[])
+        engine.run(
+            data.close, weights, strategy_name=strategy.name, universe_history=[]
+        )
         benchmarks = benchmark_suite(data.close, weights, engine=engine)
-        assert set(benchmarks) == {"buy_and_hold", "equal_weight",
-                                   "inverse_volatility", "random", "persistence"}
+        assert set(benchmarks) == {
+            "buy_and_hold",
+            "equal_weight",
+            "inverse_volatility",
+            "random",
+            "persistence",
+        }
 
     def test_deterministic_output(self) -> None:
         """Same data + seed -> identical metrics across runs and commits."""
@@ -153,10 +173,12 @@ class TestProductionStrategy:
         constructor = InverseVolatilityConstructor(window=20)
         engine = build_engine()
         weights = constructor.construct(strategy.generate_signals(data), data)
-        first = engine.run(data.close, weights, strategy_name=strategy.name,
-                           universe_history=[])
-        second = engine.run(data.close, weights, strategy_name=strategy.name,
-                            universe_history=[])
+        first = engine.run(
+            data.close, weights, strategy_name=strategy.name, universe_history=[]
+        )
+        second = engine.run(
+            data.close, weights, strategy_name=strategy.name, universe_history=[]
+        )
         assert first.metrics.to_dict() == second.metrics.to_dict()
         assert first.returns.tolist() == second.returns.tolist()
 
@@ -166,8 +188,9 @@ class TestProductionStrategy:
         constructor = InverseVolatilityConstructor(window=20)
         engine = build_engine()
         weights = constructor.construct(strategy.generate_signals(data), data)
-        result = engine.run(data.close, weights, strategy_name=strategy.name,
-                            universe_history=[])
+        result = engine.run(
+            data.close, weights, strategy_name=strategy.name, universe_history=[]
+        )
         metrics = result.metrics
         assert all(np.isfinite(v) for v in metrics.to_dict().values())
         assert metrics.sortino >= 0
@@ -181,9 +204,10 @@ class TestStatisticalValidation:
         constructor = InverseVolatilityConstructor(window=20)
         engine = build_engine()
         weights = constructor.construct(strategy.generate_signals(data), data)
-        result = engine.run(data.close, weights, strategy_name=strategy.name,
-                            universe_history=[])
-        oos = result.returns.loc[result.returns.index[-252]:]
+        result = engine.run(
+            data.close, weights, strategy_name=strategy.name, universe_history=[]
+        )
+        oos = result.returns.loc[result.returns.index[-252] :]
         dsr = deflated_sharpe_from_returns(oos, trials=6)
         assert 0 <= dsr.probability <= 1
         assert dsr.observations == 252
