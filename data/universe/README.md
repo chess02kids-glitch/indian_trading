@@ -38,3 +38,23 @@ factsheet / bseindia constituent tables using the same schema; the loader
 (`data.universe`) requires no code changes. Research experiments record the
 dataset fingerprint, so a regeneration that changes membership will not
 silently change historical backtest claims.
+
+## `nifty100-pit/` (v0.7 real-data universe)
+
+A **point-in-time** Nifty 100 membership dataset derived from
+[`aditya-jha/nse-historical-membership`](https://github.com/aditya-jha/nse-historical-membership)
+(data license **CC BY 4.0** — attribution: *underlying source: NSE index
+press releases / NSE exchange circulars (publicly published)*). It contains
+the full membership history (210 rows / 175 symbols) plus:
+
+* `provenance.json` — source commit, SHA-256 of the source CSV, membership
+  fingerprint, and per-row NSE press-release URLs;
+* `panel_symbols.txt` — the deterministic research-panel symbol list
+  (complete, gap-free price history in the window) used by the operator
+  fundamentals command.
+
+It lives in a subdirectory because `load_universe_dataset()` reads only
+*direct* CSV children of this directory — the v0.6 snapshot universes above
+are therefore untouched. The v0.7 real-data experiment
+(`scripts/run_real_data_experiment.py`) loads it explicitly and records its
+fingerprint in every run and ledger entry.

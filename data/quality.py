@@ -318,7 +318,14 @@ def check_ohlcv_long_frame(
         accepted_mask &= ~bad_volume
 
     valid = working.loc[accepted_mask].copy()
-    valid["date"] = dates[accepted_mask]
+    # ``valid`` keeps the *original* index, so every lookup below stays
+    # aligned row-for-row. Normalised symbol/date are attached here — never
+    # after a ``reset_index`` (a reset index no longer matches the source
+    # index, which would silently misalign the columns when any row was
+    # rejected above; that class of bug shipped in v0.6 and was caught by
+    # the v0.7 real-data ingestion).
+    valid["date"] = dates.loc[valid.index]
+    valid["symbol"] = symbols.loc[valid.index]
     high = pd.to_numeric(valid["high"], errors="coerce")
     low = pd.to_numeric(valid["low"], errors="coerce")
 
@@ -356,9 +363,6 @@ def check_ohlcv_long_frame(
             )
         valid = valid.loc[~duplicates]
 
-    accepted = valid.reset_index(drop=True).copy()
-    accepted["symbol"] = symbols.loc[accepted.index]
-    accepted["date"] = dates.loc[accepted.index]
     for extra in (
         "volume",
         "adj_close",
@@ -367,18 +371,20 @@ def check_ohlcv_long_frame(
         "ingested_at",
         "source_ts",
     ):
-        if extra in accepted.columns:
+        if extra in valid.columns:
             continue
         if extra in working.columns:
-            accepted[extra] = working[accepted.index][extra]
+            valid[extra] = working.loc[valid.index][extra]
         elif extra in ("volume",):
-            accepted[extra] = 0.0
-    if "source" not in accepted.columns:
-        accepted["source"] = source
-    if "exchange" not in accepted.columns:
-        accepted["exchange"] = exchange
-    if "volume" not in accepted.columns:
-        accepted["volume"] = 0.0
+            valid[extra] = 0.0
+    if "source" not in valid.columns:
+        valid["source"] = source
+    if "exchange" not in valid.columns:
+        valid["exchange"] = exchange
+    if "volume" not in valid.columns:
+        valid["volume"] = 0.0
+
+    accepted = valid.reset_index(drop=True).copy()
 
     return accepted, DataQualityReport(
         total_rows=total, accepted_rows=len(accepted), issues=tuple(issues)
