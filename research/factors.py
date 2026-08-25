@@ -296,6 +296,52 @@ class ATRFactor(Factor):
 
 
 @dataclass(frozen=True, slots=True)
+class SharpeMomentumFactor(Factor):
+    """Trailing momentum scaled by trailing volatility (Sharpe-style).
+
+    ``close.pct_change(lookback) / annualized trailing volatility``. Dividing
+    raw momentum by recent volatility produces a more stable signal that is
+    often used for volatility-targeted cross-sectional momentum. Warm-up rows
+    where volatility is unavailable remain NaN.
+    """
+
+    lookback: int = 63
+    vol_window: int = 21
+    annualization: int = 252
+
+    def __post_init__(self) -> None:
+        _validate_window(self.lookback, "lookback")
+        _validate_window(self.vol_window, "vol_window")
+        if self.annualization < 1:
+            raise ResearchInputError("annualization must be positive")
+
+    @property
+    def metadata(self) -> FactorMetadata:
+        """Return Sharpe-momentum metadata and parameters."""
+        return FactorMetadata(
+            name=f"sharpe_momentum_{self.lookback}d",
+            family="momentum",
+            description="Trailing momentum divided by trailing realized volatility.",
+            parameters={
+                "lookback": self.lookback,
+                "vol_window": self.vol_window,
+                "annualization": self.annualization,
+            },
+        )
+
+    def compute(self, data: MarketData) -> pd.DataFrame:
+        """Compute volatility-scaled trailing momentum without look-ahead."""
+        momentum = data.close.pct_change(self.lookback)
+        volatility = (
+            data.close.pct_change()
+            .rolling(self.vol_window, min_periods=self.vol_window)
+            .std()
+            * sqrt(self.annualization)
+        )
+        return (momentum / volatility).replace([pd.NA, float("inf")], pd.NA)
+
+
+@dataclass(frozen=True, slots=True)
 class RelativeStrengthRankFactor(Factor):
     """Cross-sectional percentile rank of trailing momentum."""
 
@@ -327,6 +373,7 @@ def standard_factor_set() -> tuple[Factor, ...]:
         Momentum3MFactor(),
         Momentum6MFactor(),
         Momentum12MFactor(),
+        SharpeMomentumFactor(),
         SMAFactor(),
         EMAFactor(),
         ZScoreFactor(),

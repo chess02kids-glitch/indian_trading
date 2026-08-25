@@ -29,6 +29,34 @@ authentication, execution, risk-kill, or agent modules.
 - `Experiment` identifies a hypothesis, strategy, parameters, factor set, and
   universe with a stable hash.
 
+## Historical universe dataset
+
+`data.universe` is the single source of truth for *historical* index
+membership (Nifty 50 / 100 / 500). Each constituent records a validity window
+(`valid_from` / `valid_to`); removed/delisted names are retained for
+survivorship-bias protection. `data.universe.UniverseDataset.members_at`
+resolves point-in-time membership and `validate_period` refuses backtest
+periods the dataset does not cover. `research.universe.build_universe_from_dataset`
+turns a dataset into a `Universe`, and `ensure_universe_period_covers`
+(or `research.runner.run_strategy`) refuses invalid universe dates at the
+backtest boundary.
+
+## Data-quality and calendar validation
+
+`data.quality` rejects invalid OHLCV rows (never interpolating) and reports
+missing candles, duplicates, staleness, and — via `TradingCalendar` /
+`detect_off_calendar_candles` — candles on non-trading days. The clean dataset
+pipeline (`data.dataset.CleanDataCatalog`) writes validated long-form Parquet
+with a metadata sidecar, registers a DuckDB view, and exposes a dataset
+fingerprint for experiment provenance.
+
+## Portfolio reporting
+
+`research.reporting.generate_periodic_reports` produces daily/weekly/monthly
+portfolio reports (exposure, turnover, drawdown, factor exposure) and
+`research.runner.run_strategy` rejects backtests over dates a historical
+universe does not cover.
+
 The runner composes those contracts without requiring notebooks:
 
 ```python

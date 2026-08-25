@@ -192,3 +192,38 @@ def test_cli_experiment_list_smoke(tmp_path: Path, capsys) -> None:
     """Experiment listing returns valid JSON even with no local records."""
     assert cli_main(["experiments", "list", "--tracking-dir", str(tmp_path)]) == 0
     assert json.loads(capsys.readouterr().out) == []
+
+
+def test_cli_report_periods_smoke(tmp_path: Path, capsys) -> None:
+    """The ``report periods`` subcommand writes daily/weekly/monthly files."""
+    index = pd.date_range("2022-01-03", periods=120, freq="B")
+    prices = pd.DataFrame(
+        {"A": 100 * 1.001 ** np.arange(120), "B": 100 * 1.0005 ** np.arange(120)},
+        index=index,
+    )
+    path = tmp_path / "prices.csv"
+    prices.to_csv(path, index_label="date")
+    output_dir = tmp_path / "periods"
+    assert (
+        cli_main(
+            [
+                "report",
+                "periods",
+                "--strategy",
+                "momentum",
+                "--prices",
+                str(path),
+                "--output-dir",
+                str(output_dir),
+                "--periods",
+                "W",
+                "M",
+            ]
+        )
+        == 0
+    )
+    paths = json.loads(capsys.readouterr().out)
+    assert "W" in paths and "M" in paths
+    assert Path(paths["M"]).is_file()
+    payload = json.loads(Path(paths["M"]).read_text())
+    assert payload["period"] == "M"

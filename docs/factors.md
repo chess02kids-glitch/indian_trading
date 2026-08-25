@@ -15,7 +15,7 @@ as inactive.
 
 | Family | Implementations | Default parameters |
 | --- | --- | --- |
-| Momentum | `Momentum1MFactor`, `Momentum3MFactor`, `Momentum6MFactor`, `Momentum12MFactor` | 21, 63, 126, 252 trading days |
+| Momentum | `Momentum1MFactor`, `Momentum3MFactor`, `Momentum6MFactor`, `Momentum12MFactor`, `SharpeMomentumFactor` | 21, 63, 126, 252 trading days; 63/21 vol-scaled |
 | Trend | `SMAFactor`, `EMAFactor`, `MovingAverageCrossoverFactor` | 20; 20/50 crossover |
 | Mean reversion | `ZScoreFactor`, `BollingerDeviationFactor` | 20 observations; 2 standard deviations |
 | Volatility | `RollingVolatilityFactor`, `ATRFactor` | 20 and 14 observations |

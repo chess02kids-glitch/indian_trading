@@ -201,8 +201,10 @@ class MomentumQualityStrategy(Strategy):
     def generate_signals(self, data: MarketData) -> Signal:
         """Generate momentum x quality long signals aligned with the data."""
         momentum = MomentumFactor(self.momentum_lookback).compute(data)
+        # Higher pct-rank == stronger trailing momentum. Select the top
+        # ``momentum_quantile`` fraction of the universe.
         momentum_rank = momentum.rank(axis=1, pct=True, method="first")
-        momentum_mask = momentum_rank.le(self.momentum_quantile).where(
+        momentum_mask = momentum_rank.ge(1.0 - self.momentum_quantile).where(
             momentum_rank.notna()
         )
         if self.fundamentals is None or self.fundamentals.empty:
@@ -216,8 +218,10 @@ class MomentumQualityStrategy(Strategy):
         quality_panel = quality_factor.compute(self.fundamentals)
         quality_panel = quality_panel.reindex(columns=data.close.columns)
         daily_quality = quality_panel.reindex(data.close.index).ffill()
+        # Higher quality pct-rank == better composite score. Keep the top
+        # ``quality_quantile`` fraction.
         quality_rank = daily_quality.rank(axis=1, pct=True, method="first")
-        quality_mask = quality_rank.le(self.quality_quantile).where(
+        quality_mask = quality_rank.ge(1.0 - self.quality_quantile).where(
             quality_rank.notna()
         )
         selected = momentum_rank.where(momentum_mask & quality_mask, 0.0)

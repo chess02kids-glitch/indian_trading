@@ -1,0 +1,53 @@
+symbol,index_name,valid_from,valid_to,isin,sector,exchange,delisted
+ADANIENT,nifty50,2023-01-01,,,Metals & Mining,NSE,False
+ADANIPORTS,nifty50,2023-01-01,,,Logistics,NSE,False
+APOLLOHOSP,nifty50,2023-01-01,,,Healthcare,NSE,False
+ASIANPAINT,nifty50,2023-01-01,,,Consumer,NSE,False
+AXISBANK,nifty50,2023-01-01,,,Financial,NSE,False
+BAJAJ-AUTO,nifty50,2023-01-01,,,Auto,NSE,False
+BAJFINANCE,nifty50,2023-01-01,,,Financial,NSE,False
+BAJAJFINSV,nifty50,2023-01-01,,,Financial,NSE,False
+BEL,nifty50,2023-01-01,,,Industrials,NSE,False
+BHARTIARTL,nifty50,2023-01-01,,,Telecom,NSE,False
+CIPLA,nifty50,2023-01-01,,,Pharma,NSE,False
+COALINDIA,nifty50,2023-01-01,,,Energy,NSE,False
+DRREDDY,nifty50,2023-01-01,,,Pharma,NSE,False
+EICHERMOT,nifty50,2023-01-01,,,Auto,NSE,False
+ETERNAL,nifty50,2023-01-01,,,Consumer,NSE,False
+GRASIM,nifty50,2023-01-01,,,Cement,NSE,False
+HCLTECH,nifty50,2023-01-01,,,IT,NSE,False
+HDFCBANK,nifty50,2023-01-01,,,Financial,NSE,False
+HDFCLIFE,nifty50,2023-01-01,,,Financial,NSE,False
+HEROMOTOCO,nifty50,2023-01-01,,,Auto,NSE,False
+HINDALCO,nifty50,2023-01-01,,,Metals & Mining,NSE,False
+HINDUNILVR,nifty50,2023-01-01,,,Consumer,NSE,False
+ICICIBANK,nifty50,2023-01-01,,,Financial,NSE,False
+INDUSINDBK,nifty50,2023-01-01,,,Financial,NSE,False
+INFY,nifty50,2023-01-01,,,IT,NSE,False
+ITC,nifty50,2023-01-01,,,Consumer,NSE,False
+JIOFIN,nifty50,2023-01-01,,,Financial,NSE,False
+JSWSTEEL,nifty50,2023-01-01,,,Metals & Mining,NSE,False
+KOTAKBANK,nifty50,2023-01-01,,,Financial,NSE,False
+LT,nifty50,2023-01-01,,,Infra,NSE,False
+M&M,nifty50,2023-01-01,,,Auto,NSE,False
+MARUTI,nifty50,2023-01-01,,,Auto,NSE,False
+NESTLEIND,nifty50,2023-01-01,,,Consumer,NSE,False
+NTPC,nifty50,2023-01-01,,,Energy,NSE,False
+ONGC,nifty50,2023-01-01,,,Energy,NSE,False
+POWERGRID,nifty50,2023-01-01,,,Energy,NSE,False
+RELIANCE,nifty50,2023-01-01,,,Energy,NSE,False
+SBILIFE,nifty50,2023-01-01,,,Financial,NSE,False
+SBIN,nifty50,2023-01-01,,,Financial,NSE,False
+SHRIRAMFIN,nifty50,2023-01-01,,,Financial,NSE,False
+SUNPHARMA,nifty50,2023-01-01,,,Pharma,NSE,False
+TATACONSUM,nifty50,2023-01-01,,,Consumer,NSE,False
+TATAMOTORS,nifty50,2023-01-01,,,Auto,NSE,False
+TATASTEEL,nifty50,2023-01-01,,,Metals & Mining,NSE,False
+TCS,nifty50,2023-01-01,,,IT,NSE,False
+TECHM,nifty50,2023-01-01,,,IT,NSE,False
+TITAN,nifty50,2023-01-01,,,Consumer,NSE,False
+TRENT,nifty50,2023-01-01,,,Consumer,NSE,False
+ULTRACEMCO,nifty50,2023-01-01,,,Cement,NSE,False
+WIPRO,nifty50,2023-01-01,,,IT,NSE,False
+YESBANK,nifty50,2023-01-01,2023-06-30,,Financial,NSE,False
+RCOM,nifty50,2023-01-01,2023-12-29,,Telecom,NSE,False

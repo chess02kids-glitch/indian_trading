@@ -39,6 +39,7 @@ from backtest.validation import (  # noqa: E402
 from portfolio.construction import InverseVolatilityConstructor  # noqa: E402
 from research.contracts import Experiment, MarketData  # noqa: E402
 from research.experiments import ExperimentManager  # noqa: E402
+from research.factors import MomentumFactor  # noqa: E402
 from research.ledger import HypothesisLedger  # noqa: E402
 from research.reporting import generate_report  # noqa: E402
 from research.strategies import MomentumQualityStrategy  # noqa: E402
@@ -170,8 +171,13 @@ def main(argv: list[str] | None = None) -> int:
         experiment_name="quant-india-baseline",
         tracking_dir=output_dir / "experiments",
     )
+    ledger = HypothesisLedger(output_dir / "experiments" / "ledger.jsonl")
+    # Allocate the next incremental hypothesis id (HYP-00001, HYP-00002, ...)
+    # so every run — including re-runs — records a distinct, auditable
+    # experiment instead of overwriting the previous one.
+    hypothesis = ledger.next_hypothesis_id()
     experiment = Experiment(
-        hypothesis_id="HYP-BASELINE-0001",
+        hypothesis_id=hypothesis,
         strategy=strategy.name,
         parameters=strategy.parameters,
         factor_set=["momentum_3m", "quality_composite"],
@@ -198,7 +204,6 @@ def main(argv: list[str] | None = None) -> int:
         oos_period=oos_period,
     )
 
-    ledger = HypothesisLedger(output_dir / "experiments" / "ledger.jsonl")
     ledger.for_experiment(
         experiment,
         status=record.status,
@@ -229,6 +234,18 @@ def main(argv: list[str] | None = None) -> int:
     )
     json_path, markdown_path = report.write(output_dir)
 
+    # Periodic (daily/weekly/monthly) portfolio reports with exposure,
+    # turnover, drawdown, and factor exposure of held positions.
+    from research.reporting import generate_periodic_reports  # noqa: E402
+
+    momentum_panel = MomentumFactor(strategy.momentum_lookback).compute(data)
+    period_reports = generate_periodic_reports(
+        result, factor_values=momentum_panel, periods=("D", "W", "M")
+    )
+    period_paths = {
+        period: pr.write(output_dir) for period, pr in period_reports.items()
+    }
+
     comparison = compare_results({strategy.name: result, **benchmarks})
     summary = {
         "strategy": strategy.name,
@@ -245,6 +262,7 @@ def main(argv: list[str] | None = None) -> int:
         "walk_forward_folds": len(walk_forward.windows),
         "comparison": comparison.to_dict(orient="index"),
         "reports": [str(json_path), str(markdown_path)],
+        "periodic_reports": {k: str(v) for k, v in period_paths.items()},
         "generated_at": datetime.now(UTC).isoformat(),
     }
     summary_path = output_dir / "baseline_experiment_summary.json"

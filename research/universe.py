@@ -1,13 +1,21 @@
-"""Configuration-driven research universes and frozen Nifty constituent snapshots."""
+"""Configuration-driven research universes and frozen Nifty constituent snapshots.
+
+The frozen ``nifty_50`` / ``nifty_100`` snapshots remain the lightweight
+single-date research universe. For *historical* index membership with
+validity windows and survivorship-bias protection use
+``build_universe_from_dataset`` (backed by ``data.universe.UniverseDataset``).
+"""
 
 from __future__ import annotations
 
 import json
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any
+
+import pandas as pd
 
 from .contracts import ResearchInputError
 
@@ -160,6 +168,19 @@ class Universe:
         """Return whether the universe contains ``symbol`` case-insensitively."""
         return symbol.strip().upper() in self.symbols
 
+    @property
+    def history(self) -> list[tuple[str, ...]]:
+        """Return the survivorship-safe membership history for this universe.
+
+        Frozen snapshots are a single-date view, so this returns a single
+        period of membership. Dataset-built universes carry the full
+        ``UniverseDataset`` in metadata when constructed via
+        ``build_universe_from_dataset``, which can resolve per-date history.
+        The backtest engine requires an explicit ``universe_history`` to
+        refuse running today's universe over the past.
+        """
+        return [self.symbols]
+
     def to_dict(self) -> dict[str, Any]:
         """Return a serializable universe definition."""
         return {
@@ -244,3 +265,125 @@ def resolve_universe(config: Mapping[str, Any] | Path | str) -> Universe:
     return custom_universe(
         raw_symbols, name=name or "custom", as_of=as_of, metadata=metadata
     )
+
+
+def _as_date(value: Any, field_name: str) -> date | None:
+    """Coerce a date-compatible value (None, ISO string, date, datetime)."""
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    if isinstance(value, str):
+        try:
+            return date.fromisoformat(value)
+        except ValueError as exc:
+            raise ResearchInputError(
+                f"universe {field_name} must be an ISO date"
+            ) from exc
+    try:
+        return pd.Timestamp(value).date()
+    except (TypeError, ValueError) as exc:
+        raise ResearchInputError(
+            f"universe {field_name} is not a valid date"
+        ) from exc
+
+
+def build_universe_from_dataset(
+    dataset: Any,
+    index_name: str,
+    *,
+    as_of: date | str | None = None,
+    metadata: Mapping[str, Any] | None = None,
+) -> Universe:
+    """Build a point-in-time :class:`Universe` from a historical dataset.
+
+    ``dataset`` is a ``data.universe.UniverseDataset`` (or anything exposing
+    ``members_at(index_name, day)``, ``all_symbols(index_name)`` and
+    ``validate_period(index_name, start, end)``). The returned universe's
+    metadata records the dataset's validity window so downstream backtests
+    can refuse periods the dataset does not cover.
+
+    ``as_of`` defaults to the dataset's earliest recorded membership date so
+    the universe resolves to the fullest survivorship-safe history.
+    """
+    from data.universe import UniverseDataset
+
+    if not isinstance(dataset, UniverseDataset):
+        raise ResearchInputError(
+            "dataset must be a data.universe.UniverseDataset instance"
+        )
+    canonical_index = str(index_name).strip().lower().replace("_", "").replace(
+        " ", ""
+    )
+    if canonical_index not in {"nifty50", "nifty100", "nifty500"}:
+        raise ResearchInputError(f"unsupported index: {index_name}")
+
+    earliest, latest = dataset.valid_window(index_name)
+    target = _as_date(as_of, "as_of") or earliest
+    if target < earliest:
+        raise ResearchInputError(
+            f"as_of {target.isoformat()} predates universe membership "
+            f"{earliest.isoformat()} for {index_name!r}"
+        )
+    if latest is not None and target > latest:
+        raise ResearchInputError(
+            f"as_of {target.isoformat()} exceeds universe membership "
+            f"{latest.isoformat()} for {index_name!r}"
+        )
+    symbols = dataset.members_at(index_name, target)
+    merged = {
+        "index": index_name,
+        "snapshot": "dataset",
+        "valid_from": earliest.isoformat(),
+        "valid_to": latest.isoformat() if latest is not None else None,
+        "all_symbols_count": len(dataset.all_symbols(index_name)),
+    }
+    if metadata:
+        merged.update(dict(metadata))
+    return Universe.from_symbols(
+        f"nifty{100 if '100' in canonical_index else (500 if '500' in canonical_index else 50)}",
+        symbols,
+        as_of=target,
+        metadata=merged,
+    )
+
+
+def ensure_universe_period_covers(
+    universe: Universe,
+    start: date | str | None,
+    end: date | str | None,
+) -> None:
+    """Refuse a backtest period that the universe dataset does not cover.
+
+    Only universes built from a dataset (which carry ``valid_from`` /
+    ``valid_to`` metadata) are validated. Frozen snapshots carry no validity
+    window and are left to the caller — they are a single-date view, not a
+    historical membership claim.
+    """
+    valid_from_raw = universe.metadata.get("valid_from")
+    if valid_from_raw is None:
+        return
+    valid_from = _as_date(valid_from_raw, "valid_from")
+    valid_to = _as_date(universe.metadata.get("valid_to"), "valid_to")
+    if start is None and end is None:
+        return
+    earliest_backtest = _as_date(start, "start") if start is not None else None
+    latest_backtest = _as_date(end, "end") if end is not None else None
+    if earliest_backtest is not None and earliest_backtest < valid_from:
+        raise ResearchInputError(
+            f"universe {universe.name!r} has no membership before "
+            f"{valid_from.isoformat()}; requested backtest from "
+            f"{earliest_backtest.isoformat()}"
+        )
+    if (
+        latest_backtest is not None
+        and valid_to is not None
+        and latest_backtest > valid_to
+    ):
+        raise ResearchInputError(
+            f"universe {universe.name!r} has no membership after "
+            f"{valid_to.isoformat()}; requested backtest to "
+            f"{latest_backtest.isoformat()}"
+        )
