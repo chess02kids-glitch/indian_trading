@@ -24,7 +24,7 @@ def test_backup_retention_logic():
         if key == "DATABASE_URL":
             return "postgresql://dummy"
         if key == "BACKUP_ENCRYPTION_KEY":
-            return "b_b_b_b_b_b_b_b_b_b_b_b_b_b_b_b_b_b_b_b_b_b=" # 32 url-safe base64
+            return "b_b_b_b_b_b_b_b_b_b_b_b_b_b_b_b_b_b_b_b_b_b="  # 32 url-safe base64
         return default
 
     with patch("subprocess.run") as mock_run:

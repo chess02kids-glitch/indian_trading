@@ -58,7 +58,7 @@ tracking = [
 ]
 
 [tool.setuptools]
-packages = ["config", "ingestion", "research", "models", "backtest", "portfolio", "agents", "risk_kill", "execution", "reconciliation", "orchestration", "observability", "dashboard", "reports", "auth", "store"]
+packages = ["config", "ingestion", "research", "models", "backtest", "portfolio", "agents", "risk_kill", "execution", "reconciliation", "orchestration", "observability", "dashboard", "reports", "auth", "store", "broker"]
 py-modules = ["main"]
 
 [tool.ruff]

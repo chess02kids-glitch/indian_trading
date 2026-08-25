@@ -33,6 +33,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     # Research command
     subparsers.add_parser("research", help="Run the research platform CLI")
 
+    # Broker sandbox command
+    subparsers.add_parser("broker", help="Broker sandbox operations (LIVE disabled)")
+
     return parser.parse_args(argv)
 
 
@@ -42,6 +45,14 @@ def main(argv: list[str] | None = None):
     Market and IOC orders are prohibited.
     Future execution must pass through risk_kill.
     """
+    argv_list = list(sys.argv[1:] if argv is None else argv)
+    if argv_list and argv_list[0] == "broker":
+        # Broker sandbox CLI owns its argument parsing (subcommands take
+        # their own options, which the root parser would otherwise reject).
+        from broker.cli import cli_main as broker_cli_main
+
+        sys.exit(broker_cli_main(argv_list[1:]))
+
     args = parse_args(argv)
 
     if args.command == "ingest":

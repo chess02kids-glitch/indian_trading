@@ -194,7 +194,8 @@ class SQLiteRunRepository:
                 (run_id, status, json.dumps(dict(details or {}), default=str)),
             )
         record = self.get_run(run_id)
-        assert record is not None
+        if record is None:  # pragma: no cover - defensive: insert just succeeded
+            raise RuntimeError(f"run {run_id!r} missing immediately after save")
         return record
 
     def get_run(self, run_id: str) -> dict[str, Any] | None:
