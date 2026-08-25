@@ -36,7 +36,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import subprocess
+import subprocess  # nosec B404
 import sys
 import time
 from datetime import UTC, datetime
@@ -90,7 +90,9 @@ FUNDAMENTALS_COLUMNS = ("date", "symbol", "roe", "debt_to_equity")
 
 def _git_head(repo_dir: str | Path) -> str:
     try:
-        result = subprocess.run(
+        # Fixed argv (git rev-parse HEAD on a local mirror dir); no shell,
+        # no untrusted input. Used only to pin the mirror commit for provenance.
+        result = subprocess.run(  # nosec B603 B607
             ["git", "-C", str(repo_dir), "rev-parse", "HEAD"],
             capture_output=True,
             text=True,
