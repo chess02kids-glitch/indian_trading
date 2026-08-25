@@ -21,6 +21,12 @@ class CorporateActionType(str, Enum):
     DIVIDEND = "DIVIDEND"
     RENAME = "RENAME"
     DELISTING = "DELISTING"
+    MERGER = "MERGER"
+    UNKNOWN = "UNKNOWN"
+
+
+class UnknownCorporateAction(ValueError):
+    """Raised instead of silently repairing an unhandled corporate action."""
 
 
 class CorporateAction(BaseModel):
@@ -87,6 +93,15 @@ def apply_corporate_actions(
             # Floor at 0.01 to prevent negative prices
             adjusted.loc[mask, action.symbol] = adjusted.loc[mask, action.symbol].clip(
                 lower=0.01
+            )
+        elif action.action_type in (
+            CorporateActionType.UNKNOWN,
+            CorporateActionType.MERGER,
+        ):
+            raise UnknownCorporateAction(
+                f"UNKNOWN_CORPORATE_ACTION: {action.action_type.value} "
+                f"for {action.symbol} on {action.ex_date.isoformat()} "
+                "cannot be applied without an explicit adjustment model"
             )
 
     return adjusted

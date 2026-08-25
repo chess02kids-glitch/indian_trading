@@ -22,6 +22,11 @@ call broker, authentication, execution, risk, or agent modules.
   local JSONL audit trail.
 - `generate_report()` creates machine-readable JSON and human-readable Markdown.
 
+Campaigns (`ResearchCampaignStore`), the strategy registry (`instantiate`,
+`BENCHMARK_ZOO`), hypothesis schema (`ResearchHypothesis`), and the AI
+boundary (`submit_hypothesis`) live in this package. They never import
+broker, execution, or risk modules.
+
 All factors expose metadata and parameters. Backtest execution shifts target
 weights by one observation, so factor values calculated at a close cannot trade
 on that same close.

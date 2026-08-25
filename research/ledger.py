@@ -39,6 +39,10 @@ LEDGER_STATUSES = (
     "failed",
     "interrupted",
     "halted",
+    "invalid",
+    "insufficient_data",
+    "duplicate",
+    "abandoned",
 )
 
 
@@ -93,6 +97,13 @@ class HypothesisRecord:
         "gate_result",
         "is_duplicate",
         "duplicate_of",
+        "parent_hypothesis_id",
+        "campaign_id",
+        "strategy_family",
+        "strategy_version",
+        "feature_set_hash",
+        "parameter_hash",
+        "validation_protocol_version",
     )
 
     def __init__(self, **fields: Any) -> None:
@@ -129,6 +140,13 @@ class HypothesisRecord:
             "gate_result": dict(fields.get("gate_result") or {}),
             "is_duplicate": bool(fields.get("is_duplicate", False)),
             "duplicate_of": fields.get("duplicate_of"),
+            "parent_hypothesis_id": fields.get("parent_hypothesis_id"),
+            "campaign_id": fields.get("campaign_id"),
+            "strategy_family": fields.get("strategy_family"),
+            "strategy_version": fields.get("strategy_version"),
+            "feature_set_hash": fields.get("feature_set_hash"),
+            "parameter_hash": fields.get("parameter_hash"),
+            "validation_protocol_version": fields.get("validation_protocol_version"),
         }
 
         # Enforce exact reproducibility fingerprints on accepted experiments
