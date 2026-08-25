@@ -1,6 +1,7 @@
 [Unit]
-Description=Indian Trading Database Backup
-After=network.target
+Description=Indian Trading DB Backup
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=oneshot

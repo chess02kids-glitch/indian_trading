@@ -2,6 +2,7 @@
 
 import json
 import logging
+import os
 import sys
 from contextvars import ContextVar
 from datetime import UTC, datetime
@@ -9,6 +10,47 @@ from datetime import UTC, datetime
 # Context variables for distributed tracing
 correlation_id_var: ContextVar[str] = ContextVar("correlation_id", default="")
 execution_id_var: ContextVar[str] = ContextVar("execution_id", default="")
+
+
+class SecretMaskingFilter(logging.Filter):
+    """Filters out sensitive secrets from logs before formatting."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        msg = str(record.msg)
+        secrets = []
+        if os.getenv("DATABASE_URL"):
+            secrets.append(os.getenv("DATABASE_URL"))
+        if os.getenv("SUPABASE_KEY"):
+            secrets.append(os.getenv("SUPABASE_KEY"))
+        if os.getenv("BACKUP_ENCRYPTION_KEY"):
+            secrets.append(os.getenv("BACKUP_ENCRYPTION_KEY"))
+
+        for secret in secrets:
+            if secret and secret in msg:
+                msg = msg.replace(secret, "***MASKED***")
+
+        # Check arguments too
+        if isinstance(record.args, dict):
+            new_args = {}
+            for k, v in record.args.items():
+                val_str = str(v)
+                for secret in secrets:
+                    if secret and secret in val_str:
+                        val_str = val_str.replace(secret, "***MASKED***")
+                new_args[k] = val_str
+            record.args = new_args
+        elif isinstance(record.args, tuple):
+            new_args_list = []
+            for v in record.args:
+                val_str = str(v)
+                for secret in secrets:
+                    if secret and secret in val_str:
+                        val_str = val_str.replace(secret, "***MASKED***")
+                new_args_list.append(val_str)
+            record.args = tuple(new_args_list)
+
+        record.msg = msg
+        return True
 
 
 class JSONFormatter(logging.Formatter):
@@ -37,9 +79,10 @@ class JSONFormatter(logging.Formatter):
 
 
 def setup_logging(level: int = logging.INFO) -> None:
-    """Configures the root logger to output structured JSON."""
+    """Configures the root logger to output structured JSON with masking."""
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(JSONFormatter())
+    handler.addFilter(SecretMaskingFilter())
 
     root_logger = logging.getLogger()
     root_logger.setLevel(level)

@@ -3,12 +3,22 @@
 This guide outlines the production deployment infrastructure for Phase C (Realtime and Supabase integrations).
 
 ## 1. Prerequisites
+- **Ubuntu 24.04 LTS VPS**: Recommended OS.
 - **PostgreSQL Client**: Ensure `pg_dump` is installed for the automated backups (`sudo apt-get install postgresql-client`).
-- **Supabase**: Remote database provisioned, `DATABASE_URL` accessible.
+- **Supabase**: Remote database provisioned, `DATABASE_URL` accessible via SSL.
 - **Environment**: Define `SYSTEM_MODE=PRODUCTION`.
 
+## 1.5 Ubuntu VPS Security Hardening
+Before running the deployment scripts, ensure the server is hardened:
+1. **UFW Firewall**:
+   - `sudo ufw allow OpenSSH`
+   - `sudo ufw allow 8080/tcp` (If health server needs external probe access, though internal VPC peering is preferred).
+   - `sudo ufw enable`
+2. **Static IP**: Attach an Elastic/Static IP so any broker callbacks have a consistent allowlist.
+3. **SSL Enforcement**: Supabase enforces SSL by default on port 5432. Ensure your `DATABASE_URL` specifies `sslmode=require`.
+
 ## 2. Startup Validation
-On system boot, `run_migrations.py` runs idempotently to apply any pending SQL migrations (e.g. `006_research_infrastructure.sql` and `007_realtime_subscriptions.sql`).
+On system boot, `run_migrations.py` runs idempotently to apply any pending SQL migrations (e.g. `006_research_infrastructure.sql` and `008_production_hardening.sql`).
 
 ## 3. Health Monitoring
 A minimal health endpoint runs on `:8080/health` using `scripts/health_server.py`. 
@@ -26,12 +36,16 @@ We use systemd units for robust deployment (found in `deploy/` directory).
 Backups are now encrypted with AES (via `BACKUP_ENCRYPTION_KEY`) and signed with a SHA-256 checksum.
 
 ## 6. Disaster Recovery (Restore)
-To recover from a disaster, use the `scripts/restore_db.py` utility.
-This will automatically decrypt `.enc` files and stream them to `psql`.
+To recover from a disaster, follow this checklist:
+1. Identify the latest healthy `.enc` backup in the `backups/` directory.
+2. Verify integrity and perform a dry-run: `python scripts/restore_db.py --dry-run backups/supabase_backup_XXX.sql.enc`.
+3. Stop the main trading engine systemd service to prevent race conditions during restore.
+4. Execute the actual restore:
 ```bash
 # Decrypts and restores the backup to DATABASE_URL
 python scripts/restore_db.py backups/supabase_backup_20240101_120000.sql.enc
 ```
+5. Restart the services.
 
-## 6. Realtime Subscriptions
-To connect to the realtime telemetry (Health states, experimental results, and reconciliation logs), initialize the client via `store.realtime.get_realtime_client()`, assign your event handlers, and run `start_listening()`.
+## 7. Realtime Subscriptions
+To connect to the realtime telemetry (Health states, experimental results, and reconciliation logs), initialize the client via `store.realtime.get_realtime_client()`, assign your event handlers, and run `start_listening()`. It includes exponential backoff for disconnects.

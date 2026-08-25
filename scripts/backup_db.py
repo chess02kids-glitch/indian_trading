@@ -6,6 +6,7 @@ import os
 
 # pg_dump is invoked with a fixed executable and argv list below.
 import subprocess  # nosec B404
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -74,6 +75,14 @@ def run_backup(output_dir: Path | str = "./backups") -> None:
         logger.info(
             f"Backup completed successfully: {backup_file} (SHA256: {checksum})"
         )
+        # 3. Apply retention policy (delete backups older than 7 days)
+        retention_days = int(os.getenv("BACKUP_RETENTION_DAYS", "7"))
+        now = time.time()
+        for f in output_dir.glob("*.sql.enc"):
+            if f.is_file() and os.stat(f).st_mtime < now - (retention_days * 86400):
+                logger.info(f"Removing old backup file: {f}")
+                f.unlink()
+
     except subprocess.CalledProcessError as e:
         logger.error("Backup failed. pg_dump returned non-zero exit status.")
         logger.error(f"Error output: {e.stderr}")

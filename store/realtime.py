@@ -2,6 +2,7 @@
 
 import logging
 import threading
+import time
 from typing import Any, Callable, Dict
 
 from config.database import get_supabase_client
@@ -16,6 +17,9 @@ class RealtimeClient:
         self.client = get_supabase_client()
         self.subscriptions: Dict[str, Any] = {}
         self._lock = threading.Lock()
+        self.connection_state = "DISCONNECTED"
+        self._reconnect_attempts = 0
+        self._max_reconnect_delay = 60.0
 
     def subscribe(
         self, table: str, event: str, callback: Callable[[dict], None]
@@ -45,12 +49,38 @@ class RealtimeClient:
                 callback=wrapped_callback,
             )
 
+    def _attempt_reconnect(self) -> None:
+        while self.connection_state != "CONNECTED":
+            delay = min(self._max_reconnect_delay, (2**self._reconnect_attempts) + 1)
+            logger.info(
+                f"Attempting to reconnect realtime client in {delay} seconds..."
+            )
+            time.sleep(delay)
+            try:
+                with self._lock:
+                    for channel_name, channel in self.subscriptions.items():
+                        channel.subscribe()
+                self.connection_state = "CONNECTED"
+                self._reconnect_attempts = 0
+                logger.info("Realtime client reconnected successfully.")
+            except Exception as e:
+                logger.error(f"Realtime reconnect failed: {e}")
+                self._reconnect_attempts += 1
+                self.connection_state = "ERROR"
+
     def start_listening(self) -> None:
         """Start listening to all configured channels."""
         with self._lock:
-            for channel_name, channel in self.subscriptions.items():
-                channel.subscribe()
-                logger.info(f"Subscribed to realtime channel: {channel_name}")
+            try:
+                for channel_name, channel in self.subscriptions.items():
+                    channel.subscribe()
+                    logger.info(f"Subscribed to realtime channel: {channel_name}")
+                self.connection_state = "CONNECTED"
+                self._reconnect_attempts = 0
+            except Exception as e:
+                logger.error(f"Failed to start realtime listening: {e}")
+                self.connection_state = "ERROR"
+                threading.Thread(target=self._attempt_reconnect, daemon=True).start()
 
     def unsubscribe_all(self) -> None:
         """Unsubscribe from all active channels."""
@@ -59,6 +89,7 @@ class RealtimeClient:
                 channel.unsubscribe()
                 logger.info(f"Unsubscribed from realtime channel: {channel_name}")
             self.subscriptions.clear()
+            self.connection_state = "DISCONNECTED"
 
 
 # Singleton instance

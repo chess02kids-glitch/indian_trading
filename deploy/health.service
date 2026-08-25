@@ -1,6 +1,9 @@
 [Unit]
 Description=Indian Trading Health Check Server
-After=network.target
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=500
+StartLimitBurst=5
 
 [Service]
 Type=simple
@@ -9,8 +12,10 @@ WorkingDirectory=/opt/indian_trading
 Environment=PYTHONPATH=/opt/indian_trading
 EnvironmentFile=/opt/indian_trading/.env
 ExecStart=/opt/indian_trading/venv/bin/python /opt/indian_trading/scripts/health_server.py
-Restart=on-failure
-RestartSec=5
+Restart=always
+RestartSec=10
+RestartSteps=5
+RestartMaxDelaySec=60
 
 [Install]
 WantedBy=multi-user.target

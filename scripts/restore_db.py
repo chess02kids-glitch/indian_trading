@@ -16,9 +16,9 @@ from config.logging import setup_logging
 logger = logging.getLogger(__name__)
 
 
-def restore_backup(backup_file: str) -> None:
+def restore_backup(backup_file: str, dry_run: bool = False) -> None:
     db_url = os.getenv("DATABASE_URL")
-    if not db_url:
+    if not db_url and not dry_run:
         logger.error("DATABASE_URL is not set. Cannot run restore.")
         return
 
@@ -52,6 +52,13 @@ def restore_backup(backup_file: str) -> None:
             raw_sql = f.read()
 
     # 2. Restore using psql
+    if dry_run:
+        logger.info(
+            "DRY RUN: Backup parsed and decrypted successfully. Not applying to DB."
+        )
+        logger.info(f"Extracted SQL length: {len(raw_sql)} bytes")
+        return
+
     cmd = ["psql", db_url, "-v", "ON_ERROR_STOP=1"]
 
     logger.info("Starting database restore via psql...")
@@ -71,6 +78,11 @@ if __name__ == "__main__":
     parser.add_argument(
         "backup_file", help="Path to the backup file (.sql or .sql.enc)"
     )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Parse and decrypt the backup without restoring",
+    )
     args = parser.parse_args()
 
-    restore_backup(args.backup_file)
+    restore_backup(args.backup_file, dry_run=args.dry_run)

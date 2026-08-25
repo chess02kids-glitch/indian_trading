@@ -1,0 +1,14 @@
+[Unit]
+Description=Database Backup Cleanup Service
+After=network.target
+
+[Service]
+Type=oneshot
+User=quant
+WorkingDirectory=/opt/quant-india
+Environment="DATABASE_URL=postgresql://postgres:zZJuQSj7dGDnDc5w@db.tpwuvqyposshgbaxirkx.supabase.co:5432/postgres"
+Environment="BACKUP_RETENTION_DAYS=7"
+ExecStart=/opt/quant-india/.venv/bin/python scripts/backup_db.py
+
+[Install]
+WantedBy=multi-user.target

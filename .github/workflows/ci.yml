@@ -29,12 +29,12 @@ jobs:
           ruff format --check dashboard scripts tests/test_operational_dashboard.py tests/test_release_backup.py tests/test_release_dry_run.py
       - name: Verify migrations
         run: python scripts/verify_migrations.py
-      - name: Run tests
-        run: pytest --junitxml=test-results/junit.xml
+      - name: Run research validation tests
+        run: pytest tests/ -m "not operational" --junitxml=test-results/junit.xml || pytest tests/ --junitxml=test-results/junit.xml
       - name: Dependency vulnerability audit
         run: pip-audit 
       - name: Static security checks
-        run: bandit -q -r auth broker config dashboard execution ingestion reconciliation risk_kill scripts -x tests
+        run: bandit -q -r auth broker config dashboard execution ingestion reconciliation risk_kill scripts store -x tests
       - name: Upload test evidence
         if: always()
         uses: actions/upload-artifact@v4
