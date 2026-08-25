@@ -4,7 +4,9 @@
 import argparse
 import logging
 import os
-import subprocess
+
+# psql is invoked with a fixed executable and argv list below.
+import subprocess  # nosec B404
 from pathlib import Path
 
 from cryptography.fernet import Fernet
@@ -54,7 +56,9 @@ def restore_backup(backup_file: str) -> None:
 
     logger.info("Starting database restore via psql...")
     try:
-        subprocess.run(cmd, input=raw_sql, capture_output=True, check=True)
+        # Fixed executable, shell=False, and an argv list prevent shell
+        # injection (bandit B603: no untrusted input, no shell=True).
+        subprocess.run(cmd, input=raw_sql, capture_output=True, check=True)  # nosec B603
         logger.info("Restore completed successfully.")
     except subprocess.CalledProcessError as e:
         logger.error("Restore failed. psql returned non-zero exit status.")

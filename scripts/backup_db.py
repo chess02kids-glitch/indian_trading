@@ -42,8 +42,9 @@ def run_backup(output_dir: Path | str = "./backups") -> None:
     try:
         logger.info(f"Starting database backup to {backup_file}")
         # Capture output to avoid exposing DB URL in logs on error
-        # Fixed executable, shell=False, and an argv list prevent shell injection.
-        subprocess.run(cmd, capture_output=True, text=True, check=True)
+        # Fixed executable, shell=False, and an argv list prevent shell
+        # injection (bandit B603: no untrusted input, no shell=True).
+        subprocess.run(cmd, capture_output=True, text=True, check=True)  # nosec B603
 
         # 1. Generate checksum of raw SQL
         import hashlib

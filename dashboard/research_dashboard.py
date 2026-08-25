@@ -32,13 +32,6 @@ DEFAULT_DIAGNOSTICS_PATH = "reports/generated/factor_diagnostics.json"
 DEFAULT_REPORT_PATH = "reports/generated/momentum_quality.json"
 DEFAULT_ADVANCED_PATH = "reports/generated/momentum_quality_research_monthly.json"
 
-_VERDICT_COLORS = {
-    "PASS": "green",
-    "FRAGILE": "orange",
-    "FAIL": "red",
-    "INSUFFICIENT_EVIDENCE": "gray",
-}
-
 
 def load_json(path: str | Path) -> dict[str, Any] | None:
     """Load one JSON object, returning None when missing or malformed."""
