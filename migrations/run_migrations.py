@@ -3,9 +3,8 @@ from pathlib import Path
 
 import psycopg2
 
-from observability.logging import get_logger
-
-logger = get_logger("quant_india.migrations")
+import logging
+logger = logging.getLogger("quant_india.migrations")
 
 
 def run_migrations() -> None:

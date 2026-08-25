@@ -239,13 +239,33 @@ class SupabaseRunRepository:
 
 
 class SupabaseResearchRepository:
-    # Minimal implementation if needed by Agent 1
+    @property
+    def client(self):
+        return get_supabase_client()
+
+    @with_retries(max_retries=3)
     def save_result(self, result: ResearchResult) -> ResearchResult:
+        data = {
+            "hypothesis_id": result.hypothesis_id,
+            "mlflow_reference": getattr(result, "mlflow_run_id", None) or "unknown",
+            "validation_outcome": result.status.value,
+            "benchmark_summary": result.metrics,
+            "dataset_fingerprint": getattr(result, "dataset_fingerprint", None),
+            "config_fingerprint": getattr(result, "config_fingerprint", None),
+            "code_fingerprint": getattr(result, "code_fingerprint", None),
+        }
+        self.client.table("experiments").insert(data).execute()
         return result
 
+    @with_retries(max_retries=3)
     def latest_result(self) -> ResearchResult | None:
+        res = self.client.table("experiments").select("*").order("created_at", desc=True).limit(1).execute()
+        if not res.data:
+            return None
+        # We don't have all original fields, this is a minimal mock for Agent 1 compat
         return None
 
+    @with_retries(max_retries=3)
     def list_by_hypothesis(self, hypothesis_id: str) -> list[ResearchResult]:
         return []
 
@@ -294,3 +314,39 @@ class SupabaseReconciliationRepository:
 
     def list_results(self) -> list[ReconciliationResult]:
         return []
+
+
+class SupabaseDatasetRepository:
+    @property
+    def client(self):
+        return get_supabase_client()
+
+    @with_retries(max_retries=3)
+    def save_dataset_metadata(self, name: str, fingerprint: str, metadata: dict[str, Any]) -> None:
+        data = {
+            "dataset_name": name,
+            "fingerprint": fingerprint,
+            "ingestion_metadata": metadata
+        }
+        try:
+            self.client.table("datasets").insert(data).execute()
+        except Exception as e:
+            if "23505" not in str(e):
+                raise
+
+
+class SupabaseUniverseRepository:
+    @property
+    def client(self):
+        return get_supabase_client()
+
+    @with_retries(max_retries=3)
+    def save_universe_history(self, symbol: str, index_name: str, valid_from: str, valid_to: str | None = None) -> None:
+        data = {
+            "symbol": symbol,
+            "index_name": index_name,
+            "valid_from": valid_from,
+            "valid_to": valid_to
+        }
+        self.client.table("universe_history").insert(data).execute()
+
