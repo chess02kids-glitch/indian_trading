@@ -75,7 +75,7 @@ def test_unencrypted_fallback(tmp_path):
     manager.save_secure_token("test_broker", payload)
 
     # Verify file is plain JSON
-    raw_data = filepath = tmp_path / "test_broker_session.dat"
+    raw_data = tmp_path / "test_broker_session.dat"
     assert "plain_abc" in raw_data.read_text()
 
     loaded = manager.load_secure_token("test_broker")

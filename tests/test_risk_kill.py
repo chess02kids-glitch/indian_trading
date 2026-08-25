@@ -58,24 +58,21 @@ class TestBaseline:
         }
 
     def test_worst_state_aggregation(self) -> None:
-        assert worst_state(
-            RiskState.STOP_NEW_ORDERS, RiskState.CANCEL_OPEN_ORDERS
-        ) is RiskState.CANCEL_OPEN_ORDERS
+        assert (
+            worst_state(RiskState.STOP_NEW_ORDERS, RiskState.CANCEL_OPEN_ORDERS)
+            is RiskState.CANCEL_OPEN_ORDERS
+        )
         assert worst_state(None, None) is RiskState.NOMINAL
 
 
 class TestDailyLoss:
     def test_within_limit_is_nominal(self) -> None:
-        decision = _guard(max_daily_loss=0.03).evaluate(
-            _context(equity_now=985_000.0)
-        )
+        decision = _guard(max_daily_loss=0.03).evaluate(_context(equity_now=985_000.0))
         assert decision.state is RiskState.NOMINAL
 
     def test_daily_loss_triggers_stop(self) -> None:
         """Final suite (test 5): daily loss triggers STOP_NEW_ORDERS."""
-        decision = _guard(max_daily_loss=0.03).evaluate(
-            _context(equity_now=965_000.0)
-        )
+        decision = _guard(max_daily_loss=0.03).evaluate(_context(equity_now=965_000.0))
         assert decision.state is RiskState.STOP_NEW_ORDERS
         assert "daily_loss" in decision.triggered_by
         assert decision.human_action_required is True

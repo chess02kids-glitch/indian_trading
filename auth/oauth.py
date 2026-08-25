@@ -60,18 +60,6 @@ class UpstoxOAuth(OAuthFlow):
         if not self.is_configured:
             raise ValueError("Upstox credentials not configured.")
 
-        headers = {
-            "accept": "application/json",
-            "Content-Type": "application/x-www-form-urlencoded",
-        }
-        data = {
-            "code": code,
-            "client_id": self.credentials.api_key,
-            "client_secret": self.credentials.api_secret,
-            "redirect_uri": self.credentials.redirect_uri,
-            "grant_type": "authorization_code",
-        }
-
         logger.info(
             f"Trading code for Upstox token (masked client_id={self.credentials.api_key[:4]}...)"
         )

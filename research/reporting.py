@@ -61,6 +61,7 @@ class ResearchReport:
     allocation_summary: Mapping[str, Any]
     benchmark_comparison: Mapping[str, Mapping[str, Any]]
     validation: Mapping[str, Any]
+    metadata: Mapping[str, Any]
 
     def to_dict(self) -> dict[str, Any]:
         """Return the full machine-readable report."""
@@ -77,6 +78,7 @@ class ResearchReport:
                 key: dict(value) for key, value in self.benchmark_comparison.items()
             },
             "validation": dict(self.validation),
+            "metadata": dict(self.metadata),
         }
 
     def to_json(self) -> str:
@@ -107,16 +109,21 @@ class ResearchReport:
                 f"| {name} | `{json.dumps(metrics, sort_keys=True, default=str)}` |"
             )
         lines.extend(["", "## Allocation summary", ""])
-        lines.append(
-            f"```json\n{json.dumps(self.allocation_summary, indent=2, default=str)}\n```"
-        )
+        allocation_json = json.dumps(self.allocation_summary, indent=2, default=str)
+        lines.append(f"```json\n{allocation_json}\n```")
         if self.validation:
+            validation_json = json.dumps(self.validation, indent=2, default=str)
+            lines.extend(["", "## Validation", "", f"```json\n{validation_json}\n```"])
+        if self.metadata:
+            metadata_json = json.dumps(
+                self.metadata, indent=2, sort_keys=True, default=str
+            )
             lines.extend(
                 [
                     "",
-                    "## Validation",
+                    "## Reproducibility metadata",
                     "",
-                    f"```json\n{json.dumps(self.validation, indent=2, default=str)}\n```",
+                    f"```json\n{metadata_json}\n```",
                 ]
             )
         return "\n".join(lines) + "\n"
@@ -263,8 +270,14 @@ def generate_report(
     validation: object | None = None,
     *,
     rolling_window: int = 63,
+    metadata: Mapping[str, Any] | None = None,
 ) -> ResearchReport:
-    """Generate standardized series, allocation, benchmark, and validation output."""
+    """Generate standardized series, allocation, benchmark, and validation output.
+
+    ``metadata`` carries the experiment-specific reproducibility context such
+    as strategy parameters, historical universe, dataset version, and seed.
+    Engine and cost metadata is always retained from ``result``.
+    """
     if rolling_window < 2:
         raise ResearchInputError("rolling_window must be at least two")
     cumulative = result.equity_curve / result.equity_curve.iloc[0] - 1.0
@@ -289,4 +302,5 @@ def generate_report(
         allocation_summary=allocation,
         benchmark_comparison=comparison.to_dict(orient="index"),
         validation=_mapping(validation),
+        metadata={**result.metadata, **(dict(metadata) if metadata else {})},
     )

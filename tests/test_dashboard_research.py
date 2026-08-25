@@ -14,9 +14,11 @@ from dashboard.paper_dashboard import (
 def test_load_experiment_history_reads_jsonl(tmp_path) -> None:
     path = tmp_path / "experiments.jsonl"
     path.write_text(
-        json.dumps({"hypothesis_id": "HYP-00001", "status": "rejected"}) + "\n"
+        json.dumps({"hypothesis_id": "HYP-00001", "status": "rejected"})
+        + "\n"
         + "not json\n"
-        + json.dumps({"hypothesis_id": "HYP-00002", "status": "accepted"}) + "\n"
+        + json.dumps({"hypothesis_id": "HYP-00002", "status": "accepted"})
+        + "\n"
     )
     records = load_experiment_history(path)
     assert [r["hypothesis_id"] for r in records] == ["HYP-00001", "HYP-00002"]

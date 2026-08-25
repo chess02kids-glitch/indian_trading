@@ -1,9 +1,9 @@
+import logging
 import os
 from pathlib import Path
 
 import psycopg2
 
-import logging
 logger = logging.getLogger("quant_india.migrations")
 
 
@@ -35,7 +35,7 @@ def run_migrations() -> None:
                     );
                     """
                 )
-                
+
                 # Fetch applied migrations
                 cur.execute("SELECT version FROM public.schema_migrations;")
                 applied_migrations = {row[0] for row in cur.fetchall()}
@@ -43,13 +43,15 @@ def run_migrations() -> None:
                 for sql_file in sql_files:
                     migration_name = sql_file.name
                     if migration_name in applied_migrations:
-                        logger.info(f"Skipping already applied migration: {migration_name}")
+                        logger.info(
+                            f"Skipping already applied migration: {migration_name}"
+                        )
                         continue
-                        
+
                     logger.info(f"Applying migration: {migration_name}")
                     with open(sql_file, "r") as f:
                         sql = f.read()
-                    
+
                     try:
                         # Use a savepoint/nested transaction block for each file
                         # Since we are already in `with conn`, everything is one big transaction,
@@ -60,7 +62,7 @@ def run_migrations() -> None:
                         cur.execute(sql)
                         cur.execute(
                             "INSERT INTO public.schema_migrations (version) VALUES (%s);",
-                            (migration_name,)
+                            (migration_name,),
                         )
                         logger.info(f"Successfully applied {migration_name}")
                     except Exception as e:

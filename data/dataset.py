@@ -182,9 +182,7 @@ class CleanDataCatalog:
             frame, _ = self.read_clean(symbol, source=source)
             frame = frame.copy()
             frame["date"] = pd.to_datetime(frame["date"])
-            panel = frame.set_index("date")[["close"]].rename(
-                columns={"close": symbol}
-            )
+            panel = frame.set_index("date")[["close"]].rename(columns={"close": symbol})
             frames.append(panel)
         wide = pd.concat(frames, axis=1).sort_index()
         if dropna:
@@ -199,9 +197,9 @@ class CleanDataCatalog:
         for column in payload.columns:
             if payload[column].dtype == object:
                 payload[column] = payload[column].astype(str)
-        bytes_ = payload.sort_values(["symbol", "date"]).to_records(
-            index=False
-        ).tobytes()
+        bytes_ = (
+            payload.sort_values(["symbol", "date"]).to_records(index=False).tobytes()
+        )
         return hashlib.sha256(bytes_).hexdigest()
 
     def dataset_fingerprint(

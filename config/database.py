@@ -70,20 +70,31 @@ def with_retries(max_retries: int = 3, backoff_factor: float = 0.5) -> Callable:
                     return func(*args, **kwargs)
                 except Exception as e:
                     last_exception = e
-                    
+
                     # Detect non-transient errors.
                     # postgrest-py APIError usually has `.code` and `.message`.
                     err_code = getattr(e, "code", "")
                     err_msg = getattr(e, "message", str(e))
-                    
+
                     # 23505 = unique_violation (idempotency error)
                     # 42... = syntax error or access rule violation (RLS)
                     # 23... = integrity constraint violation
-                    if str(err_code) == "23505" or "duplicate key value" in err_msg.lower():
-                        logger.warning(f"Unique constraint/Idempotency error in {getattr(func, '__name__', '<unknown>')}. Raising immediately: {e}")
+                    if (
+                        str(err_code) == "23505"
+                        or "duplicate key value" in err_msg.lower()
+                    ):
+                        logger.warning(
+                            f"Unique constraint/Idempotency error in {getattr(func, '__name__', '<unknown>')}. Raising immediately: {e}"
+                        )
                         raise
-                    if str(err_code).startswith("42") or str(err_code).startswith("23") or "policy" in err_msg.lower():
-                        logger.error(f"Non-transient database error in {getattr(func, '__name__', '<unknown>')}. Raising immediately: {e}")
+                    if (
+                        str(err_code).startswith("42")
+                        or str(err_code).startswith("23")
+                        or "policy" in err_msg.lower()
+                    ):
+                        logger.error(
+                            f"Non-transient database error in {getattr(func, '__name__', '<unknown>')}. Raising immediately: {e}"
+                        )
                         raise
 
                     logger.warning(

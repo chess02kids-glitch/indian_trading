@@ -105,9 +105,7 @@ class UniverseMembership:
         index_name = _canonical_index(self.index_name)
         exchange = self.exchange.strip().upper() or "NSE"
         if self.valid_to is not None and self.valid_to < self.valid_from:
-            raise ValueError(
-                f"valid_to before valid_from for {symbol} in {index_name}"
-            )
+            raise ValueError(f"valid_to before valid_from for {symbol} in {index_name}")
         object.__setattr__(self, "symbol", symbol)
         object.__setattr__(self, "index_name", index_name)
         object.__setattr__(self, "exchange", exchange)
@@ -173,9 +171,7 @@ class UniverseDataset:
         self._by_index: dict[str, tuple[UniverseMembership, ...]] = {}
         for index_name in _INDEX_ALIASES.values():
             self._by_index[index_name] = tuple(
-                member
-                for member in self.members
-                if member.index_name == index_name
+                member for member in self.members if member.index_name == index_name
             )
 
     @property
@@ -189,9 +185,7 @@ class UniverseDataset:
 
     def all_symbols(self, index_name: str | None = None) -> tuple[str, ...]:
         """Return every symbol ever in ``index_name`` (survivorship-safe)."""
-        records = (
-            self.members if index_name is None else self.for_index(index_name)
-        )
+        records = self.members if index_name is None else self.for_index(index_name)
         return tuple(sorted({member.symbol for member in records}))
 
     def members_at(
@@ -217,9 +211,7 @@ class UniverseDataset:
         """Alias of :meth:`members_at` for engine ``universe_history`` use."""
         return self.members_at(index_name, day)
 
-    def valid_window(
-        self, index_name: str
-    ) -> tuple[_dt.date, _dt.date | None]:
+    def valid_window(self, index_name: str) -> tuple[_dt.date, _dt.date | None]:
         """Return the union validity window of membership for an index."""
         records = self.for_index(index_name)
         if not records:
@@ -271,9 +263,7 @@ class UniverseDataset:
         required = {"symbol", "index_name", "valid_from"}
         missing = required - set(frame.columns)
         if missing:
-            raise ValueError(
-                f"universe frame missing columns: {sorted(missing)}"
-            )
+            raise ValueError(f"universe frame missing columns: {sorted(missing)}")
         return cls([_coerce_row(row) for row in frame.to_dict("records")])
 
     @classmethod
@@ -293,9 +283,7 @@ class UniverseDataset:
         return cls(records)
 
     @classmethod
-    def from_files(
-        cls, paths: Sequence[str | Path]
-    ) -> "UniverseDataset":
+    def from_files(cls, paths: Sequence[str | Path]) -> "UniverseDataset":
         """Load and merge membership from an explicit set of files."""
         records: list[UniverseMembership] = []
         for path in paths:

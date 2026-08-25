@@ -10,7 +10,9 @@ from data.universe import load_universe_dataset
 from research.universe import build_universe_from_dataset
 
 
-def _frame(symbol: str = "A", periods: int = 20, start: str = "2024-01-01") -> pd.DataFrame:
+def _frame(
+    symbol: str = "A", periods: int = 20, start: str = "2024-01-01"
+) -> pd.DataFrame:
     rows = []
     for day in pd.date_range(start, periods=periods, freq="B"):
         rows.append(
@@ -60,9 +62,7 @@ def test_build_clean_dataset_rejects_dirty_data_when_required(tmp_path) -> None:
     frame = _frame()
     frame.loc[0, "high"] = 90.0  # high < max(open, close)
     with pytest.raises(ValueError, match="clean dataset rejected"):
-        build_clean_dataset(
-            ["A"], {"A": frame}, data_dir=tmp_path, require_clean=True
-        )
+        build_clean_dataset(["A"], {"A": frame}, data_dir=tmp_path, require_clean=True)
 
 
 def test_dataset_pipeline_feeds_research_universe(tmp_path) -> None:

@@ -15,8 +15,10 @@ def _result(periods: int = 250):
     index = pd.date_range("2023-01-02", periods=periods, freq="B")
     prices = pd.DataFrame(
         {
-            "A": 100 * np.exp(np.cumsum(np.random.default_rng(1).normal(0.0005, 0.01, periods))),
-            "B": 100 * np.exp(np.cumsum(np.random.default_rng(2).normal(0.0003, 0.01, periods))),
+            "A": 100
+            * np.exp(np.cumsum(np.random.default_rng(1).normal(0.0005, 0.01, periods))),
+            "B": 100
+            * np.exp(np.cumsum(np.random.default_rng(2).normal(0.0003, 0.01, periods))),
         },
         index=index,
     )
@@ -37,9 +39,17 @@ def test_period_rows_have_required_fields() -> None:
     result = _result()
     month = generate_periodic_reports(result, periods=("M",))["M"].periods[0]
     for field in (
-        "period_start", "period_end", "period_return", "cumulative_return",
-        "volatility", "sharpe", "max_drawdown", "exposure",
-        "max_holding", "num_holdings", "turnover",
+        "period_start",
+        "period_end",
+        "period_return",
+        "cumulative_return",
+        "volatility",
+        "sharpe",
+        "max_drawdown",
+        "exposure",
+        "max_holding",
+        "num_holdings",
+        "turnover",
     ):
         assert field in month
     assert month["exposure"] == pytest.approx(1.0, abs=1e-9)
@@ -51,9 +61,9 @@ def test_periodic_reports_include_factor_exposure() -> None:
     factor = pd.DataFrame(
         0.5, index=result.returns.index, columns=result.weights.columns
     )
-    month = generate_periodic_reports(
-        result, periods=("M",), factor_values=factor
-    )["M"].periods[0]
+    month = generate_periodic_reports(result, periods=("M",), factor_values=factor)[
+        "M"
+    ].periods[0]
     assert "factor_exposure" in month
     assert month["factor_exposure"] == pytest.approx(0.5)
 

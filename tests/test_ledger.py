@@ -39,8 +39,12 @@ class TestLedgerSequencing:
     def test_ids_increment(self, tmp_path) -> None:
         ledger = HypothesisLedger(tmp_path / "ledger.jsonl")
         first = ledger.record(
-            hypothesis="p1", status="accepted", strategy="momentum",
-            dataset_fingerprint="ds1", config_fingerprint="cfg1", code_fingerprint="code1"
+            hypothesis="p1",
+            status="accepted",
+            strategy="momentum",
+            dataset_fingerprint="ds1",
+            config_fingerprint="cfg1",
+            code_fingerprint="code1",
         )
         second = ledger.record(hypothesis="p2", status="rejected", strategy="x")
         assert first.hypothesis_id == "HYP-00001"
@@ -50,13 +54,21 @@ class TestLedgerSequencing:
     def test_sequence_survives_restart(self, tmp_path) -> None:
         path = tmp_path / "ledger.jsonl"
         HypothesisLedger(path).record(
-            hypothesis="p1", status="accepted", strategy="s",
-            dataset_fingerprint="ds", config_fingerprint="cfg", code_fingerprint="code"
+            hypothesis="p1",
+            status="accepted",
+            strategy="s",
+            dataset_fingerprint="ds",
+            config_fingerprint="cfg",
+            code_fingerprint="code",
         )
         restarted = HypothesisLedger(path)
         record = restarted.record(
-            hypothesis="p2", status="accepted", strategy="s",
-            dataset_fingerprint="ds", config_fingerprint="cfg", code_fingerprint="code"
+            hypothesis="p2",
+            status="accepted",
+            strategy="s",
+            dataset_fingerprint="ds",
+            config_fingerprint="cfg",
+            code_fingerprint="code",
         )
         assert record.hypothesis_id == "HYP-00002"
 
@@ -82,7 +94,7 @@ class TestLedgerSequencing:
             strategy="s",
             dataset_fingerprint="ds",
             config_fingerprint="cfg",
-            code_fingerprint="code"
+            code_fingerprint="code",
         )
         assert rec.hypothesis_id == "HYP-00007"
         assert ledger.next_hypothesis_id() == "HYP-00008"

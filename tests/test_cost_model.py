@@ -131,7 +131,9 @@ class TestEngineIntegration:
                     cost_model=IndiaCostModel(scenario=scenario),
                 )
             )
-            results[scenario] = engine.run(prices, weights, strategy_name=scenario, universe_history=[])
+            results[scenario] = engine.run(
+                prices, weights, strategy_name=scenario, universe_history=[]
+            )
         assert (
             results["pessimistic"].metrics.cost_drag
             > results["optimistic"].metrics.cost_drag
@@ -147,7 +149,9 @@ class TestEngineIntegration:
         engine = VectorBTResearchEngine(
             BacktestConfig(use_vectorbt=False, cost_model=CostModel(5, 2))
         )
-        result = engine.run(prices, weights, strategy_name="legacy", universe_history=[])
+        result = engine.run(
+            prices, weights, strategy_name="legacy", universe_history=[]
+        )
         assert result.metrics.cost_drag >= 0
 
     def test_cost_model_serializable_in_metadata(self) -> None:

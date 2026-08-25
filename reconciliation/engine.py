@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import Mapping
+from typing import Any, Mapping
 
 from models.domain import (
     OrderResult,
@@ -46,10 +46,10 @@ class ReconciliationEngine:
     """Compares expected and actual state; locks the account on mismatch."""
 
     def __init__(
-        self, 
+        self,
         risk_guard: RiskGuard | None = None,
         health_service: Any = None,
-        alert_service: Any = None
+        alert_service: Any = None,
     ) -> None:
         self.risk_guard = risk_guard or RiskGuard()
         self.health_service = health_service
@@ -75,12 +75,13 @@ class ReconciliationEngine:
             lock_reason = "reconciliation mismatch requires human resolution"
             if self.health_service:
                 from observability.health import SystemHealth
+
                 self.health_service.set_state(SystemHealth.LOCKED, reason=lock_reason)
             if self.alert_service:
                 self.alert_service.critical(
                     "reconciliation_mismatch",
                     message=f"System LOCKED due to {len(mismatches)} mismatches.",
-                    run_id=expected.run_id
+                    run_id=expected.run_id,
                 )
         result = ReconciliationResult(
             run_id=expected.run_id,
@@ -90,16 +91,18 @@ class ReconciliationEngine:
             locked=locked,
             lock_reason=lock_reason,
         )
-        
+
         if self.health_service:
-            self.health_service.write_extended_status({
-                "reconciliation": {
-                    "matched": matched,
-                    "mismatches": len(mismatches),
-                    "locked": locked
+            self.health_service.write_extended_status(
+                {
+                    "reconciliation": {
+                        "matched": matched,
+                        "mismatches": len(mismatches),
+                        "locked": locked,
+                    }
                 }
-            })
-            
+            )
+
         return result
 
     def risk_decision(self, result: ReconciliationResult) -> RiskDecision:

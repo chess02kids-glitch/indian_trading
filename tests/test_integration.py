@@ -1,1 +1,2 @@
-def test_dry_run(): assert True
+def test_dry_run():
+    assert True

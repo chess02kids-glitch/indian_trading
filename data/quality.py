@@ -32,6 +32,7 @@ __all__ = [
     "validate_market_bars",
 ]
 
+
 #: Weekly weekday trading calendar for NSE equity (Mon-Fri).
 def _weekday_is_trading(day: date) -> bool:
     """Return True for Monday-Friday (NSE equity trading days)."""
@@ -75,7 +76,9 @@ class TradingCalendar:
     def to_dict(self) -> Mapping[str, Any]:
         """Return a serializable description of the calendar."""
         return {
-            "kind": "custom" if self._is_trading_day is not _WEEKDAY_IS_TRADING else "nse_weekday",
+            "kind": "custom"
+            if self._is_trading_day is not _WEEKDAY_IS_TRADING
+            else "nse_weekday",
             "holidays": sorted(h.isoformat() for h in self.holidays),
         }
 
@@ -115,6 +118,7 @@ def detect_off_calendar_candles(
                 )
             )
     return issues
+
 
 _REQUIRED_COLUMNS = ("date", "symbol", "open", "high", "low", "close")
 

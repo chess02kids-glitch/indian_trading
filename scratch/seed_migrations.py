@@ -1,5 +1,7 @@
 import os
+
 import psycopg2
+
 
 def run():
     db_url = os.getenv("DATABASE_URL")
@@ -26,6 +28,7 @@ def run():
         )
     conn.commit()
     conn.close()
+
 
 if __name__ == "__main__":
     run()
