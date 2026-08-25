@@ -304,3 +304,234 @@ def generate_report(
         validation=_mapping(validation),
         metadata={**result.metadata, **(dict(metadata) if metadata else {})},
     )
+
+
+@dataclass(frozen=True, slots=True)
+class AdvancedResearchReport:
+    """Daily / weekly / monthly research report for paper-trading oversight.
+
+    Includes strategy configuration, validation status, benchmark
+    comparison, confidence intervals, the research-gate outcome, and
+    reproducibility metadata — a complete, auditable record for one
+    reporting frequency.
+    """
+
+    strategy: str
+    frequency: str
+    generated_at: datetime
+    configuration: Mapping[str, Any]
+    metrics: Mapping[str, Any]
+    validation: Mapping[str, Any]
+    gate: Mapping[str, Any]
+    benchmark_comparison: Mapping[str, Mapping[str, Any]]
+    confidence_intervals: Mapping[str, Mapping[str, Any]]
+    periods: list[dict[str, Any]]
+    reproducibility: Mapping[str, Any]
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return the full machine-readable report."""
+        return {
+            "strategy": self.strategy,
+            "frequency": self.frequency,
+            "generated_at": self.generated_at.isoformat(),
+            "configuration": dict(self.configuration),
+            "metrics": dict(self.metrics),
+            "validation": dict(self.validation),
+            "gate": dict(self.gate),
+            "benchmark_comparison": {
+                name: dict(values) for name, values in self.benchmark_comparison.items()
+            },
+            "confidence_intervals": {
+                name: dict(values) for name, values in self.confidence_intervals.items()
+            },
+            "periods": list(self.periods),
+            "reproducibility": dict(self.reproducibility),
+        }
+
+    def to_json(self) -> str:
+        """Serialize as deterministic JSON."""
+        return json.dumps(
+            self.to_dict(),
+            sort_keys=True,
+            separators=(",", ":"),
+            default=str,
+        )
+
+    def to_markdown(self) -> str:
+        """Render a human-readable research report."""
+        frequency_label = {"D": "daily", "W": "weekly", "M": "monthly"}.get(
+            self.frequency, self.frequency
+        )
+        lines = [
+            f"# {frequency_label.capitalize()} research report: {self.strategy}",
+            "",
+            f"Generated: `{self.generated_at.isoformat()}`",
+            "",
+            "## Strategy configuration",
+            "",
+            "```json",
+            json.dumps(self.configuration, indent=2, sort_keys=True, default=str),
+            "```",
+            "",
+            "## Performance",
+            "",
+            "| Metric | Value |",
+            "| --- | ---: |",
+        ]
+        for name, value in self.metrics.items():
+            lines.append(f"| {name} | {value} |")
+        lines.extend(
+            [
+                "",
+                "## Validation status",
+                "",
+                "```json",
+                json.dumps(self.validation, indent=2, sort_keys=True, default=str),
+                "```",
+                "",
+                "## Research gate",
+                "",
+            ]
+        )
+        if self.gate:
+            lines.append(f"Verdict: **{self.gate.get('verdict', 'unknown')}**")
+            lines.append(f"Score: {self.gate.get('score', 'n/a')}")
+            lines.append("")
+            lines.append("| Status | Check | Reason |")
+            lines.append("| --- | --- | --- |")
+            for check in self.gate.get("checks", []):
+                lines.append(
+                    f"| {check.get('status')} | {check.get('name')} | "
+                    f"{check.get('message')} |"
+                )
+        else:
+            lines.append("_No gate decision recorded._")
+        lines.extend(
+            ["", "## Benchmark comparison", "", "| Name | Sharpe | CAGR | MDD |"]
+        )
+        for name, values in self.benchmark_comparison.items():
+            lines.append(
+                f"| {name} | {values.get('sharpe')} | "
+                f"{values.get('annualized_return')} | {values.get('max_drawdown')} |"
+            )
+        lines.extend(["", "## Confidence intervals", ""])
+        for name, interval in self.confidence_intervals.items():
+            lines.append(
+                f"- **{name}**: {interval.get('estimate')} "
+                f"[{interval.get('lower')}, {interval.get('upper')}]"
+            )
+        if self.periods:
+            lines.extend(["", "## Period summary", ""])
+            for period in self.periods:
+                lines.append(
+                    f"- {period.get('period_start')} → {period.get('period_end')}: "
+                    f"return {period.get('period_return')}, "
+                    f"exposure {period.get('exposure')}, "
+                    f"turnover {period.get('turnover')}"
+                )
+        lines.extend(
+            [
+                "",
+                "## Reproducibility metadata",
+                "",
+                "```json",
+                json.dumps(self.reproducibility, indent=2, sort_keys=True, default=str),
+                "```",
+            ]
+        )
+        return "\n".join(lines) + "\n"
+
+    def write(self, output_dir: Path | str = "reports/generated") -> tuple[Path, Path]:
+        """Write JSON and Markdown reports beneath ``output_dir``."""
+        directory = Path(output_dir).expanduser()
+        stem = _SAFE_NAME.sub("_", self.strategy.strip()) or "strategy"
+        label = frequency_label(self.frequency)
+        json_path = directory / f"{stem}_research_{label}.json"
+        markdown_path = directory / f"{stem}_research_{label}.md"
+        directory.mkdir(parents=True, exist_ok=True)
+        json_path.write_text(self.to_json() + "\n", encoding="utf-8")
+        markdown_path.write_text(self.to_markdown(), encoding="utf-8")
+        return json_path, markdown_path
+
+
+def frequency_label(frequency: str) -> str:
+    """Return the report filename label for a frequency code."""
+    if frequency not in _PERIOD_LABELS:
+        raise ResearchInputError(f"unsupported report frequency: {frequency}")
+    return _PERIOD_LABELS[frequency]
+
+
+def validation_status(
+    validation: object | None,
+) -> dict[str, Any]:
+    """Summarize a walk-forward / CPCV result into a validation-status block."""
+    if validation is None:
+        return {"status": "missing", "checks": []}
+    if isinstance(validation, Mapping):
+        return dict(validation)
+    to_dict = getattr(validation, "to_dict", None)
+    if callable(to_dict):
+        payload = to_dict()
+        if isinstance(payload, Mapping):
+            return dict(payload)
+    raise ResearchInputError("validation must be a mapping or expose to_dict()")
+
+
+def generate_advanced_report(
+    result: BacktestResult,
+    *,
+    frequency: str = "M",
+    benchmark_results: Mapping[str, BacktestResult] | None = None,
+    validation: object | None = None,
+    gate_result: object | None = None,
+    configuration: Mapping[str, Any] | None = None,
+    confidence_intervals: Mapping[str, Any] | None = None,
+    period_report: pd.DataFrame | PeriodReport | None = None,
+    diagnostics: object | None = None,
+    metadata: Mapping[str, Any] | None = None,
+    generated_at: datetime | None = None,
+) -> AdvancedResearchReport:
+    """Combine metrics, validation, gate, benchmarks, CIs, and reproducibility.
+
+    ``configuration`` carries strategy parameters, versions, universe,
+    rebalance frequency, cost model, and seed; ``metadata`` carries the
+    runtime reproducibility context (git commit, dataset fingerprint,
+    MLflow run id).
+    """
+    if frequency not in _PERIOD_LABELS:
+        raise ResearchInputError(f"unsupported report frequency: {frequency}")
+    all_results = {result.strategy_name: result, **(benchmark_results or {})}
+    comparison = compare_results(all_results)
+    benchmark_payload = comparison.to_dict(orient="index")
+    if isinstance(period_report, PeriodReport):
+        periods = list(period_report.periods)
+    elif isinstance(period_report, pd.DataFrame):
+        periods = period_report.to_dict(orient="records")
+    elif period_report is None:
+        periods = []
+    else:
+        raise ResearchInputError(
+            "period_report must be a PeriodReport, DataFrame, or None"
+        )
+    gate_payload = _mapping(gate_result)
+    diagnostic_payload = _mapping(diagnostics) if diagnostics is not None else {}
+    return AdvancedResearchReport(
+        strategy=result.strategy_name,
+        frequency=frequency,
+        generated_at=generated_at or datetime.now(UTC),
+        configuration=dict(configuration or {}),
+        metrics=result.metrics.to_dict(),
+        validation=validation_status(validation),
+        gate=gate_payload,
+        benchmark_comparison=benchmark_payload,
+        confidence_intervals={
+            name: _mapping(value)
+            for name, value in (confidence_intervals or {}).items()
+        },
+        periods=periods,
+        reproducibility={
+            **result.metadata,
+            **dict(metadata or {}),
+            **diagnostic_payload,
+        },
+    )

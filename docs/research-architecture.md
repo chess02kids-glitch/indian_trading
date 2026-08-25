@@ -86,3 +86,33 @@ embargo gap.
 Allocation objects are DataFrames indexed by date and labelled by symbol. They
 are not order instructions. Execution remains outside the sprint and all
 existing risk and execution invariants remain unchanged.
+
+## v0.3 statistical validation and research gate
+
+The research pipeline now runs:
+
+    Historical Data -> Factor Generation -> Strategy -> VectorBT Backtest
+        -> Statistical Validation (DSR, purged walk-forward, CPCV, bootstrap CIs)
+        -> Research Gate (PASS / FAIL / FRAGILE / INSUFFICIENT_EVIDENCE)
+        -> Factor Diagnostics -> Paper-Trading Analytics -> Long-Run Replay
+        -> Research Reports -> MLflow (metadata-only)
+
+Key modules:
+
+- `backtest.validation` — deflated Sharpe, purged walk-forward, CPCV, and
+  bootstrap confidence intervals (see `docs/validation_engine.md`).
+- `research.gate` — the decision layer with explicit reasons for every
+  verdict (see `docs/research_gate.md`).
+- `research.diagnostics` — factor decay, sector exposure, turnover
+  attribution, rank stability, volatility contributions, contribution
+  breakdown.
+- `research.experiments` — MLflow parameters/metrics/artifacts plus the
+  local JSONL audit trail; MLflow is metadata-only.
+- `research.ledger` — accepted, rejected, failed, and interrupted runs with
+  duplicate-fingerprint detection; append-only and immutable.
+- `research.replay` / `research.paper_analytics` — deterministic long-run
+  replay and read-only paper-trading analytics.
+- `dashboard/research_dashboard.py` — read-only Streamlit research views.
+
+Everything remains deterministic; the gate is a pure function of its inputs
+and research code never imports execution, broker, or risk-kill modules.
