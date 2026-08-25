@@ -461,13 +461,13 @@ class SupabaseBrokerSessionRepository:
         broker_account_id: str,
         issued_at: str,
         expires_at: str,
-        token_status: str = "ACTIVE",
+        token_status: str | None = None,
     ) -> None:
         data = {
             "broker_account_id": broker_account_id,
             "issued_at": issued_at,
             "expires_at": expires_at,
-            "token_status": token_status,
+            "token_status": token_status or "ACTIVE",
             "reauth_required": False,
         }
         self.client.table("broker_sessions").insert(data).execute()

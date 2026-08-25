@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import os
 import sys
 from datetime import UTC, date, datetime, time
@@ -164,8 +165,10 @@ def main() -> int:
                 SystemHealth.HALTED, "daily runner unexpected failure"
             )
             failed_health.write_extended_status(payload)
-        except Exception:
-            pass
+        except Exception as status_exc:
+            logging.getLogger(__name__).warning(
+                "daily_status_write_failed: %s", type(status_exc).__name__
+            )
         _emit(payload)
         return EXIT_CODES["unexpected_failure"]
 

@@ -285,8 +285,17 @@ class ExecutionService:
                                         )
                                     summary.submitted.append(recovered_result)
                                     continue
-                            except Exception:
-                                pass  # Network issue, fallback to skipping
+                            except Exception as exc:
+                                summary.skipped.append(
+                                    {
+                                        "symbol": intent.symbol,
+                                        "reason": (
+                                            "duplicate recovery lookup failed: "
+                                            f"{type(exc).__name__}"
+                                        ),
+                                    }
+                                )
+                                continue
                     summary.skipped.append(
                         {
                             "symbol": intent.symbol,
