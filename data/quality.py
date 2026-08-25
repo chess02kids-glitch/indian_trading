@@ -209,11 +209,27 @@ def _is_finite(value: Any) -> bool:
         return False
 
 
+def _as_of_date(as_of: Any) -> date:
+    if isinstance(as_of, pd.Timestamp):
+        return as_of.date()
+    if isinstance(as_of, datetime):
+        return as_of.date()
+    if isinstance(as_of, date):
+        return as_of
+    if isinstance(as_of, str):
+        try:
+            return pd.Timestamp(as_of).date()
+        except ValueError as exc:
+            raise DataQualityError("as_of must be an ISO date or ISO datetime") from exc
+    raise DataQualityError("as_of must be a date, datetime, timestamp, or ISO string")
+
+
 def check_ohlcv_long_frame(
     frame: pd.DataFrame,
     *,
     source: str = "unknown",
     exchange: str = "NSE",
+    as_of: date | datetime | pd.Timestamp | str | None = None,
 ) -> tuple[pd.DataFrame, DataQualityReport]:
     """Validate a long-form OHLCV frame row by row.
 
@@ -223,7 +239,10 @@ def check_ohlcv_long_frame(
 
     Checks per row: finite positive prices, ``high >= max(open, close)``,
     ``low <= min(open, close)``, ``high >= low``, ``volume >= 0``, unique
-    ``(date, symbol)``, parseable/sorted-free timestamps.
+    ``(date, symbol)``, parseable/sorted-free timestamps. When ``as_of`` is
+    supplied, observations dated strictly after it are flagged as
+    ``future_date`` and excluded: research must never trade on information
+    that has not happened yet.
     """
     if not isinstance(frame, pd.DataFrame) or frame.empty:
         raise DataQualityError("market data frame is empty")
@@ -249,6 +268,24 @@ def check_ohlcv_long_frame(
     if (symbols == "").any():
         issues.append(QualityIssue("invalid_symbol", detail="empty symbol value"))
         accepted_mask &= symbols.ne("")
+
+    if as_of is not None:
+        reference = _as_of_date(as_of)
+        future_mask = accepted_mask & dates.notna() & (dates.dt.date > reference)
+        if future_mask.any():
+            for index in working.index[future_mask]:
+                issues.append(
+                    QualityIssue(
+                        "future_date",
+                        symbol=str(symbols.loc[index]),
+                        date=str(dates.loc[index].date()),
+                        detail=(
+                            "observation dated after the as-of reference "
+                            f"{reference.isoformat()}"
+                        ),
+                    )
+                )
+            accepted_mask &= ~future_mask
 
     for field_name in ("open", "high", "low", "close"):
         values = pd.to_numeric(working[field_name], errors="coerce")
@@ -353,13 +390,18 @@ def load_market_bars(
     *,
     source: str = "unknown",
     exchange: str = "NSE",
+    as_of: date | datetime | pd.Timestamp | str | None = None,
 ) -> tuple[list[MarketBar], DataQualityReport]:
     """Validate a long frame into strict :class:`MarketBar` records.
 
     Rows that fail strict ``MarketBar`` validation are reported as issues
     instead of raising, so one bad row does not destroy a valid dataset.
+    ``as_of`` enables the future-date guard (see
+    :func:`check_ohlcv_long_frame`).
     """
-    accepted, report = check_ohlcv_long_frame(frame, source=source, exchange=exchange)
+    accepted, report = check_ohlcv_long_frame(
+        frame, source=source, exchange=exchange, as_of=as_of
+    )
     issues = list(report.issues)
     bars: list[MarketBar] = []
     for _, row in accepted.iterrows():

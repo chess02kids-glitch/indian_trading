@@ -43,6 +43,8 @@ __all__ = [
     "BootstrapConfidenceInterval",
     "CrossValidationResult",
     "DeflatedSharpeResult",
+    "HoldoutProtocolResult",
+    "HoldoutSplit",
     "ValidationWindow",
     "WalkForwardResult",
     "bootstrap_metric_intervals",
@@ -51,7 +53,9 @@ __all__ = [
     "deflated_sharpe_from_returns",
     "deflated_sharpe_ratio",
     "expected_maximum_sharpe",
+    "holdout_split",
     "run_combinatorial_purged_cv",
+    "run_holdout_protocol",
     "run_walk_forward",
     "validation_consistency",
     "walk_forward_splits",
@@ -846,6 +850,246 @@ def validation_consistency(
         "positive_fold_fraction": positive,
         "best_fold_sharpe": float(sharpes.max()),
         "worst_fold_sharpe": float(sharpes.min()),
-        "fold_sharpe_std": float(sharpes.std(ddof=1)),
+        # A single fold has no dispersion to measure.
+        "fold_sharpe_std": float(sharpes.std(ddof=1)) if len(sharpes) > 1 else 0.0,
         "aggregate_deflated_sharpe_probability": dsr.probability,
     }
+
+
+@dataclass(frozen=True, slots=True)
+class HoldoutSplit:
+    """Chronological partition of a research timeline.
+
+    The development prefix is the only region where walk-forward and
+    combinatorial-purged cross-validation may train or test. The trailing
+    holdout is *locked*: it is never used for signal evaluation during
+    development and receives exactly one candidate evaluation.
+    """
+
+    dev_index: pd.DatetimeIndex
+    holdout_index: pd.DatetimeIndex
+    holdout_size: int
+
+    def __post_init__(self) -> None:
+        dev = _validate_index(self.dev_index)
+        holdout = _validate_index(self.holdout_index)
+        if (
+            not isinstance(self.holdout_size, int)
+            or isinstance(self.holdout_size, bool)
+            or self.holdout_size < 2
+        ):
+            raise ResearchInputError("holdout_size must be an integer of at least 2")
+        if len(holdout) != self.holdout_size:
+            raise ResearchInputError("holdout_index length must equal holdout_size")
+        if len(dev) < 2:
+            raise ResearchInputError("development index must have at least 2 rows")
+        if dev[-1] >= holdout[0]:
+            raise ResearchInputError(
+                "development observations must end strictly before the holdout"
+            )
+        object.__setattr__(self, "dev_index", dev)
+        object.__setattr__(self, "holdout_index", holdout)
+
+    @property
+    def dev_start(self) -> pd.Timestamp:
+        """First development observation."""
+        return self.dev_index[0]
+
+    @property
+    def dev_end(self) -> pd.Timestamp:
+        """Last development observation (never traded in the holdout run)."""
+        return self.dev_index[-1]
+
+    @property
+    def holdout_start(self) -> pd.Timestamp:
+        """First locked holdout observation."""
+        return self.holdout_index[0]
+
+    @property
+    def holdout_end(self) -> pd.Timestamp:
+        """Last locked holdout observation."""
+        return self.holdout_index[-1]
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return the explicit, reproducible split boundaries."""
+        return {
+            "dev_start": self.dev_start.isoformat(),
+            "dev_end": self.dev_end.isoformat(),
+            "dev_size": len(self.dev_index),
+            "holdout_start": self.holdout_start.isoformat(),
+            "holdout_end": self.holdout_end.isoformat(),
+            "holdout_size": len(self.holdout_index),
+        }
+
+
+def holdout_split(index: pd.DatetimeIndex, holdout_size: int) -> HoldoutSplit:
+    """Partition a sorted index into a development prefix and locked holdout.
+
+    The holdout is the trailing ``holdout_size`` observations; everything
+    before it is development data. The boundaries are a pure function of the
+    index, so identical inputs always produce identical splits.
+    """
+    validated = _validate_index(index)
+    if (
+        not isinstance(holdout_size, int)
+        or isinstance(holdout_size, bool)
+        or holdout_size < 2
+    ):
+        raise ResearchInputError("holdout_size must be an integer of at least 2")
+    if len(validated) - holdout_size < 2:
+        raise ResearchInputError(
+            "index must retain at least two development observations"
+        )
+    holdout = validated[len(validated) - holdout_size :]
+    dev = validated[: len(validated) - holdout_size]
+    return HoldoutSplit(dev_index=dev, holdout_index=holdout, holdout_size=holdout_size)
+
+
+@dataclass(frozen=True, slots=True)
+class HoldoutProtocolResult:
+    """Full TRAIN -> VALIDATION -> LOCKED HOLDOUT evaluation of one candidate.
+
+    * ``walk_forward`` (and optional ``cpcv``) are computed on the
+      development prefix only — their windows can never overlap the holdout.
+    * ``holdout_result`` is the single, final evaluation of the candidate on
+      the locked holdout slice. Its signals are point-in-time: each weight
+      uses only information available at or before its own date.
+    """
+
+    split: HoldoutSplit
+    walk_forward: WalkForwardResult
+    cpcv: CrossValidationResult | None
+    holdout_result: BacktestResult
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return boundary + per-period metrics without wall-clock fields."""
+        return {
+            "split": self.split.to_dict(),
+            "walk_forward": self.walk_forward.to_dict(),
+            "cpcv": self.cpcv.to_dict() if self.cpcv is not None else None,
+            "holdout": {
+                "start": self.holdout_result.returns.index[0].isoformat(),
+                "end": self.holdout_result.returns.index[-1].isoformat(),
+                "metrics": self.holdout_result.metrics.to_dict(),
+            },
+        }
+
+
+def _restrict_to_index(data: MarketData, index: pd.DatetimeIndex) -> MarketData:
+    """Slice an aligned MarketData panel to a sub-index, preserving alignment."""
+
+    def _slice(panel: pd.DataFrame | None) -> pd.DataFrame | None:
+        return panel.loc[index] if panel is not None else None
+
+    return MarketData(
+        close=_slice(data.close),
+        high=_slice(data.high),
+        low=_slice(data.low),
+        volume=_slice(data.volume),
+    )
+
+
+def _assert_windows_disjoint_from_holdout(
+    windows: Sequence[ValidationWindow], split: HoldoutSplit
+) -> None:
+    """Explicit look-ahead guard: no validation window may touch the holdout."""
+    for window in windows:
+        if window.train_index[-1] >= split.holdout_start:
+            raise ResearchInputError(
+                f"walk-forward fold {window.fold} training window overlaps the "
+                "locked holdout; the holdout must remain untouched during "
+                "strategy development"
+            )
+        if window.test_index[-1] >= split.holdout_start:
+            raise ResearchInputError(
+                f"walk-forward fold {window.fold} test window overlaps the "
+                "locked holdout; the holdout must remain untouched during "
+                "strategy development"
+            )
+
+
+def run_holdout_protocol(
+    strategy: Strategy,
+    data: MarketData,
+    constructor: PortfolioConstructor,
+    engine: VectorBTResearchEngine,
+    holdout_size: int,
+    *,
+    train_size: int,
+    test_size: int,
+    step_size: int | None = None,
+    expanding: bool = False,
+    purge: int = 0,
+    embargo: int = 0,
+    cpcv_n_groups: int | None = None,
+    cpcv_n_test_groups: int | None = None,
+    universe_history: Sequence[Any] | None = None,
+    holdout_strategy_name: str | None = None,
+) -> HoldoutProtocolResult:
+    """Run the chronological TRAIN -> VALIDATION -> LOCKED HOLDOUT protocol.
+
+    1. The timeline is split into a development prefix and a trailing locked
+       holdout (``holdout_split``).
+    2. Walk-forward (and optionally CPCV) validation runs on the development
+       prefix *only*, with an explicit guard that no window touches the
+       holdout.
+    3. The candidate is evaluated exactly once on the locked holdout slice.
+       Signals are computed from the full point-in-time panel so trailing
+       look-backs that start before the holdout still work, but no weight at
+       a holdout date ever uses information after that date.
+
+    Deterministic: identical inputs produce identical splits, fold results,
+    and holdout results.
+    """
+    split = holdout_split(data.close.index, holdout_size)
+    dev_data = _restrict_to_index(data, split.dev_index)
+
+    walk_forward = run_walk_forward(
+        strategy,
+        dev_data,
+        constructor,
+        engine,
+        train_size=train_size,
+        test_size=test_size,
+        step_size=step_size,
+        expanding=expanding,
+        purge=purge,
+        embargo=embargo,
+    )
+    cpcv: CrossValidationResult | None = None
+    if cpcv_n_groups is not None and cpcv_n_test_groups is not None:
+        cpcv = run_combinatorial_purged_cv(
+            strategy,
+            dev_data,
+            constructor,
+            engine,
+            n_groups=cpcv_n_groups,
+            n_test_groups=cpcv_n_test_groups,
+            purge=purge,
+            embargo=embargo,
+        )
+
+    _assert_windows_disjoint_from_holdout(walk_forward.windows, split)
+    if cpcv is not None:
+        _assert_windows_disjoint_from_holdout(cpcv.windows, split)
+
+    signals = strategy.generate_signals(data)
+    weights = constructor.construct(signals, data)
+    if not weights.index.equals(data.close.index):
+        raise ResearchInputError(
+            "constructor weights must align exactly with the research timeline"
+        )
+    holdout_result = engine.run(
+        data.close.loc[split.holdout_index],
+        weights.loc[split.holdout_index],
+        strategy_name=holdout_strategy_name or f"{strategy.name}_holdout",
+        universe_history=list(universe_history or ()),
+    )
+    if not holdout_result.returns.index.equals(split.holdout_index):
+        raise ResearchInputError("holdout evaluation must cover the holdout exactly")
+    return HoldoutProtocolResult(
+        split=split,
+        walk_forward=walk_forward,
+        cpcv=cpcv,
+        holdout_result=holdout_result,
+    )

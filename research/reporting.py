@@ -93,12 +93,34 @@ class ResearchReport:
             f"# Research report: {self.strategy}",
             "",
             f"Generated: `{self.generated_at.isoformat()}`",
-            "",
-            "## Performance",
-            "",
-            "| Metric | Value |",
-            "| --- | ---: |",
         ]
+        periods = {
+            key: self.metadata[key]
+            for key in (
+                "backtest_period",
+                "dev_period",
+                "oos_period",
+                "holdout_period",
+            )
+            if self.metadata.get(key)
+        }
+        if periods:
+            lines.extend(["", "## Periods", ""])
+            for key, value in periods.items():
+                lines.append(f"- `{key}`: `{value}`")
+            lines.extend(
+                [
+                    "",
+                    "These are distinct evidence regimes and must not be "
+                    "confused: `backtest_period` is the full-period context "
+                    "run; walk-forward folds are computed on the development "
+                    "prefix only; `oos_period`/`holdout_period` is the single "
+                    "locked-holdout evaluation used as gate evidence. Paper "
+                    "trading results are a separate system and never appear "
+                    "in this report.",
+                ]
+            )
+        lines.extend(["", "## Performance", "", "| Metric | Value |", "| --- | ---: |"])
         for name, value in self.metrics.items():
             lines.append(f"| {name} | {value} |")
         lines.extend(

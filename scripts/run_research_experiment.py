@@ -35,10 +35,10 @@ from backtest.validation import (  # noqa: E402
     bootstrap_metric_intervals,
     bootstrap_sharpe_confidence_interval,
     deflated_sharpe_from_returns,
-    run_combinatorial_purged_cv,
-    run_walk_forward,
+    run_holdout_protocol,
     validation_consistency,
 )
+from data.universe import load_universe_dataset  # noqa: E402
 from portfolio.construction import InverseVolatilityConstructor  # noqa: E402
 from research.contracts import Experiment, MarketData  # noqa: E402
 from research.diagnostics import (  # noqa: E402
@@ -143,6 +143,7 @@ def main(argv: list[str] | None = None) -> int:
         "--output-dir", type=Path, default=ROOT / "reports" / "generated"
     )
     parser.add_argument("--periods", type=int, default=756)
+    parser.add_argument("--holdout-size", type=int, default=252)
     parser.add_argument("--vol-target", type=float, default=0.15)
     parser.add_argument("--use-vectorbt", action="store_true")
     parser.add_argument("--seed", type=int, default=20260824)
@@ -150,7 +151,18 @@ def main(argv: list[str] | None = None) -> int:
 
     output_dir: Path = args.output_dir
     output_dir.mkdir(parents=True, exist_ok=True)
-    universe = nifty_100()
+    # Versioned universe: the frozen research snapshot must match the
+    # versioned constituent CSV (data/universe/nifty100.csv), and the
+    # snapshot validity window is recorded in every experiment artifact.
+    universe_dataset = load_universe_dataset()
+    snapshot_start, _ = universe_dataset.valid_window("nifty100")
+    universe = nifty_100(as_of=snapshot_start)
+    if set(universe.symbols) != set(universe_dataset.all_symbols("nifty100")):
+        raise SystemExit(
+            "frozen nifty100 research snapshot does not match the versioned "
+            "constituent CSV; refusing to run on an ambiguous universe"
+        )
+    universe_version = f"nifty100-snapshot-{snapshot_start.isoformat()}"
     prices = make_synthetic_dataset(
         universe.symbols, periods=args.periods, seed=args.seed
     )
@@ -182,20 +194,50 @@ def main(argv: list[str] | None = None) -> int:
         data.close,
         constructor.construct(strategy.generate_signals(data), data),
         strategy_name=strategy.name,
-        universe_history=[],
+        universe_history=universe.history,
     )
+    # Full-period benchmarks (report context; the gate compares holdout
+    # slices below so every comparison is on the same locked evidence).
     benchmarks = benchmark_suite(data.close, result.weights, engine=engine)
 
-    # Out-of-sample slice: last 12 months.
-    oos_start = result.returns.index[-252]
-    oos_period = (
-        f"{oos_start.date().isoformat()}/{result.returns.index[-1].date().isoformat()}"
+    # -- locked holdout protocol (TRAIN -> VALIDATION -> LOCKED HOLDOUT) ----
+    # The trailing ``--holdout-size`` observations are locked before any
+    # validation runs: walk-forward and CPCV only ever see the development
+    # prefix (guarded explicitly), and the candidate receives exactly one
+    # final evaluation on the untouched holdout slice.
+    protocol = run_holdout_protocol(
+        strategy,
+        data,
+        constructor,
+        engine,
+        args.holdout_size,
+        train_size=252,
+        test_size=63,
+        purge=20,
+        embargo=5,
+        cpcv_n_groups=6,
+        cpcv_n_test_groups=2,
+        universe_history=universe.history,
     )
+    split = protocol.split
+    walk_forward = protocol.walk_forward
+    cpcv = protocol.cpcv
+    holdout_result = protocol.holdout_result
+    holdout_prices = data.close.loc[split.holdout_index]
+
     backtest_period = (
-        f"{result.returns.index[0].date().isoformat()}/"
-        f"{result.returns.index[-1].date().isoformat()}"
+        f"{data.close.index[0].date().isoformat()}/"
+        f"{data.close.index[-1].date().isoformat()}"
     )
-    oos_returns = result.returns.loc[oos_start:]
+    dev_period = (
+        f"{split.dev_start.date().isoformat()}/{split.dev_end.date().isoformat()}"
+    )
+    holdout_period = (
+        f"{split.holdout_start.date().isoformat()}/"
+        f"{split.holdout_end.date().isoformat()}"
+    )
+    oos_returns = holdout_result.returns
+    oos_period = holdout_period
 
     trials = 1 + len(benchmarks)
     dsr = deflated_sharpe_from_returns(oos_returns, trials)
@@ -206,35 +248,27 @@ def main(argv: list[str] | None = None) -> int:
         samples=1000,
         seed=args.seed,
     )
-    walk_forward = run_walk_forward(
-        strategy,
-        data,
-        constructor,
-        engine,
-        train_size=252,
-        test_size=63,
-        purge=20,
-        embargo=5,
-    )
-    cpcv = run_combinatorial_purged_cv(
-        strategy,
-        data,
-        constructor,
-        engine,
-        n_groups=6,
-        n_test_groups=2,
-        purge=20,
-        embargo=5,
-    )
+    # Like-for-like holdout comparisons: every benchmark and placebo is
+    # evaluated on the same locked holdout slice, same cost model, same
+    # rebalance schedule, and same position constraints as the candidate.
+    holdout_benchmarks = {
+        name: engine.run(
+            holdout_prices,
+            benchmark_result.weights.loc[split.holdout_index],
+            strategy_name=f"{name}_holdout",
+            universe_history=universe.history,
+        )
+        for name, benchmark_result in benchmarks.items()
+    }
     wf_consistency = validation_consistency(walk_forward)
     cpcv_consistency = validation_consistency(cpcv)
     placebos = generate_placebo_results(
-        data.close, engine=engine, samples=50, seed=args.seed
+        holdout_prices, engine=engine, samples=50, seed=args.seed
     )
     gate = ResearchGate(random_seed=args.seed)
     gate_decision = gate.evaluate(
         result,
-        benchmarks=benchmarks,
+        benchmarks=holdout_benchmarks,
         validation=walk_forward,
         placebo_results=placebos,
         oos_returns=oos_returns,
@@ -249,6 +283,7 @@ def main(argv: list[str] | None = None) -> int:
         "score": gate_decision.score,
         "checks": [check.to_dict() for check in gate_decision.checks],
         "reproducibility": gate_decision.reproducibility,
+        "holdout_boundaries": split.to_dict(),
         "path": str(gate_path),
     }
     (output_dir / "research_gate_summary.json").write_text(
@@ -264,6 +299,65 @@ def main(argv: list[str] | None = None) -> int:
             f"OOS deflated Sharpe probability {dsr.probability:.3f} below "
             f"threshold {acceptance_threshold}"
         )
+    if reason is None and gate_decision.verdict == "FAIL":
+        reason = _gate_reason(gate_decision)
+
+    # -- report warnings and limitations (spec: explicit, machine-readable) -
+    # Warnings: gate checks that passed with caveats (never silent).
+    # Limitations: fixed, honest dataset/universe caveats — no alpha claim.
+    warnings = [
+        check.message for check in gate_decision.checks if check.status == "warn"
+    ]
+    limitations = [
+        "synthetic price dataset: results validate the research pipeline, "
+        "they are not evidence about real Indian equities",
+        f"universe is a single-date snapshot ({universe_version}): results "
+        "carry a survivorship-bias limitation",
+        "historical corporate-action adjustment is not wired to a real data source",
+        "no alpha or statistical-significance claim is made",
+    ]
+
+    # -- cost-scenario survival table (OPTIMISTIC / BASE / PESSIMISTIC) -----
+    # Reporting only: the gate above evaluates the pre-declared base
+    # scenario. The same weights are re-simulated under each scenario's
+    # spread/slippage assumptions so cost fragility is visible per period.
+    scenario_results = {}
+    for scenario in ("optimistic", "base", "pessimistic"):
+        scenario_model = IndiaCostModel(scenario=scenario)
+        scenario_engine = VectorBTResearchEngine(
+            BacktestConfig(
+                rebalance_frequency="M",
+                initial_cash=1_000_000.0,
+                cost_model=scenario_model,
+                volatility_target=args.vol_target,
+                use_vectorbt=args.use_vectorbt,
+            )
+        )
+        scenario_full = (
+            result
+            if scenario == "base"
+            else scenario_engine.run(
+                data.close,
+                result.weights,
+                strategy_name=f"{strategy.name}_{scenario}",
+                universe_history=universe.history,
+            )
+        )
+        scenario_holdout = (
+            holdout_result
+            if scenario == "base"
+            else scenario_engine.run(
+                holdout_prices,
+                result.weights.loc[split.holdout_index],
+                strategy_name=f"{strategy.name}_{scenario}_holdout",
+                universe_history=universe.history,
+            )
+        )
+        scenario_results[scenario] = {
+            "cost_model": scenario_model.to_dict(),
+            "full_period": scenario_full.metrics.to_dict(),
+            "holdout": scenario_holdout.metrics.to_dict(),
+        }
 
     # -- reports, diagnostics, and artifacts (before tracking) --------------
     from research.experiments import _commit_hash
@@ -276,15 +370,28 @@ def main(argv: list[str] | None = None) -> int:
             "deflated_sharpe": dsr.to_dict(),
             "bootstrap_ci": bootstrap.to_dict(),
             "oos_period": oos_period,
+            "walk_forward": walk_forward.to_dict(),
+            "cpcv": cpcv.to_dict() if cpcv is not None else None,
+            "holdout": {
+                "boundaries": split.to_dict(),
+                "metrics": holdout_result.metrics.to_dict(),
+            },
         },
         metadata={
             "strategy_parameters": strategy.parameters,
             "universe": universe.name,
+            "universe_version": universe_version,
             "universe_symbols": list(universe.symbols),
             "dataset_version": dataset_version,
             "cost_model": cost_model.to_dict(),
             "backtest_period": backtest_period,
+            "dev_period": dev_period,
             "oos_period": oos_period,
+            "holdout_period": holdout_period,
+            "holdout_boundaries": split.to_dict(),
+            "cost_scenario_results": scenario_results,
+            "warnings": warnings,
+            "limitations": limitations,
             "random_seed": args.seed,
             "code_commit": code_commit,
             "mlflow_run_id": "pending",
@@ -321,6 +428,13 @@ def main(argv: list[str] | None = None) -> int:
             metadata={
                 "walk_forward_consistency": wf_consistency,
                 "cpcv_consistency": cpcv_consistency,
+                "universe_version": universe_version,
+                "dev_period": dev_period,
+                "holdout_period": holdout_period,
+                "holdout_boundaries": split.to_dict(),
+                "cost_scenario_results": scenario_results,
+                "warnings": warnings,
+                "limitations": limitations,
                 "random_seed": args.seed,
                 "code_commit": code_commit,
                 "dataset_fingerprint": _dataset_fingerprint(prices),
@@ -392,10 +506,13 @@ def main(argv: list[str] | None = None) -> int:
             "deflated_sharpe": dsr.to_dict(),
             "bootstrap_ci": bootstrap.to_dict(),
             "walk_forward_folds": len(walk_forward.windows),
-            "cpcv_folds": len(cpcv.windows),
+            "cpcv_folds": len(cpcv.windows) if cpcv is not None else 0,
             "walk_forward_consistency": wf_consistency,
             "cpcv_consistency": cpcv_consistency,
             "oos_period": oos_period,
+            "holdout_period": holdout_period,
+            "holdout_boundaries": split.to_dict(),
+            "holdout_metrics": holdout_result.metrics.to_dict(),
             "acceptance_threshold": acceptance_threshold,
         },
         benchmarks={name: benchmark for name, benchmark in benchmarks.items()},
@@ -427,12 +544,24 @@ def main(argv: list[str] | None = None) -> int:
             "oos_sharpe_probability": dsr.probability,
             "total_return": result.metrics.total_return,
             "max_drawdown": result.metrics.max_drawdown,
+            "holdout_total_return": holdout_result.metrics.total_return,
+            "holdout_sharpe": holdout_result.metrics.sharpe,
+            "holdout_max_drawdown": holdout_result.metrics.max_drawdown,
+            "holdout_turnover": holdout_result.metrics.turnover,
+            "walk_forward_positive_fold_fraction": wf_consistency[
+                "positive_fold_fraction"
+            ],
+            "pessimistic_holdout_sharpe": scenario_results["pessimistic"]["holdout"][
+                "sharpe"
+            ],
         },
         reason=reason,
         dataset_version=dataset_version,
         code_commit=record.commit_hash,
         backtest_period=backtest_period,
         oos_period=oos_period,
+        holdout_period=holdout_period,
+        universe_version=universe_version,
         cost_model=cost_name,
         dataset_fingerprint=_dataset_fingerprint(prices),
         config_fingerprint=_config_fingerprint(engine_config, strategy),
@@ -442,15 +571,28 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     comparison = compare_results({strategy.name: result, **benchmarks})
+    holdout_comparison = compare_results(
+        {strategy.name: holdout_result, **holdout_benchmarks}
+    )
     summary = {
         "strategy": strategy.name,
         "universe": universe.name,
+        "universe_version": universe_version,
         "dataset_version": dataset_version,
         "cost_model": cost_model.to_dict(),
         "status": record.status,
         "reason": reason,
         "record": record.to_dict(),
         "full_period_metrics": result.metrics.to_dict(),
+        "backtest_period": backtest_period,
+        "dev_period": dev_period,
+        "holdout_period": holdout_period,
+        "holdout_boundaries": split.to_dict(),
+        "holdout_metrics": holdout_result.metrics.to_dict(),
+        "cost_scenario_results": scenario_results,
+        "holdout_benchmarks": {
+            name: r.metrics.to_dict() for name, r in holdout_benchmarks.items()
+        },
         "oos_period": oos_period,
         "deflated_sharpe": dsr.to_dict(),
         "bootstrap_ci": bootstrap.to_dict(),
@@ -463,6 +605,9 @@ def main(argv: list[str] | None = None) -> int:
         "cpcv_consistency": cpcv_consistency,
         "research_gate": gate_decision.to_dict(),
         "comparison": comparison.to_dict(orient="index"),
+        "holdout_comparison": holdout_comparison.to_dict(orient="index"),
+        "warnings": warnings,
+        "limitations": limitations,
         "reports": [str(json_path), str(markdown_path)],
         "periodic_reports": {k: str(v) for k, v in period_paths.items()},
         "advanced_reports": {k: str(v) for k, v in advanced_paths.items()},

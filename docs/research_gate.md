@@ -38,6 +38,12 @@ engine, cost model, and rebalance frequency as the candidate, so the
 comparison is apples-to-apples. The gate itself is a pure function of its
 inputs and never touches execution or broker code.
 
+**Evidence discipline.** `oos_returns` must be the candidate's locked
+holdout returns (see `backtest.validation.run_holdout_protocol`), and the
+`benchmarks` / `placebo_results` mappings must be evaluated on that same
+holdout slice — never full-period results mixed with holdout evidence.
+The baseline experiment wires the gate this way.
+
 ## Using the gate
 
 ```python

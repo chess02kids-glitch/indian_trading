@@ -102,6 +102,27 @@ class TestOhlcvValidation:
         assert any(issue.kind == "duplicate_row" for issue in report.issues)
         assert len(accepted) == 1
 
+    def test_future_observations_rejected_with_as_of(self) -> None:
+        accepted, report = check_ohlcv_long_frame(
+            _frame(_good_rows()), as_of="2026-08-20"
+        )
+        assert any(issue.kind == "future_date" for issue in report.issues)
+        assert list(accepted["date"]) == [pd.Timestamp("2026-08-20")]
+
+    def test_no_future_issues_without_as_of(self) -> None:
+        accepted, report = check_ohlcv_long_frame(_frame(_good_rows()))
+        assert not any(issue.kind == "future_date" for issue in report.issues)
+        assert len(accepted) == 2
+
+    def test_invalid_as_of_rejected(self) -> None:
+        with pytest.raises(DataQualityError):
+            check_ohlcv_long_frame(_frame(_good_rows()), as_of=12345)
+
+    def test_load_market_bars_honors_as_of(self) -> None:
+        bars, report = load_market_bars(_frame(_good_rows()), as_of="2026-08-20")
+        assert [bar.date for bar in bars] == [pd.Timestamp("2026-08-20").date()]
+        assert any(issue.kind == "future_date" for issue in report.issues)
+
     def test_empty_frame_raises(self) -> None:
         with pytest.raises(DataQualityError):
             check_ohlcv_long_frame(pd.DataFrame())
