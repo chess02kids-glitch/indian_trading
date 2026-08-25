@@ -90,7 +90,7 @@ def test_rls_audit_log_immutable(db_conn):
             cur.execute("DELETE FROM public.audit_log")
             assert cur.rowcount == 0, "Should not be able to delete audit logs"
         except psycopg2.errors.InsufficientPrivilege:
-            pass # Also acceptable
-            
+            pass  # Also acceptable
+
         # Ensure we rollback since a failed transaction might abort the connection state
         db_conn.rollback()
