@@ -17,11 +17,20 @@ It executes the same pre-flight validations (`validate_database_health()`) as th
 ## 4. Structured Logging
 The system now uses `config/logging.py` to output fully structured JSON lines (`ELK`, `Datadog` compatible) instead of standard terminal text formatting. Set `LOG_LEVEL` environment variable appropriately.
 
-## 5. Automated Backups
-Schedule `scripts/backup_db.py` via `cron` or `systemd-timers` to periodically execute logical backups (`pg_dump`).
-Example Crontab (Nightly at 2 AM):
+## 5. Automated Backups & Systemd
+We use systemd units for robust deployment (found in `deploy/` directory).
+
+- `deploy/health.service`: Runs the health server on port 8080 continuously.
+- `deploy/backup.service` & `deploy/backup.timer`: Executes `scripts/backup_db.py` nightly.
+
+Backups are now encrypted with AES (via `BACKUP_ENCRYPTION_KEY`) and signed with a SHA-256 checksum.
+
+## 6. Disaster Recovery (Restore)
+To recover from a disaster, use the `scripts/restore_db.py` utility.
+This will automatically decrypt `.enc` files and stream them to `psql`.
 ```bash
-0 2 * * * /path/to/venv/bin/python /path/to/repo/scripts/backup_db.py >> /var/log/db_backup.log 2>&1
+# Decrypts and restores the backup to DATABASE_URL
+python scripts/restore_db.py backups/supabase_backup_20240101_120000.sql.enc
 ```
 
 ## 6. Realtime Subscriptions

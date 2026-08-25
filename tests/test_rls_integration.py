@@ -86,20 +86,11 @@ def test_rls_audit_log_immutable(db_conn):
     with db_conn.cursor() as cur:
         simulate_user(cur, user_a)
 
-        # The audit_log table should be completely immutable for authenticated users
-        # Try to delete from it
-        with pytest.raises(psycopg2.errors.InsufficientPrivilege):
-            # We might get InsufficientPrivilege or rowcount 0 depending on RLS.
-            # RLS Deny policy usually just acts like 0 rows match if it's a DELETE policy without raising.
-            # But if UPDATE/DELETE is forbidden entirely by permission, it raises.
-            # Since we set TO authenticated USING (false), it should just return 0 rows affected or raise.
+        try:
             cur.execute("DELETE FROM public.audit_log")
-
-        # In Postgres RLS, a policy returning false means the row isn't visible for that operation.
-        # So rowcount will be 0.
-        if cur.statusmessage == "DELETE 0":
-            # If it didn't raise, we must verify rowcount is 0
-            pass
-
-        # To be safe, rollback since we caught an exception or did a bad op
+            assert cur.rowcount == 0, "Should not be able to delete audit logs"
+        except psycopg2.errors.InsufficientPrivilege:
+            pass # Also acceptable
+            
+        # Ensure we rollback since a failed transaction might abort the connection state
         db_conn.rollback()

@@ -28,4 +28,9 @@ def test_migrations_are_idempotent():
         text=True,
     )
     assert res2.returncode == 0, f"Second run failed: {res2.stderr}"
-    assert "No new migrations" in res2.stdout or "applied" in res2.stdout
+    # Standard python logging outputs to stderr by default
+    assert (
+        "Skipping already applied migration" in res2.stderr
+        or "No migration files found" in res2.stderr
+        or "Successfully applied" in res2.stderr
+    )

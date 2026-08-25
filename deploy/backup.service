@@ -1,0 +1,11 @@
+[Unit]
+Description=Indian Trading Database Backup
+After=network.target
+
+[Service]
+Type=oneshot
+User=appuser
+WorkingDirectory=/opt/indian_trading
+Environment=PYTHONPATH=/opt/indian_trading
+EnvironmentFile=/opt/indian_trading/.env
+ExecStart=/opt/indian_trading/venv/bin/python /opt/indian_trading/scripts/backup_db.py

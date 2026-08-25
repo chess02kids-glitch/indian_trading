@@ -3,7 +3,12 @@
 import json
 import logging
 import sys
+from contextvars import ContextVar
 from datetime import UTC, datetime
+
+# Context variables for distributed tracing
+correlation_id_var: ContextVar[str] = ContextVar("correlation_id", default="")
+execution_id_var: ContextVar[str] = ContextVar("execution_id", default="")
 
 
 class JSONFormatter(logging.Formatter):
@@ -18,6 +23,8 @@ class JSONFormatter(logging.Formatter):
             "module": record.module,
             "funcName": record.funcName,
             "lineNo": record.lineno,
+            "correlation_id": correlation_id_var.get(),
+            "execution_id": execution_id_var.get(),
         }
         if record.exc_info:
             log_record["exception"] = self.formatException(record.exc_info)

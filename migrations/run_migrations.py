@@ -4,6 +4,7 @@ from pathlib import Path
 
 import psycopg2
 
+logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(name)s:%(message)s")
 logger = logging.getLogger("quant_india.migrations")
 
 
