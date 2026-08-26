@@ -221,6 +221,30 @@ class HypothesisLedger:
                     continue
             return hypothesis_id(highest + 1)
 
+    def next_hypothesis_ids(self, count: int) -> tuple[str, ...]:
+        """Allocate ``count`` consecutive HYP ids without writing records.
+
+        Used when a campaign must reserve its whole trial set before any
+        evaluation (fixing the DSR trial count pre-holdout). The ids are
+        consecutive from the current ledger high-water mark; the caller
+        must record outcomes for every allocated id before calling any
+        further allocation, or the sequence will collide.
+        """
+        if not isinstance(count, int) or isinstance(count, bool) or count < 1:
+            raise ResearchInputError("count must be a positive integer")
+        with self._lock:
+            highest = 0
+            for record in self._read_records():
+                try:
+                    highest = max(
+                        highest, parse_hypothesis_number(record.hypothesis_id)
+                    )
+                except ResearchInputError:
+                    continue
+            return tuple(
+                hypothesis_id(highest + offset) for offset in range(1, count + 1)
+            )
+
     @staticmethod
     def _research_fingerprint(record: HypothesisRecord) -> str:
         """Deterministic duplicate key for one research record.

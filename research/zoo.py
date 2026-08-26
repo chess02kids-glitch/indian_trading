@@ -45,16 +45,67 @@ from backtest.benchmarks import (
 )
 from backtest.engine import BacktestConfig, BacktestResult, VectorBTResearchEngine
 from portfolio.construction import EqualWeightConstructor
-from research.contracts import MarketData, ResearchInputError
+from research.contracts import MarketData, ResearchInputError, Signal, Strategy
 
 from .registry import StrategyRegistry
 
 __all__ = [
+    "IdentityConstructor",
+    "WeightPanelStrategy",
     "ZOO_FAMILIES",
     "zoo_context",
     "run_benchmark_zoo",
     "run_zoo_family",
 ]
+
+
+class WeightPanelStrategy(Strategy):
+    """Expose a precomputed weight panel through the Strategy interface.
+
+    Used so weight-based zoo families (buy & hold, equal weight, inverse
+    volatility, random, persistence) can run through the same validation
+    machinery (walk-forward / CPCV) as signal-based families. The panel
+    must be causal: every row computable from data up to that row — the
+    zoo families satisfy this by construction.
+    """
+
+    def __init__(self, weights: pd.DataFrame, name: str = "weight_panel") -> None:
+        self._weights = _validate_weight_panel(weights).astype(float)
+        self._name = str(name)
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def parameters(self) -> Mapping[str, Any]:
+        return {"source": "precomputed_weight_panel"}
+
+    def generate_signals(self, data: MarketData) -> Signal:
+        if not isinstance(data, MarketData):
+            raise ResearchInputError("generate_signals requires MarketData")
+        aligned = self._weights.reindex(
+            index=data.close.index, columns=data.close.columns
+        )
+        aligned = aligned.fillna(0.0)
+        return Signal(
+            aligned,
+            metadata={"strategy": self._name, "source": "weight_panel"},
+        )
+
+
+class IdentityConstructor:
+    """Return signal values unchanged as target weights.
+
+    Counterpart of :class:`WeightPanelStrategy` for validation runs: the
+    panel already contains normalized target weights.
+    """
+
+    def construct(self, signals: Signal, data: MarketData) -> pd.DataFrame:
+        if not signals.values.index.equals(data.close.index):
+            raise ResearchInputError("signals and market data must share an index")
+        return signals.values.astype(float)
+
 
 #: Pre-declared zoo families with canonical configurations. Adding a family
 #: is a code change with a regression test, never a runtime action.
@@ -143,6 +194,24 @@ def _validate_prices(prices: pd.DataFrame) -> pd.DataFrame:
         or not np.isfinite(numeric.to_numpy()).all()
     ):
         raise ResearchInputError("prices must be finite and strictly positive")
+    return numeric.astype(float)
+
+
+def _validate_weight_panel(weights: pd.DataFrame) -> pd.DataFrame:
+    """Validate a target-weight panel (finite, non-negative, unique keys)."""
+    if not isinstance(weights, pd.DataFrame) or weights.empty:
+        raise ResearchInputError("weights must be a non-empty DataFrame")
+    if not isinstance(weights.index, pd.DatetimeIndex) or not weights.index.is_unique:
+        raise ResearchInputError("weights must use a unique DatetimeIndex")
+    if not weights.columns.is_unique:
+        raise ResearchInputError("weights columns must be unique")
+    numeric = weights.apply(pd.to_numeric, errors="coerce")
+    if (
+        numeric.isna().any().any()
+        or (numeric < 0).any().any()
+        or not np.isfinite(numeric.to_numpy()).all()
+    ):
+        raise ResearchInputError("weights must be finite and non-negative")
     return numeric.astype(float)
 
 
