@@ -14,6 +14,17 @@ from typing import Any, Sequence
 import pandas as pd
 from pydantic import BaseModel, ConfigDict, field_validator
 
+from .contracts import ResearchInputError
+
+
+class UnknownCorporateActionError(ResearchInputError):
+    """Raised when a corporate action cannot be applied with certainty.
+
+    The system refuses to pretend an action was handled when the data
+    cannot confirm it (e.g. the action's symbol is missing from the price
+    panel). Fix the data or the action record; never silently skip.
+    """
+
 
 class CorporateActionType(str, Enum):
     SPLIT = "SPLIT"
@@ -54,7 +65,10 @@ class CorporateAction(BaseModel):
 
 
 def apply_corporate_actions(
-    prices: pd.DataFrame, actions: list[CorporateAction]
+    prices: pd.DataFrame,
+    actions: list[CorporateAction],
+    *,
+    strict: bool = False,
 ) -> pd.DataFrame:
     """Apply corporate actions to produce an adjusted price series.
 
@@ -62,6 +76,10 @@ def apply_corporate_actions(
     Returns a new DataFrame with adjusted prices.
 
     Prices should be indexed by date and columns should be symbols.
+
+    When ``strict=True``, an action whose symbol is missing from the panel
+    raises :class:`UnknownCorporateActionError` instead of being silently
+    skipped: unapplied adjustments must never masquerade as applied ones.
     """
     adjusted = prices.copy().astype(float)
 
@@ -70,6 +88,12 @@ def apply_corporate_actions(
 
     for action in sorted_actions:
         if action.symbol not in adjusted.columns:
+            if strict:
+                raise UnknownCorporateActionError(
+                    f"UNKNOWN_CORPORATE_ACTION: {action.action_type.value} "
+                    f"for {action.symbol} on {action.ex_date} cannot be "
+                    "applied — symbol absent from the price panel"
+                )
             continue
 
         # Mask for dates strictly before the ex_date
@@ -209,6 +233,93 @@ def _same_event(a: CorporateAction, b: CorporateAction) -> bool:
     if a.action_type == CorporateActionType.RENAME:
         return a.new_symbol == b.new_symbol
     return True
+
+
+def audit_corporate_action_coverage(
+    prices: pd.DataFrame,
+    actions: Sequence[CorporateAction],
+) -> dict[str, Any]:
+    """Audit whether every corporate action is reflected in the panel.
+
+    Findings (each with the action's symbol/type/date):
+
+    * ``UNKNOWN_CORPORATE_ACTION`` — the action's symbol is absent from
+      the price panel: the action could not be applied, and pretending it
+      was handled would be fabricated certainty.
+    * ``OUTSIDE_PANEL`` — the ex-date is outside the panel's range: the
+      action has no observable effect here (informational).
+    * ``DELISTING_NOT_REFLECTED`` — a DELISTING action exists but the
+      symbol still has prices after the ex-date.
+    * ``RENAME_NOT_REFLECTED`` — a RENAME action exists but the old
+      symbol still has prices after the ex-date.
+    """
+    if not isinstance(prices, pd.DataFrame) or prices.empty:
+        raise ResearchInputError("prices must be a non-empty DataFrame")
+    findings: list[dict[str, Any]] = []
+    index = prices.index
+    for action in actions:
+        record = {
+            "symbol": action.symbol,
+            "action_type": action.action_type.value,
+            "ex_date": action.ex_date.isoformat(),
+        }
+        if action.symbol not in prices.columns:
+            findings.append(
+                {
+                    **record,
+                    "finding": "UNKNOWN_CORPORATE_ACTION",
+                    "detail": (
+                        f"symbol {action.symbol!r} is absent from the price "
+                        "panel; the action cannot be applied with certainty"
+                    ),
+                }
+            )
+            continue
+        ex_ts = pd.Timestamp(action.ex_date)
+        if ex_ts < index[0] or ex_ts > index[-1]:
+            findings.append(
+                {
+                    **record,
+                    "finding": "OUTSIDE_PANEL",
+                    "detail": "ex-date outside the panel range; no effect here",
+                }
+            )
+            continue
+        after = prices.loc[index >= ex_ts, action.symbol]
+        has_after = after.notna().any()
+        if action.action_type == CorporateActionType.DELISTING and has_after:
+            findings.append(
+                {
+                    **record,
+                    "finding": "DELISTING_NOT_REFLECTED",
+                    "detail": "symbol still has prices after the delisting date",
+                }
+            )
+        if (
+            action.action_type == CorporateActionType.RENAME
+            and has_after
+            and action.new_symbol not in prices.columns
+        ):
+            findings.append(
+                {
+                    **record,
+                    "finding": "RENAME_NOT_REFLECTED",
+                    "detail": (
+                        "old symbol still has prices after the ex-date and "
+                        f"the new symbol {action.new_symbol!r} is absent"
+                    ),
+                }
+            )
+    return {
+        "audit": "corporate_action_coverage",
+        "actions_checked": len(actions),
+        "findings": findings,
+        "clean": not findings,
+        "note": (
+            "UNKNOWN_CORPORATE_ACTION means the data cannot confirm the "
+            "action was handled; do not trade on unconfirmed adjustments"
+        ),
+    }
 
 
 def verify_corporate_actions(

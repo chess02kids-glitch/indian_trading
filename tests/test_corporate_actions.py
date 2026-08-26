@@ -6,9 +6,11 @@ import pytest
 from research.corporate_actions import (
     CorporateAction,
     CorporateActionType,
+    UnknownCorporateActionError,
     apply_corporate_actions,
     apply_delistings,
     apply_renames,
+    audit_corporate_action_coverage,
     verify_corporate_actions,
 )
 
@@ -166,3 +168,93 @@ def test_corporate_action_verification_require_two_sources():
     by_symbol = {r.action.symbol: r for r in results}
     assert by_symbol["RELIANCE"].matched
     assert not by_symbol["EXTRA"].source_a_ok and by_symbol["EXTRA"].source_b_ok
+
+
+class TestCorporateActionRedTeam:
+    """Unknown-action surfacing: never pretend an action was handled."""
+
+    def test_unknown_action_surfaces_when_symbol_absent(self):
+        prices = pd.DataFrame(
+            {"AAA": [100.0, 101.0, 102.0]},
+            index=pd.bdate_range("2026-01-01", periods=3),
+        )
+        action = CorporateAction(
+            symbol="ZZZ",
+            ex_date=date(2026, 1, 2),
+            action_type=CorporateActionType.SPLIT,
+            ratio=0.5,
+        )
+        report = audit_corporate_action_coverage(prices, [action])
+        assert report["clean"] is False
+        assert report["findings"][0]["finding"] == "UNKNOWN_CORPORATE_ACTION"
+        with pytest.raises(UnknownCorporateActionError):
+            apply_corporate_actions(prices, [action], strict=True)
+        # Non-strict keeps the legacy silently-skip behaviour for
+        # backwards compatibility, but the audit reports it.
+        applied = apply_corporate_actions(prices, [action])
+        assert applied.equals(prices)
+
+    def test_delisting_not_reflected_flagged(self):
+        prices = pd.DataFrame(
+            {"AAA": [100.0, 101.0, 102.0, 103.0]},
+            index=pd.bdate_range("2026-01-01", periods=4),
+        )
+        action = CorporateAction(
+            symbol="AAA",
+            ex_date=date(2026, 1, 3),
+            action_type=CorporateActionType.DELISTING,
+        )
+        report = audit_corporate_action_coverage(prices, [action])
+        assert report["clean"] is False
+        assert report["findings"][0]["finding"] == "DELISTING_NOT_REFLECTED"
+        # after applying the delisting the panel reflects it
+        applied = apply_delistings(prices, [action])
+        assert applied["AAA"].isna().iloc[2:].all()
+        assert audit_corporate_action_coverage(applied, [action])["clean"] is True
+
+    def test_rename_not_reflected_flagged(self):
+        prices = pd.DataFrame(
+            {"OLD": [100.0, 101.0, 102.0], "OTHER": [50.0, 51.0, 52.0]},
+            index=pd.bdate_range("2026-01-01", periods=3),
+        )
+        action = CorporateAction(
+            symbol="OLD",
+            ex_date=date(2026, 1, 2),
+            action_type=CorporateActionType.RENAME,
+            new_symbol="NEW",
+        )
+        report = audit_corporate_action_coverage(prices, [action])
+        assert any(
+            finding["finding"] == "RENAME_NOT_REFLECTED"
+            for finding in report["findings"]
+        )
+
+    def test_outside_panel_is_informational(self):
+        prices = pd.DataFrame(
+            {"AAA": [100.0, 101.0]},
+            index=pd.bdate_range("2026-01-01", periods=2),
+        )
+        action = CorporateAction(
+            symbol="AAA",
+            ex_date=date(2027, 6, 1),
+            action_type=CorporateActionType.SPLIT,
+            ratio=0.5,
+        )
+        report = audit_corporate_action_coverage(prices, [action])
+        assert report["findings"][0]["finding"] == "OUTSIDE_PANEL"
+
+    def test_clean_panel_passes(self):
+        prices = pd.DataFrame(
+            {"AAA": [200.0, 101.0, 102.0]},
+            index=pd.bdate_range("2026-01-01", periods=3),
+        )
+        # 2:1 split on 2026-01-02: prices before are halved, so 200 -> 100
+        action = CorporateAction(
+            symbol="AAA",
+            ex_date=date(2026, 1, 2),
+            action_type=CorporateActionType.SPLIT,
+            ratio=0.5,
+        )
+        applied = apply_corporate_actions(prices, [action])
+        assert applied["AAA"].iloc[0] == 100.0
+        assert audit_corporate_action_coverage(applied, [action])["clean"] is True

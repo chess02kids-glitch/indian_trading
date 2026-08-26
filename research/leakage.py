@@ -165,9 +165,12 @@ def audit_rank_mask_order(
         membership.columns
     ):
         # Align defensively; absent cells are False (conservative).
-        aligned = membership.reindex(
-            index=signals.index, columns=signals.columns
-        ).astype(bool)
+        # fillna BEFORE astype(bool): NaN.astype(bool) is True.
+        aligned = (
+            membership.reindex(index=signals.index, columns=signals.columns)
+            .fillna(False)
+            .astype(bool)
+        )
     else:
         aligned = membership.astype(bool)
     if selection_dates is not None:

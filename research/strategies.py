@@ -224,7 +224,10 @@ class MomentumQualityStrategy(Strategy):
         """
         mask = self.active_members
         assert mask is not None  # guarded by callers
-        return mask.reindex(index=index, columns=columns).astype(bool).fillna(False)
+        # fillna BEFORE astype(bool): NaN.astype(bool) is True in
+        # numpy/pandas, so missing membership must be replaced with False
+        # first or absent dates/symbols would silently become eligible.
+        return mask.reindex(index=index, columns=columns).fillna(False).astype(bool)
 
     def generate_signals(self, data: MarketData) -> Signal:
         """Generate momentum x quality long signals aligned with the data."""
@@ -321,10 +324,12 @@ class _QuantileRankStrategy(Strategy):
     ) -> "pd.DataFrame | None":
         if self.active_members is None:
             return None
+        # fillna BEFORE astype(bool): NaN.astype(bool) is True, so missing
+        # membership must become False first (mask-before-rank contract).
         return (
             self.active_members.reindex(index=index, columns=columns)
-            .astype(bool)
             .fillna(False)
+            .astype(bool)
         )
 
     def _rank_select(self, values: pd.DataFrame, *, top: bool) -> pd.DataFrame:

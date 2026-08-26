@@ -225,7 +225,9 @@ def _membership_mask(
         return pd.DataFrame(True, index=index, columns=columns)
     if not isinstance(membership, pd.DataFrame):
         raise ResearchInputError("membership must be a DataFrame or None")
-    return membership.reindex(index=index, columns=columns).astype(bool).fillna(False)
+    # fillna BEFORE astype(bool): NaN.astype(bool) is True in
+    # numpy/pandas, so missing membership must become False first.
+    return membership.reindex(index=index, columns=columns).fillna(False).astype(bool)
 
 
 def _mask_weights(weights: pd.DataFrame, mask: pd.DataFrame) -> pd.DataFrame:
