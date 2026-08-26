@@ -221,6 +221,31 @@ class HypothesisLedger:
                     continue
             return hypothesis_id(highest + 1)
 
+    def reserve(self, **fields: Any) -> HypothesisRecord:
+        """Atomically allocate the next HYP id and write a running record.
+
+        The running record consumes the id immediately (so consecutive
+        allocations never collide) and documents the reservation in the
+        append-only log. The later outcome record with the same id
+        supersedes it; both lines remain in the file, and
+        :meth:`latest_records` returns the completed state per id.
+        """
+        with self._lock:
+            hypothesis_id_value = self.next_hypothesis_id()
+            return self.record(
+                hypothesis_id=hypothesis_id_value,
+                status="running",
+                hypothesis=str(fields.get("hypothesis") or "reserved"),
+                strategy=str(fields.get("strategy") or "unknown"),
+                strategy_family=fields.get("strategy_family"),
+                parameters=dict(fields.get("parameters") or {}),
+                features=list(fields.get("features") or []),
+                transformations=list(fields.get("transformations") or []),
+                campaign_id=fields.get("campaign_id"),
+                parent_hypothesis_id=fields.get("parent_hypothesis_id"),
+                reason=str(fields.get("reason") or "reserved"),
+            )
+
     def next_hypothesis_ids(self, count: int) -> tuple[str, ...]:
         """Allocate ``count`` consecutive HYP ids without writing records.
 
@@ -334,9 +359,13 @@ class HypothesisLedger:
             if "hypothesis_id" not in fields or not fields.get("hypothesis_id"):
                 fields["hypothesis_id"] = self.next_hypothesis_id()
             elif fields["hypothesis_id"] in existing:
-                raise ResearchInputError(
-                    f"Duplicate hypothesis_id: {fields['hypothesis_id']}"
-                )
+                prior = existing[fields["hypothesis_id"]]
+                if prior.status != "running":
+                    raise ResearchInputError(
+                        f"Duplicate hypothesis_id: {fields['hypothesis_id']}"
+                    )
+                # A running reservation record is superseded by its
+                # outcome record; both lines stay in the append-only log.
             candidate = HypothesisRecord(**fields)
             fingerprint = self._research_fingerprint(candidate)
             duplicate_of = None
@@ -349,11 +378,15 @@ class HypothesisLedger:
                     f"duplicate experiment of {duplicate_of} "
                     f"(fingerprint {fingerprint}) — refusing to record"
                 )
+            # A caller-supplied duplicate_of (e.g. a novelty rejection
+            # linked to a specific prior hypothesis) is preserved when the
+            # fingerprint detector finds no match of its own.
+            final_duplicate_of = duplicate_of or candidate.duplicate_of
             candidate = HypothesisRecord(
                 **{
                     **candidate.to_dict(),
-                    "is_duplicate": duplicate_of is not None,
-                    "duplicate_of": duplicate_of,
+                    "is_duplicate": final_duplicate_of is not None,
+                    "duplicate_of": final_duplicate_of,
                 }
             )
             self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -419,6 +452,21 @@ class HypothesisLedger:
     def list_records(self) -> tuple[HypothesisRecord, ...]:
         with self._lock:
             return tuple(self._read_records())
+
+    def latest_records(self) -> tuple[HypothesisRecord, ...]:
+        """Return the latest record per hypothesis id.
+
+        A reserved-but-uncompleted hypothesis appears as its ``running``
+        marker; a completed hypothesis appears as its outcome record.
+        Counters and novelty checks must use this view so a trial is
+        counted exactly once; the raw :meth:`list_records` remains the
+        full append-only audit trail.
+        """
+        with self._lock:
+            latest: dict[str, HypothesisRecord] = {}
+            for record in self._read_records():
+                latest[record.hypothesis_id] = record
+            return tuple(latest.values())
 
     def latest(self) -> HypothesisRecord | None:
         records = self.list_records()

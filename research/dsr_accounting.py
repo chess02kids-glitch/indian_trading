@@ -72,11 +72,14 @@ def trial_count_from_history(
     """
     if not isinstance(ledger, HypothesisLedger):
         raise ResearchInputError("ledger must be a HypothesisLedger")
-    records = (
-        ledger.records_for_campaign(campaign_id)
-        if campaign_id is not None
-        else ledger.list_records()
-    )
+    # Use the latest-record-per-id view: a running reservation marker is
+    # superseded by its outcome record, so every trial counts exactly once.
+    latest = ledger.latest_records()
+    records = [
+        record
+        for record in latest
+        if campaign_id is None or record.campaign_id == campaign_id
+    ]
     breakdown: dict[str, int] = {}
     for record in records:
         status = record.status

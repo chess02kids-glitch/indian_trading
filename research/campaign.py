@@ -504,6 +504,28 @@ class CampaignStore:
                     f"reached for family {family!r}",
                 )
 
+    def can_reserve(
+        self,
+        campaign_id: str,
+        *,
+        family: str,
+        variant_signature: str | None = None,
+    ) -> tuple[bool, str | None]:
+        """Non-mutating budget probe: may this trial be reserved?
+
+        Returns ``(allowed, error_message)``; the error message carries
+        the ``RESEARCH_BUDGET_EXHAUSTED`` prefix when the budget is the
+        blocker. Callers use this to check the budget before allocating
+        resources (e.g. a hypothesis id) for a trial that could not run.
+        """
+        with self._lock:
+            campaign = self.require(campaign_id)
+            try:
+                self._guard_budget(campaign, family, variant_signature)
+            except BudgetExhaustedError as exc:
+                return False, str(exc)
+            return True, None
+
     def reserve_trial(
         self,
         campaign_id: str,
