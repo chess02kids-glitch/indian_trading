@@ -339,11 +339,21 @@ class ResearchGate:
         factor_versions: Mapping[str, str] | None = None,
         universe: str = "unknown",
         generated_at: datetime | None = None,
+        trials: int | None = None,
+        trials_source: str | None = None,
     ) -> GateDecision:
         """Evaluate one candidate strategy and return a self-explanatory verdict.
 
         Parameters mirror the experiment reproducibility record so the gate
         decision can always be traced back to a specific run.
+
+        ``trials`` is the multiple-testing correction count. When supplied
+        it must be the authoritative search-history count from the
+        campaign/ledger accounting (:mod:`research.dsr_accounting`),
+        determined *before* the holdout evaluation. When omitted the gate
+        falls back to ``config.tested_variants``, then to a documented
+        heuristic (``len(benchmarks) + len(placebos) + 1``) that counts
+        comparators as trials — retained only for legacy callers.
         """
         config = self.config
         returns = result.returns
@@ -353,9 +363,18 @@ class ResearchGate:
         if evidence_returns.empty:
             raise ResearchInputError("out-of-sample returns may not be empty")
 
-        trials = config.tested_variants or (
-            len(benchmarks) + len(placebo_results or {}) + 1
-        )
+        if trials is not None:
+            if not isinstance(trials, int) or isinstance(trials, bool) or trials < 1:
+                raise ResearchInputError("trials must be a positive integer")
+            resolved_trials = trials
+            resolved_trials_source = trials_source or "explicit"
+        elif config.tested_variants is not None:
+            resolved_trials = config.tested_variants
+            resolved_trials_source = "tested_variants_config"
+        else:
+            resolved_trials = len(benchmarks) + len(placebo_results or {}) + 1
+            resolved_trials_source = "heuristic"
+        trials = resolved_trials
         checks: list[GateCheck] = []
         metrics: dict[str, Any] = {}
 
@@ -394,6 +413,8 @@ class ResearchGate:
                     cost_model_name=cost_model_name,
                     rebalance_frequency=rebalance_frequency,
                     validation_method=validation_method,
+                    trials=trials,
+                    trials_source=resolved_trials_source,
                 ),
                 generated_at=generated_at or datetime.now(UTC),
             )
@@ -425,6 +446,7 @@ class ResearchGate:
                     "sharpe_ci_lower": sharpe_ci.lower,
                     "sharpe_ci_upper": sharpe_ci.upper,
                     "trials": trials,
+                    "trials_source": resolved_trials_source,
                     "observations": len(evidence_returns),
                 },
             )
@@ -436,6 +458,7 @@ class ResearchGate:
                 "sharpe_ci_lower": sharpe_ci.lower,
                 "sharpe_ci_upper": sharpe_ci.upper,
                 "trials_corrected": trials,
+                "trials_source": resolved_trials_source,
             }
         )
 
@@ -663,6 +686,8 @@ class ResearchGate:
                 cost_model_name=cost_model_name,
                 rebalance_frequency=rebalance_frequency,
                 validation_method=validation_method,
+                trials=trials,
+                trials_source=resolved_trials_source,
             ),
             generated_at=generated_at or datetime.now(UTC),
         )
@@ -677,6 +702,8 @@ class ResearchGate:
         cost_model_name: str,
         rebalance_frequency: str,
         validation_method: str,
+        trials: int | None = None,
+        trials_source: str | None = None,
     ) -> dict[str, Any]:
         return {
             "strategy": result.strategy_name,
@@ -690,6 +717,8 @@ class ResearchGate:
             "git_commit": self.git_commit,
             "dataset_fingerprint": self.dataset_fingerprint,
             "engine_metadata": dict(result.metadata),
+            "trials_corrected": trials,
+            "trials_source": trials_source,
         }
 
 
