@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 import re
 import threading
+from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Mapping
@@ -31,7 +32,10 @@ __all__ = [
 
 _ID_RE = re.compile(r"^HYP-(\d{5})$")
 
-#: Statuses a first-class research record may carry.
+#: Statuses a first-class research record may carry. Every outcome — wins,
+#: losses, failures, invalid proposals, data-starved experiments, duplicate
+#: rejections, and abandoned work — is a first-class ledger status. Nothing
+#: that was attempted is ever deleted; the ledger only grows.
 LEDGER_STATUSES = (
     "accepted",
     "rejected",
@@ -39,6 +43,10 @@ LEDGER_STATUSES = (
     "failed",
     "interrupted",
     "halted",
+    "insufficient_data",
+    "duplicate",
+    "invalid",
+    "abandoned",
 )
 
 
@@ -93,6 +101,13 @@ class HypothesisRecord:
         "gate_result",
         "is_duplicate",
         "duplicate_of",
+        # Research-campaign lineage (v0.8): optional on every record so
+        # pre-existing ledger files remain fully readable.
+        "campaign_id",
+        "parent_hypothesis_id",
+        "strategy_family",
+        "features",
+        "transformations",
     )
 
     def __init__(self, **fields: Any) -> None:
@@ -129,6 +144,11 @@ class HypothesisRecord:
             "gate_result": dict(fields.get("gate_result") or {}),
             "is_duplicate": bool(fields.get("is_duplicate", False)),
             "duplicate_of": fields.get("duplicate_of"),
+            "campaign_id": fields.get("campaign_id"),
+            "parent_hypothesis_id": fields.get("parent_hypothesis_id"),
+            "strategy_family": fields.get("strategy_family"),
+            "features": list(fields.get("features") or []),
+            "transformations": list(fields.get("transformations") or []),
         }
 
         # Enforce exact reproducibility fingerprints on accepted experiments
@@ -401,6 +421,11 @@ class HypothesisLedger:
         run_id: str | None = None,
         gate_result: Mapping[str, Any] | None = None,
         reject_duplicates: bool = False,
+        campaign_id: str | None = None,
+        parent_hypothesis_id: str | None = None,
+        strategy_family: str | None = None,
+        features: Sequence[str] | None = None,
+        transformations: Sequence[str] | None = None,
     ) -> HypothesisRecord:
         """Record an :class:`Experiment` outcome using its own hypothesis id.
 
@@ -408,6 +433,11 @@ class HypothesisLedger:
         ``reject_duplicates`` is True an identical research fingerprint
         (same strategy, parameters, dataset, code, cost model, period)
         raises :class:`DuplicateExperimentError` instead of being recorded.
+
+        The optional lineage fields (``campaign_id``,
+        ``parent_hypothesis_id``, ``strategy_family``, ``features``,
+        ``transformations``) link the outcome into the campaign and
+        hypothesis lineage graph.
         """
         return self.record(
             hypothesis_id=experiment.hypothesis_id,
@@ -431,4 +461,50 @@ class HypothesisLedger:
             run_id=run_id,
             gate_result=dict(gate_result or {}),
             reject_duplicates=reject_duplicates,
+            campaign_id=campaign_id,
+            parent_hypothesis_id=parent_hypothesis_id,
+            strategy_family=strategy_family,
+            features=list(features or []),
+            transformations=list(transformations or []),
         )
+
+    def records_for_campaign(self, campaign_id: str) -> tuple[HypothesisRecord, ...]:
+        """Return all records linked to one campaign, in ledger order."""
+        return tuple(
+            record
+            for record in self.list_records()
+            if record.campaign_id == campaign_id
+        )
+
+    def status_counts(self) -> dict[str, int]:
+        """Count records per status — the audit trail, winners and losers."""
+        counts: dict[str, int] = {status: 0 for status in LEDGER_STATUSES}
+        for record in self.list_records():
+            counts[record.status] = counts.get(record.status, 0) + 1
+        return counts
+
+    def strategy_counts(self) -> dict[str, int]:
+        """Count records per strategy name (families tested and how often)."""
+        counts: dict[str, int] = {}
+        for record in self.list_records():
+            key = str(record.strategy or "unknown")
+            counts[key] = counts.get(key, 0) + 1
+        return counts
+
+    def lineage(self, hypothesis_id: str) -> tuple[HypothesisRecord, ...]:
+        """Return the ancestor chain of one hypothesis, oldest first.
+
+        Follows ``parent_hypothesis_id`` links; the chain stops when a
+        record has no parent or a parent id is missing from the ledger
+        (which is reported, never silently repaired).
+        """
+        by_id = {record.hypothesis_id: record for record in self.list_records()}
+        chain: list[HypothesisRecord] = []
+        current = by_id.get(hypothesis_id)
+        while current is not None:
+            chain.append(current)
+            parent = current.parent_hypothesis_id
+            if not parent:
+                break
+            current = by_id.get(parent)
+        return tuple(reversed(chain))
