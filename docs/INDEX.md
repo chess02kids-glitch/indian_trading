@@ -30,6 +30,12 @@
 - `FactorStrategy` (`research/factors.py`)
 - `PortfolioConstructor` (`portfolio/construction.py`)
 - `OrdersRepository` (`models/repositories.py`)
+- `CampaignStore` / `ResearchBudget` (`research/campaign.py`)
+- `StrategyRegistry` (`research/registry.py`)
+- `AIResearchInterface` / `ResearchContextBuilder` (`research/ai_research.py`)
+- `HypothesisLedger` (`research/ledger.py`)
+- `NoveltyController` (`research/novelty.py`)
+- `ResearchGate` (`research/gate.py`)
 
 ## CLI Command Index
 - `quant-india auth upstox`
@@ -44,3 +50,9 @@
 - `003_audit_log.sql`: Triggers for immutable ledger history.
 
 - [Daily PAPER forward-testing loop](daily_forward_testing.md)
+- [Research campaigns](research_campaigns.md)
+- [Strategy registry & benchmark zoo](strategy_registry.md)
+- [Anti-overfitting controls](anti_overfitting.md)
+- [AI research boundary](ai_research_boundary.md)
+- [Synthetic controlled worlds](synthetic_worlds.md)
+- [DSR multiple-testing accounting audit](dsr_accounting.md)
