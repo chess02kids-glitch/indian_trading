@@ -145,8 +145,11 @@ class TestFileTokenStore:
         manager = TokenManager(store, clock=FakeClock())
         manager.record_token("upstox", "tk-1", expires_in_seconds=60)
         path = store._path("upstox")
-        mode = os.stat(path).st_mode & 0o777
-        assert mode == 0o600
+        if os.name == "nt":
+            assert path.exists()
+        else:
+            mode = os.stat(path).st_mode & 0o777
+            assert mode == 0o600
 
     def test_roundtrip(self, tmp_path) -> None:
         store = FileTokenStore(tmp_path / "tok")
