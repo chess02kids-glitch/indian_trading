@@ -115,11 +115,11 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 "text/html; charset=utf-8",
                 render_operational_dashboard(status),
             )
-        elif path == "/api/strategies":
+        elif path in ("/api/strategies", "/api/research/strategies"):
             from dashboard.research_api import list_strategies
 
             self._send_json(HTTPStatus.OK, list_strategies())
-        elif path == "/api/data-status":
+        elif path in ("/api/data-status", "/api/research/data-status"):
             from dashboard.research_api import get_data_status
 
             self._send_json(HTTPStatus.OK, get_data_status())
