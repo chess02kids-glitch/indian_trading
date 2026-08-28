@@ -132,6 +132,28 @@ class DebtQualityFactor(_FundamentalFactorBase):
         return (-panel).rank(axis=1, pct=True, method="first").where(panel.notna())
 
 
+@dataclass(frozen=True)
+class PeRatioQualityFactor(_FundamentalFactorBase):
+    """Cross-sectional rank of inverse P/E ratio (lower P/E ranks higher)."""
+
+    def __init__(self, label: str | None = None) -> None:
+        object.__setattr__(self, "metric", "pe_ratio")
+        object.__setattr__(self, "label", label)
+
+    @property
+    def metadata(self) -> FactorMetadata:
+        return FactorMetadata(
+            name=f"value_pe_{self.label}" if self.label else "value_pe",
+            family="value",
+            description="Cross-sectional percentile rank of inverse P/E ratio (value tilt).",
+            parameters={"metric": "pe_ratio"},
+        )
+
+    def compute(self, fundamentals: pd.DataFrame) -> pd.DataFrame:
+        panel = self._panel(fundamentals)
+        return (-panel).rank(axis=1, pct=True, method="first").where(panel.notna())
+
+
 class CompositeQualityFactor:
     """Weighted blend of fundamental quality factor panels.
 

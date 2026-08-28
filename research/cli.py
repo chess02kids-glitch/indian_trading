@@ -139,6 +139,26 @@ def build_parser() -> argparse.ArgumentParser:
         "--output-dir", type=Path, default=Path("reports/generated")
     )
 
+    candidate_set_cmd = research_commands.add_parser(
+        "candidate-set",
+        help="evaluate the 8 candidate strategies through the research protocol",
+    )
+    _common_price_argument(candidate_set_cmd)
+    candidate_set_cmd.add_argument(
+        "--output-dir", type=Path, default=Path("reports/generated")
+    )
+    candidate_set_cmd.add_argument(
+        "--tracking-dir",
+        type=Path,
+        default=Path("reports/generated/experiments"),
+    )
+    candidate_set_cmd.add_argument("--seed", type=int, default=42)
+    candidate_set_cmd.add_argument("--placebo-samples", type=int, default=50)
+    candidate_set_cmd.add_argument(
+        "--cpcv", action="store_true", help="also evaluate CPCV"
+    )
+    _add_validation_arguments(candidate_set_cmd)
+
     replay = domains.add_parser("replay", help="long-run replay tooling")
     replay_commands = replay.add_subparsers(dest="command")
     plan = replay_commands.add_parser("plan", help="show the deterministic schedule")
@@ -408,6 +428,40 @@ def cli_main(argv: Sequence[str] | None = None) -> int:
             data = data.select(universe.symbols)
         result = _run_validation(strategy, data, args)
         print(json.dumps(result.to_dict(), default=str, sort_keys=True))
+        return 0
+    if args.domain == "research" and args.command in {
+        "candidate-set",
+        "candidates",
+    }:
+        from .candidate_set import evaluate_candidate_set
+
+        data = _load_prices(args.prices)
+        universe = _resolve_cli_universe(args.universe)
+        if universe is not None:
+            data = data.select(universe.symbols)
+        report = evaluate_candidate_set(
+            data,
+            train_size=args.train_size,
+            test_size=args.test_size,
+            placebo_samples=args.placebo_samples,
+            seed=args.seed,
+            tracking_dir=args.tracking_dir,
+            run_cpcv=getattr(args, "cpcv", False),
+        )
+        md_path, json_path = report.write(args.output_dir)
+        print(
+            json.dumps(
+                {
+                    "total_candidates": len(report.evaluations),
+                    "passed": len(report.passed),
+                    "fragile": len(report.fragile),
+                    "rejected": len(report.rejected),
+                    "report_md": str(md_path),
+                    "report_json": str(json_path),
+                },
+                sort_keys=True,
+            )
+        )
         return 0
     if args.domain == "research" and args.command == "gate":
         return _cli_gate(args)

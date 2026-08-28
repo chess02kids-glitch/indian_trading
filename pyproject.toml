@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "quant-india"
 version = "0.5.0"
 description = "Production repository foundation for Indian Trading"
-requires-python = ">=3.12,<3.13"
+requires-python = ">=3.11,<3.13"
 # Dependency note (2026-08): `mlflow` is NOT a base dependency. Every
 # mlflow release (2.x-3.15.x) caps cryptography <50 or pyarrow <23, while
 # the safe ranges per PYSEC-2026-3552 (fixed 50.0.0) and PYSEC-2026-113

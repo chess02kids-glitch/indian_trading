@@ -1,21 +1,27 @@
 Metadata-Version: 2.4
 Name: quant-india
-Version: 0.1.0
+Version: 0.5.0
 Summary: Production repository foundation for Indian Trading
-Requires-Python: <3.13,>=3.12
+Requires-Python: <3.13,>=3.11
 Requires-Dist: yfinance>=0.2.0
 Requires-Dist: duckdb>=1.0.0
 Requires-Dist: pandas>=2.0.0
-Requires-Dist: pyarrow>=15.0.0
+Requires-Dist: pyarrow>=23.0.1
 Requires-Dist: pandera>=0.18.0
+Requires-Dist: pydantic<4.0,>=2.5
 Requires-Dist: supabase>=2.3.0
 Requires-Dist: psycopg2-binary>=2.9.9
-Requires-Dist: mlflow<4.0,>=2.15
 Requires-Dist: numpy<3.0,>=1.26
+Requires-Dist: plotly<6.0,>=5.0
 Requires-Dist: vectorbt<1.0,>=0.26
-Requires-Dist: cryptography>=41.0.0
+Requires-Dist: cryptography>=50.0.0
+Requires-Dist: setuptools>=83.0.0
+Requires-Dist: wheel>=0.48.0
 Provides-Extra: dev
-Requires-Dist: pytest; extra == "dev"
+Requires-Dist: pytest>=9.0.3; extra == "dev"
 Requires-Dist: pytest-mock; extra == "dev"
+Requires-Dist: hypothesis<7.0,>=6.0; extra == "dev"
 Requires-Dist: ruff; extra == "dev"
 Requires-Dist: pre-commit; extra == "dev"
+Provides-Extra: tracking
+Requires-Dist: mlflow<4.0,>=2.15; extra == "tracking"

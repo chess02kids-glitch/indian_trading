@@ -13,14 +13,11 @@ from __future__ import annotations
 
 import json
 import threading
-import time
-from http import HTTPStatus
 from http.client import HTTPConnection
-from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 
+from dashboard.cockpit_html import render_cockpit_page
 from dashboard.research_api import (
     STRATEGY_CATALOGUE,
     ExperimentResult,
@@ -29,11 +26,8 @@ from dashboard.research_api import (
     get_experiment,
     list_experiments,
     list_strategies,
-    load_prices,
     run_experiment,
 )
-from dashboard.cockpit_html import render_cockpit_page
-
 
 # ---------------------------------------------------------------------------
 # Strategy catalogue
@@ -388,8 +382,9 @@ class TestServerEndpoints:
     @pytest.fixture
     def server(self):
         """Start a test server on a random port."""
-        from dashboard.server import DashboardHandler, run_server
         from http.server import ThreadingHTTPServer
+
+        from dashboard.server import DashboardHandler
 
         server = ThreadingHTTPServer(("127.0.0.1", 0), DashboardHandler)
         port = server.server_address[1]
@@ -458,20 +453,27 @@ class TestServerEndpoints:
         conn.close()
 
     def test_post_research_run_synthetic(self, server):
-        payload = json.dumps({
-            "strategy": "momentum",
-            "parameters": {"lookback": 21},
-            "use_synthetic": True,
-            "train_size": 100,
-            "test_size": 50,
-            "placebo_samples": 10,
-            "seed": 42,
-        }).encode()
+        payload = json.dumps(
+            {
+                "strategy": "momentum",
+                "parameters": {"lookback": 21},
+                "use_synthetic": True,
+                "train_size": 100,
+                "test_size": 50,
+                "placebo_samples": 10,
+                "seed": 42,
+            }
+        ).encode()
         conn = HTTPConnection("127.0.0.1", server, timeout=120)
-        conn.request("POST", "/api/research/run", body=payload, headers={
-            "Content-Type": "application/json",
-            "Content-Length": str(len(payload)),
-        })
+        conn.request(
+            "POST",
+            "/api/research/run",
+            body=payload,
+            headers={
+                "Content-Type": "application/json",
+                "Content-Length": str(len(payload)),
+            },
+        )
         resp = conn.getresponse()
         assert resp.status == 200
         data = json.loads(resp.read())
@@ -484,20 +486,30 @@ class TestServerEndpoints:
     def test_post_research_run_missing_strategy(self, server):
         payload = json.dumps({"parameters": {}}).encode()
         conn = HTTPConnection("127.0.0.1", server)
-        conn.request("POST", "/api/research/run", body=payload, headers={
-            "Content-Type": "application/json",
-            "Content-Length": str(len(payload)),
-        })
+        conn.request(
+            "POST",
+            "/api/research/run",
+            body=payload,
+            headers={
+                "Content-Type": "application/json",
+                "Content-Length": str(len(payload)),
+            },
+        )
         resp = conn.getresponse()
         assert resp.status == 400
         conn.close()
 
     def test_post_research_run_invalid_json(self, server):
         conn = HTTPConnection("127.0.0.1", server)
-        conn.request("POST", "/api/research/run", body=b"not json", headers={
-            "Content-Type": "application/json",
-            "Content-Length": "8",
-        })
+        conn.request(
+            "POST",
+            "/api/research/run",
+            body=b"not json",
+            headers={
+                "Content-Type": "application/json",
+                "Content-Length": "8",
+            },
+        )
         resp = conn.getresponse()
         assert resp.status == 400
         conn.close()
