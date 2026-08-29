@@ -368,6 +368,124 @@ class RelativeStrengthRankFactor(Factor):
         return momentum.rank(axis=1, pct=True, method="first")
 
 
+@dataclass(frozen=True, slots=True)
+class DonchianFactor(Factor):
+    """Normalized position of close price within trailing Donchian channel bounds."""
+
+    window: int = 20
+
+    def __post_init__(self) -> None:
+        _validate_window(self.window)
+
+    @property
+    def metadata(self) -> FactorMetadata:
+        """Return Donchian channel metadata."""
+        return FactorMetadata(
+            name="donchian",
+            family="trend",
+            description="Normalized close position in trailing highest-high/lowest-low channel.",
+            parameters={"window": self.window},
+        )
+
+    def compute(self, data: MarketData) -> pd.DataFrame:
+        """Compute normalized Donchian channel position using trailing data only."""
+        high_source = data.high if data.high is not None else data.close
+        low_source = data.low if data.low is not None else data.close
+        upper = high_source.shift(1).rolling(self.window, min_periods=self.window).max()
+        lower = low_source.shift(1).rolling(self.window, min_periods=self.window).min()
+        spread = (upper - lower).replace(0, pd.NA)
+        return (data.close - lower) / spread
+
+
+@dataclass(frozen=True, slots=True)
+class RSIFactor(Factor):
+    """Relative Strength Index (RSI) using exponential Wilder smoothing."""
+
+    window: int = 14
+
+    def __post_init__(self) -> None:
+        _validate_window(self.window)
+
+    @property
+    def metadata(self) -> FactorMetadata:
+        """Return RSI metadata."""
+        return FactorMetadata(
+            name="rsi",
+            family="momentum",
+            description="Relative Strength Index over trailing window.",
+            parameters={"window": self.window},
+        )
+
+    def compute(self, data: MarketData) -> pd.DataFrame:
+        """Compute standard RSI bounded between 0 and 100."""
+        diff = data.close.diff()
+        gain = diff.where(diff > 0, 0.0)
+        loss = (-diff).where(diff < 0, 0.0)
+        avg_gain = gain.ewm(
+            alpha=1.0 / self.window, min_periods=self.window, adjust=False
+        ).mean()
+        avg_loss = loss.ewm(
+            alpha=1.0 / self.window, min_periods=self.window, adjust=False
+        ).mean()
+        rs = avg_gain / avg_loss.replace(0, pd.NA)
+        rsi = 100.0 - (100.0 / (1.0 + rs))
+        rsi = rsi.where(avg_loss != 0, 100.0).where(avg_gain != 0, 0.0)
+        return rsi.where(avg_gain.notna() & avg_loss.notna())
+
+
+@dataclass(frozen=True, slots=True)
+class LowVolatilityRankFactor(Factor):
+    """Cross-sectional rank of inverse trailing volatility (low vol ranks highest)."""
+
+    window: int = 63
+    annualization: int = 252
+
+    def __post_init__(self) -> None:
+        _validate_window(self.window)
+        if self.annualization < 1:
+            raise ResearchInputError("annualization must be positive")
+
+    @property
+    def metadata(self) -> FactorMetadata:
+        """Return low-volatility ranking metadata."""
+        return FactorMetadata(
+            name="low_volatility_rank",
+            family="volatility",
+            description="Cross-sectional percentile rank of inverse realized volatility.",
+            parameters={"window": self.window, "annualization": self.annualization},
+        )
+
+    def compute(self, data: MarketData) -> pd.DataFrame:
+        """Compute per-date low-volatility ranks."""
+        volatility = data.close.pct_change().rolling(
+            self.window, min_periods=self.window
+        ).std() * sqrt(self.annualization)
+        inv_vol = 1.0 / volatility.replace(0, pd.NA)
+        return inv_vol.rank(axis=1, pct=True, method="first")
+
+
+@dataclass(frozen=True, slots=True)
+class PriceGapFactor(Factor):
+    """Trailing overnight price gap return."""
+
+    def __property(self) -> None:
+        pass
+
+    @property
+    def metadata(self) -> FactorMetadata:
+        """Return price-gap factor metadata."""
+        return FactorMetadata(
+            name="price_gap",
+            family="mean_reversion",
+            description="Trailing one-day close-to-close or open-to-close gap return.",
+            parameters={},
+        )
+
+    def compute(self, data: MarketData) -> pd.DataFrame:
+        """Compute trailing 1-day gap return."""
+        return data.close.pct_change(1)
+
+
 def standard_factor_set() -> tuple[Factor, ...]:
     """Return the default factor set used by research examples."""
     return (
@@ -383,4 +501,15 @@ def standard_factor_set() -> tuple[Factor, ...]:
         RollingVolatilityFactor(),
         ATRFactor(),
         RelativeStrengthRankFactor(),
+    )
+
+
+def extended_factor_set() -> tuple[Factor, ...]:
+    """Return the extended factor set including Donchian, RSI, Low-Vol, and Gap factors."""
+    return (
+        *standard_factor_set(),
+        DonchianFactor(),
+        RSIFactor(),
+        LowVolatilityRankFactor(),
+        PriceGapFactor(),
     )

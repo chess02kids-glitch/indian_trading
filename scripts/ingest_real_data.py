@@ -641,8 +641,8 @@ def fetch_fundamentals(
                     balance.loc["Stockholders Equity"]
                     if "Stockholders Equity" in balance.index
                     else None
-    )
-)
+                )
+            )
             total_debt = (
                 balance.loc["Total Debt"] if "Total Debt" in balance.index else None
             )

@@ -33,6 +33,19 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     # Research command
     subparsers.add_parser("research", help="Run the research platform CLI")
 
+    # Dashboard command
+    dash_parser = subparsers.add_parser(
+        "dashboard", help="Start the Research Cockpit web dashboard"
+    )
+    dash_parser.add_argument(
+        "--port",
+        type=int,
+        default=int(sys.argv[sys.argv.index("--port") + 1])
+        if "--port" in sys.argv
+        else 8080,
+        help="Port to listen on (default: 8080)",
+    )
+
     # Broker sandbox command
     subparsers.add_parser("broker", help="Broker sandbox operations (LIVE disabled)")
 
@@ -83,6 +96,11 @@ def main(argv: list[str] | None = None):
 
         sys.argv.remove("research")
         sys.exit(cli_main())
+
+    elif args.command == "dashboard":
+        from dashboard.server import run_server
+
+        run_server(port=args.port)
 
     else:
         print("Quant India system initialized. Safe no-op entry point.")

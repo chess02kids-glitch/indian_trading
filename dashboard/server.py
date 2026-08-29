@@ -51,7 +51,7 @@ def render_operational_dashboard(status: dict[str, Any]) -> bytes:
         "<body><h1>Quant India — RC-1 Operations</h1>"
         '<p class="warning">Read-only status; unknown values require operator '
         "investigation.</p>"
-        f'<table>{rows}</table><p>Snapshot: {source}; generated: {generated_at}</p>'
+        f"<table>{rows}</table><p>Snapshot: {source}; generated: {generated_at}</p>"
         '<p><a href="/">← Research Cockpit</a></p>'
         "</body></html>"
     )
@@ -107,9 +107,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
         elif path == "/api/status":
             self._send_json(HTTPStatus.OK, collect_status())
         elif path == "/" or path == "/cockpit":
-            self._send(
-                HTTPStatus.OK, "text/html; charset=utf-8", _get_cockpit_page()
-            )
+            self._send(HTTPStatus.OK, "text/html; charset=utf-8", _get_cockpit_page())
         elif path == "/operations":
             status = collect_status()
             self._send(
@@ -117,11 +115,11 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 "text/html; charset=utf-8",
                 render_operational_dashboard(status),
             )
-        elif path == "/api/strategies":
+        elif path in ("/api/strategies", "/api/research/strategies"):
             from dashboard.research_api import list_strategies
 
             self._send_json(HTTPStatus.OK, list_strategies())
-        elif path == "/api/data-status":
+        elif path in ("/api/data-status", "/api/research/data-status"):
             from dashboard.research_api import get_data_status
 
             self._send_json(HTTPStatus.OK, get_data_status())
@@ -130,7 +128,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
 
             self._send_json(HTTPStatus.OK, list_experiments())
         elif path.startswith("/api/research/experiment/"):
-            run_id = unquote(path[len("/api/research/experiment/"):])
+            run_id = unquote(path[len("/api/research/experiment/") :])
             from dashboard.research_api import get_experiment
 
             exp = get_experiment(run_id)
@@ -161,16 +159,12 @@ class DashboardHandler(BaseHTTPRequestHandler):
             body = self.rfile.read(content_length)
             config = json.loads(body)
         except (ValueError, json.JSONDecodeError) as exc:
-            self._send_json(
-                HTTPStatus.BAD_REQUEST, {"error": f"invalid JSON: {exc}"}
-            )
+            self._send_json(HTTPStatus.BAD_REQUEST, {"error": f"invalid JSON: {exc}"})
             return
 
         strategy = config.get("strategy")
         if not strategy:
-            self._send_json(
-                HTTPStatus.BAD_REQUEST, {"error": "strategy is required"}
-            )
+            self._send_json(HTTPStatus.BAD_REQUEST, {"error": "strategy is required"})
             return
 
         try:

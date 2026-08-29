@@ -25,11 +25,11 @@ from backtest import (
 )
 from backtest.validation import validation_consistency
 from portfolio import EqualWeightConstructor
-from research.contracts import CostModel, Experiment, MarketData, ResearchInputError
+from research.contracts import Experiment, MarketData, ResearchInputError
 from research.experiments import ExperimentManager
-from research.gate import GateDecision, ResearchGate, generate_placebo_results
+from research.gate import ResearchGate, generate_placebo_results
 from research.runner import run_strategy
-from research.strategies import Strategy, strategy_from_name
+from research.strategies import strategy_from_name
 
 logger = logging.getLogger(__name__)
 
@@ -38,8 +38,231 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 STRATEGY_CATALOGUE: dict[str, dict[str, Any]] = {
+    "cross_sectional_momentum": {
+        "label": "S01: Cross-Sectional Momentum",
+        "candidate_id": "S01",
+        "description": "Ranks universe by trailing momentum (3M/6M/12M); longs top quantile, avoids bottom losers.",
+        "parameters": {
+            "lookback": {
+                "type": "int",
+                "default": 63,
+                "min": 5,
+                "max": 500,
+                "label": "Lookback (days)",
+                "help": "Trailing window for momentum calculation (e.g. 63 for 3M, 126 for 6M)",
+            },
+            "quantile": {
+                "type": "float",
+                "default": 0.20,
+                "min": 0.05,
+                "max": 0.50,
+                "step": 0.05,
+                "label": "Top quantile",
+                "help": "Fraction of universe to hold long (e.g. 0.20 for top quintile)",
+            },
+            "multi_horizon": {
+                "type": "bool",
+                "default": False,
+                "label": "Multi-horizon momentum (blend 1M/3M/6M/12M)",
+                "help": "Averages momentum rank across multiple time horizons",
+            },
+        },
+    },
+    "donchian_trend": {
+        "label": "S02: Donchian / Trend Following",
+        "candidate_id": "S02",
+        "description": "Mechanical 20/10 day channel breakout with zero lookahead state persistence.",
+        "parameters": {
+            "entry_window": {
+                "type": "int",
+                "default": 20,
+                "min": 5,
+                "max": 200,
+                "label": "Entry window (days)",
+                "help": "Breakout lookback (Turtle 20 or 55 days)",
+            },
+            "exit_window": {
+                "type": "int",
+                "default": 10,
+                "min": 2,
+                "max": 100,
+                "label": "Exit window (days)",
+                "help": "Trailing stop lookback",
+            },
+            "volatility_weighted": {
+                "type": "bool",
+                "default": False,
+                "label": "Volatility weighting (ATR-scaled)",
+                "help": "Scale position inversely by realized volatility",
+            },
+        },
+    },
+    "pairs_trading": {
+        "label": "S03: Pairs Trading / Stat-Arb",
+        "candidate_id": "S03",
+        "description": "Spread z-score statistical arbitrage; enters on 2.0 std divergence, exits at mean reversion.",
+        "parameters": {
+            "window": {
+                "type": "int",
+                "default": 60,
+                "min": 10,
+                "max": 252,
+                "label": "Lookback window",
+                "help": "Rolling window for spread mean and standard deviation",
+            },
+            "entry_zscore": {
+                "type": "float",
+                "default": 2.0,
+                "min": 0.5,
+                "max": 4.0,
+                "step": 0.1,
+                "label": "Entry z-score",
+                "help": "Standard deviation threshold to trigger mean-reversion trade",
+            },
+            "exit_zscore": {
+                "type": "float",
+                "default": 0.5,
+                "min": 0.0,
+                "max": 2.0,
+                "step": 0.1,
+                "label": "Exit z-score",
+                "help": "Target z-score for mean reversion profit taking",
+            },
+        },
+    },
+    "rsi_mean_reversion": {
+        "label": "S04: RSI Mean Reversion",
+        "candidate_id": "S04",
+        "description": "Buys oversold RSI (<30) and exits on overbought (>70) with optional regime trend filter.",
+        "parameters": {
+            "rsi_window": {
+                "type": "int",
+                "default": 14,
+                "min": 2,
+                "max": 50,
+                "label": "RSI period",
+                "help": "Lookback period for Wilder's RSI (14 standard, 2 for short-term)",
+            },
+            "oversold": {
+                "type": "float",
+                "default": 30.0,
+                "min": 5.0,
+                "max": 45.0,
+                "step": 1.0,
+                "label": "Oversold threshold (buy)",
+                "help": "RSI level below which to buy",
+            },
+            "overbought": {
+                "type": "float",
+                "default": 70.0,
+                "min": 50.0,
+                "max": 95.0,
+                "step": 1.0,
+                "label": "Overbought threshold (exit)",
+                "help": "RSI level above which to exit",
+            },
+        },
+    },
+    "orb": {
+        "label": "S05: Opening Range Breakout (ORB)",
+        "candidate_id": "S05",
+        "description": "Intraday breakout beyond opening range hurdle with realistic slippage and transaction costs.",
+        "parameters": {
+            "range_factor": {
+                "type": "float",
+                "default": 0.5,
+                "min": 0.1,
+                "max": 2.0,
+                "step": 0.1,
+                "label": "Range multiplier",
+                "help": "ATR multiple for opening breakout barrier",
+            },
+            "atr_window": {
+                "type": "int",
+                "default": 14,
+                "min": 3,
+                "max": 50,
+                "label": "ATR lookback",
+                "help": "Period for Average True Range estimation",
+            },
+        },
+    },
+    "gap_fade": {
+        "label": "S06: Gap Fade",
+        "candidate_id": "S06",
+        "description": "Identifies moderate overnight gap-downs (-0.5% to -3.5%) and bets on intraday mean-reversion bounce.",
+        "parameters": {
+            "min_gap_pct": {
+                "type": "float",
+                "default": -0.005,
+                "min": -0.05,
+                "max": -0.001,
+                "step": 0.001,
+                "label": "Min gap threshold",
+                "help": "Minimum overnight drop required to trigger gap-fade",
+            },
+            "max_gap_pct": {
+                "type": "float",
+                "default": -0.035,
+                "min": -0.10,
+                "max": -0.01,
+                "step": 0.005,
+                "label": "Max gap threshold (safety cutoff)",
+                "help": "Maximum gap-down before skipping (avoids catastrophic crashes)",
+            },
+        },
+    },
+    "low_volatility": {
+        "label": "S07: Low-Volatility Factor",
+        "candidate_id": "S07",
+        "description": "Ranks equities by inverse realized volatility; selects the top quantile of lowest-volatility names.",
+        "parameters": {
+            "vol_window": {
+                "type": "int",
+                "default": 63,
+                "min": 10,
+                "max": 252,
+                "label": "Volatility lookback (days)",
+                "help": "Rolling window for realized volatility calculation",
+            },
+            "quantile": {
+                "type": "float",
+                "default": 0.25,
+                "min": 0.05,
+                "max": 0.50,
+                "step": 0.05,
+                "label": "Low-vol quantile",
+                "help": "Fraction of lowest-volatility universe to hold",
+            },
+        },
+    },
+    "value_quality": {
+        "label": "S08: Value & Quality Factor",
+        "candidate_id": "S08",
+        "description": "Composite screen selecting high return-on-equity, low debt/equity leverage, and value tilt.",
+        "parameters": {
+            "quality_quantile": {
+                "type": "float",
+                "default": 0.5,
+                "min": 0.1,
+                "max": 0.9,
+                "step": 0.1,
+                "label": "Quality quantile filter",
+                "help": "Top fraction of ROE & low-debt scores to retain",
+            },
+            "value_quantile": {
+                "type": "float",
+                "default": 0.5,
+                "min": 0.1,
+                "max": 0.9,
+                "step": 0.1,
+                "label": "Value quantile filter",
+                "help": "Top fraction of value / price-to-trend scores to retain",
+            },
+        },
+    },
     "momentum": {
-        "label": "Momentum",
+        "label": "Momentum (Classic)",
         "description": "Long-only trailing momentum. Buys assets with positive trailing returns.",
         "parameters": {
             "lookback": {
@@ -376,9 +599,8 @@ def run_experiment(
             )
         else:
             warned_checks = [c for c in decision.checks if c.status == "warn"]
-            rejection_reason = (
-                f"Verdict: {decision.verdict}; "
-                + "; ".join(f"{c.name}: {c.message}" for c in warned_checks)
+            rejection_reason = f"Verdict: {decision.verdict}; " + "; ".join(
+                f"{c.name}: {c.message}" for c in warned_checks
             )
 
     # 12. Equity curve data for charts
@@ -391,8 +613,7 @@ def run_experiment(
     ]
     dd_series = compute_drawdown(equity_series)
     drawdown_data = [
-        {"date": idx.isoformat(), "value": float(val)}
-        for idx, val in dd_series.items()
+        {"date": idx.isoformat(), "value": float(val)} for idx, val in dd_series.items()
     ]
 
     # 13. Metrics
