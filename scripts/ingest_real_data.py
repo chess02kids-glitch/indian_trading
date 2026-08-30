@@ -603,6 +603,7 @@ def fetch_fundamentals(
         # leave both series untouched, so they do not register here).
         if symbol in eod2_closes and not history_raw.empty:
             yahoo_close = history_raw["Close"].astype(float)
+            yahoo_close.index = yahoo_close.index.tz_localize(None)
             joined = pd.concat(
                 [eod2_closes[symbol], yahoo_close], axis=1, keys=("eod2", "yfinance")
             ).dropna()
