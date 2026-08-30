@@ -46,10 +46,10 @@ YEARLY_FILE = ROOT / "research_live" / "deliverables" / "yearly.csv"
 
 # MomReM production parameters (from research_live/STRATEGY_REPORT.md)
 MOMREM = {
-    "lookback": 20,      # 20-day trailing return = momentum score
-    "top_n": 20,         # top-20 names, equal weight
-    "rebalance": 20,     # every 20 trading days
-    "regime_ma": 100,    # equal-weight market proxy vs its 100-day SMA
+    "lookback": 20,  # 20-day trailing return = momentum score
+    "top_n": 20,  # top-20 names, equal weight
+    "rebalance": 20,  # every 20 trading days
+    "regime_ma": 100,  # equal-weight market proxy vs its 100-day SMA
     "cost_oneway": 0.0015,
 }
 
@@ -80,7 +80,9 @@ def load_panel() -> pd.DataFrame:
         files = sorted(glob.glob(str(DATA_DIR / "*.parquet")))
         frames = []
         for f in files:
-            df = pd.read_parquet(f, columns=["date", "symbol", "open", "high", "low", "close", "volume"])
+            df = pd.read_parquet(
+                f, columns=["date", "symbol", "open", "high", "low", "close", "volume"]
+            )
             df = df.dropna(subset=["date", "close"])
             frames.append(df)
         if not frames:
@@ -215,7 +217,9 @@ def compute_momrem_signal(capital: float = 100_000.0) -> dict[str, Any]:
         above = (close.iloc[-1] > sma20.iloc[-1]).dropna()
         r5 = close.pct_change(5, fill_method=None).iloc[-1].dropna()
         breadth = {
-            "above_20d_sma_pct": round(float(above.mean()) * 100.0, 1) if len(above) else None,
+            "above_20d_sma_pct": round(float(above.mean()) * 100.0, 1)
+            if len(above)
+            else None,
             "advancers_5d": int((r5 > 0).sum()) if len(r5) else 0,
             "decliners_5d": int((r5 < 0).sum()) if len(r5) else 0,
             "universe_size": int(close.shape[1]),
@@ -279,16 +283,34 @@ MOMREM_CARD = {
     "label": "MomReM — Indian Equity Momentum + Market-Regime Tilt",
     "verdict": "VALIDATED",
     "status_color": "#2ea043",
-    "full": {"cagr": 0.157, "sharpe": 0.697, "sortino": 0.652, "calmar": 0.488, "mdd": -0.322, "pf": 1.266},
+    "full": {
+        "cagr": 0.157,
+        "sharpe": 0.697,
+        "sortino": 0.652,
+        "calmar": 0.488,
+        "mdd": -0.322,
+        "pf": 1.266,
+    },
     "is": {"cagr": 0.128, "sharpe": 0.483, "mdd": -0.263},
-    "oos": {"cagr": 0.193, "sharpe": 0.966, "sortino": 0.907, "calmar": 1.188, "mdd": -0.163, "pf": 1.324},
+    "oos": {
+        "cagr": 0.193,
+        "sharpe": 0.966,
+        "sortino": 0.907,
+        "calmar": 1.188,
+        "mdd": -0.163,
+        "pf": 1.324,
+    },
     "validation": {
         "deflated_sharpe": 0.999,
         "alpha": 0.03,
         "beta": 0.51,
         "ir": 0.27,
         "cost_sensitivity": {"1x": 0.97, "2x": 0.85, "3x": 0.73},
-        "trade_stats": {"n": 198, "win_rate_pct": 47.98, "expectancy_pct_per_month": 1.321},
+        "trade_stats": {
+            "n": 198,
+            "win_rate_pct": 47.98,
+            "expectancy_pct_per_month": 1.321,
+        },
     },
 }
 
@@ -577,10 +599,10 @@ def render_strategy_page(capital: float = 100_000.0) -> bytes:
         )
         stale = (
             '<div class="ok">Data is fresh (last bar '
-            f'{signal["as_of"]}, {signal["stale_days"]}d old).</div>'
+            f"{signal['as_of']}, {signal['stale_days']}d old).</div>"
             if signal["fresh"]
             else '<div class="warn"><b>Data is stale:</b> last bar is '
-            f'{signal["as_of"]} ({signal["stale_days"]} days ago). The signal below is '
+            f"{signal['as_of']} ({signal['stale_days']} days ago). The signal below is "
             f'"as of" that date — refresh data with <code>python fetch_data.py</code> '
             "before acting on it.</div>"
         )
@@ -611,9 +633,9 @@ def render_strategy_page(capital: float = 100_000.0) -> bytes:
             <th class='num'>Weight</th><th class='num'>Last close ₹</th>
             <th class='num'>Qty</th><th class='num'>≈ Invested ₹</th></tr></thead>
             <tbody>{rows_html}</tbody></table>
-            <p class='muted' style='margin-top:10px'>Notional ≈ ₹{signal['basket_notional']:,.0f}
-            · cash ≈ ₹{signal['cash']:,.0f} · rebalanced every 20 trading days
-            (next: <b>{signal['next_rebalance']}</b>) · quantities rounded down to whole shares.{unaffordable_note}</p>
+            <p class='muted' style='margin-top:10px'>Notional ≈ ₹{signal["basket_notional"]:,.0f}
+            · cash ≈ ₹{signal["cash"]:,.0f} · rebalanced every 20 trading days
+            (next: <b>{signal["next_rebalance"]}</b>) · quantities rounded down to whole shares.{unaffordable_note}</p>
             """
         else:
             basket_html = (
@@ -623,35 +645,35 @@ def render_strategy_page(capital: float = 100_000.0) -> bytes:
 
         hist_html = "".join(
             f"<tr><td>{h['date']}</td>"
-            f"<td>{'<span class=badge green>IN MARKET</span>' if h['regime']=='IN_MARKET' else '<span class=badge amber>IN CASH</span>'}</td>"
+            f"<td>{'<span class=badge green>IN MARKET</span>' if h['regime'] == 'IN_MARKET' else '<span class=badge amber>IN CASH</span>'}</td>"
             f"<td>{', '.join(html.escape(s) for s in h['top3'])}</td></tr>"
             for h in signal["signal_history"][-8:]
         )
 
         live = f"""
-        <h2>Live signal — as of {signal['as_of']}</h2>
+        <h2>Live signal — as of {signal["as_of"]}</h2>
         {stale}
         <div class="grid2">
           <div class="card">
             <div class="muted">MARKET REGIME (equal-weight proxy vs 100d SMA)</div>
             <div style="margin:10px 0">{reg_pill}</div>
             <table>
-              <tr><td>Market proxy</td><td class='num'>{regime['proxy']:.4f}</td></tr>
-              <tr><td>100-day SMA</td><td class='num'>{regime['sma100']:.4f}</td></tr>
-              <tr><td>Proxy vs SMA</td><td class='num'>{regime['proxy_vs_sma_pct']:+.2f}%</td></tr>
+              <tr><td>Market proxy</td><td class='num'>{regime["proxy"]:.4f}</td></tr>
+              <tr><td>100-day SMA</td><td class='num'>{regime["sma100"]:.4f}</td></tr>
+              <tr><td>Proxy vs SMA</td><td class='num'>{regime["proxy_vs_sma_pct"]:+.2f}%</td></tr>
               <tr><td>Strategy position</td><td class='num'>{pos_pill}</td></tr>
-              <tr><td>Since last rebalance</td><td class='num'>{signal['return_since_rebalance_pct']:+.2f}% (est.)</td></tr>
+              <tr><td>Since last rebalance</td><td class='num'>{signal["return_since_rebalance_pct"]:+.2f}% (est.)</td></tr>
             </table>
-            <p class="muted" style="margin-top:8px">{pos['note']}</p>
+            <p class="muted" style="margin-top:8px">{pos["note"]}</p>
           </div>
           <div class="card">
             <div class="muted">MARKET BREADTH (whole universe)</div>
             <table>
-              <tr><td>Above 20-day SMA</td><td class='num'>{signal['breadth']['above_20d_sma_pct']}%</td></tr>
-              <tr><td>Advancers / decliners (5d)</td><td class='num'>{signal['breadth']['advancers_5d']} / {signal['breadth']['decliners_5d']}</td></tr>
-              <tr><td>Universe size</td><td class='num'>{signal['breadth']['universe_size']}</td></tr>
-              <tr><td>Last rebalance</td><td class='num'>{signal['last_rebalance']}</td></tr>
-              <tr><td>Next rebalance</td><td class='num'>{signal['next_rebalance']}</td></tr>
+              <tr><td>Above 20-day SMA</td><td class='num'>{signal["breadth"]["above_20d_sma_pct"]}%</td></tr>
+              <tr><td>Advancers / decliners (5d)</td><td class='num'>{signal["breadth"]["advancers_5d"]} / {signal["breadth"]["decliners_5d"]}</td></tr>
+              <tr><td>Universe size</td><td class='num'>{signal["breadth"]["universe_size"]}</td></tr>
+              <tr><td>Last rebalance</td><td class='num'>{signal["last_rebalance"]}</td></tr>
+              <tr><td>Next rebalance</td><td class='num'>{signal["next_rebalance"]}</td></tr>
             </table>
             <p class="muted" style="margin-top:8px">Breadth confirms/contradicts the regime
             filter — a falling % above the 20-day SMA while the proxy is above its 100-day
@@ -659,7 +681,7 @@ def render_strategy_page(capital: float = 100_000.0) -> bytes:
           </div>
         </div>
         <div class="card">
-          <div class="muted">TODAY'S BASKET — top-20 names by 20-day momentum, equal weight, ₹{signal['capital']:,.0f} capital</div>
+          <div class="muted">TODAY'S BASKET — top-20 names by 20-day momentum, equal weight, ₹{signal["capital"]:,.0f} capital</div>
           <div style="margin-top:10px">{basket_html}</div>
         </div>
         <div class="card">
@@ -683,11 +705,11 @@ def render_strategy_page(capital: float = 100_000.0) -> bytes:
     lb_rows = "".join(
         f"<tr><td>{html.escape(r['label'])}</td>"
         f"<td class='num'>{r['oos_sharpe']:.2f}</td>"
-        f"<td class='num'>{r['oos_cagr']*100:.1f}%</td>"
-        f"<td class='num'>{r['oos_mdd']*100:.1f}%</td>"
+        f"<td class='num'>{r['oos_cagr'] * 100:.1f}%</td>"
+        f"<td class='num'>{r['oos_mdd'] * 100:.1f}%</td>"
         f"<td class='num'>{r['alpha']:+.3f}</td>"
         f"<td class='num'>{r['ir']:+.2f}</td>"
-        f"<td>{'<span class=badge green>VALIDATED</span>' if r['verdict']=='VALIDATED' else ('<span class=badge amber>'+html.escape(r['verdict'])+'</span>' if r['verdict']=='BENCHMARK-LIKE' else '<span class=badge red>REJECTED</span>')}</td>"
+        f"<td>{'<span class=badge green>VALIDATED</span>' if r['verdict'] == 'VALIDATED' else ('<span class=badge amber>' + html.escape(r['verdict']) + '</span>' if r['verdict'] == 'BENCHMARK-LIKE' else '<span class=badge red>REJECTED</span>')}</td>"
         f"<td class='muted'>{html.escape(r['note'])}</td></tr>"
         for r in rows
     )
@@ -736,7 +758,11 @@ python scripts/daily_signal.py --capital 100000 --telegram</pre>
     </div>
     """
 
-    return _page("Strategy Dashboard — Quant India", hero + live + charts + leaderboard + next_steps, "strategy")
+    return _page(
+        "Strategy Dashboard — Quant India",
+        hero + live + charts + leaderboard + next_steps,
+        "strategy",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -763,7 +789,9 @@ def main() -> None:
 
     parser = argparse.ArgumentParser(description="Strategy dashboard smoke test")
     parser.add_argument("--capital", type=float, default=100_000.0)
-    parser.add_argument("--html", action="store_true", help="write dashboard.html and exit")
+    parser.add_argument(
+        "--html", action="store_true", help="write dashboard.html and exit"
+    )
     args = parser.parse_args()
 
     if args.html:
@@ -774,10 +802,14 @@ def main() -> None:
         return
 
     sig = compute_momrem_signal(args.capital)
-    print(f"as_of={sig['as_of']} regime={sig['regime']['state']} "
-          f"position={sig['position']['state']} stale={sig['stale_days']}d")
-    print(f"basket={len(sig['basket'])} names notional=₹{sig['basket_notional']:,.0f} "
-          f"cash=₹{sig['cash']:,.0f} next_rebalance={sig['next_rebalance']}")
+    print(
+        f"as_of={sig['as_of']} regime={sig['regime']['state']} "
+        f"position={sig['position']['state']} stale={sig['stale_days']}d"
+    )
+    print(
+        f"basket={len(sig['basket'])} names notional=₹{sig['basket_notional']:,.0f} "
+        f"cash=₹{sig['cash']:,.0f} next_rebalance={sig['next_rebalance']}"
+    )
 
 
 if __name__ == "__main__":

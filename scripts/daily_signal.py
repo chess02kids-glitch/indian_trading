@@ -46,9 +46,15 @@ def _fmt_basket(sig: dict) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Daily MomReM signal")
-    parser.add_argument("--capital", type=float, default=100_000.0, help="deployable capital in ₹")
-    parser.add_argument("--save", action="store_true", help="save var/signal/latest.json")
-    parser.add_argument("--telegram", action="store_true", help="send Telegram alert if configured")
+    parser.add_argument(
+        "--capital", type=float, default=100_000.0, help="deployable capital in ₹"
+    )
+    parser.add_argument(
+        "--save", action="store_true", help="save var/signal/latest.json"
+    )
+    parser.add_argument(
+        "--telegram", action="store_true", help="send Telegram alert if configured"
+    )
     args = parser.parse_args()
 
     sig = compute_momrem_signal(args.capital)
@@ -56,22 +62,34 @@ def main() -> int:
     pos = sig["position"]
 
     print("=" * 62)
-    print("MomReM — Momentum + Market-Regime Filter  (VALIDATED, deflated Sharpe 0.999)")
+    print(
+        "MomReM — Momentum + Market-Regime Filter  (VALIDATED, deflated Sharpe 0.999)"
+    )
     print("=" * 62)
     stale_note = (
-        f"STALE {sig['stale_days']}d — run fetch_data.py" if not sig["fresh"] else "FRESH"
+        f"STALE {sig['stale_days']}d — run fetch_data.py"
+        if not sig["fresh"]
+        else "FRESH"
     )
     print(f"As of            : {sig['as_of']}  ({stale_note})")
-    print(f"Market regime    : {regime['state']}  (proxy {regime['proxy']:.4f} vs 100d SMA {regime['sma100']:.4f}, {regime['proxy_vs_sma_pct']:+.2f}%)")
+    print(
+        f"Market regime    : {regime['state']}  (proxy {regime['proxy']:.4f} vs 100d SMA {regime['sma100']:.4f}, {regime['proxy_vs_sma_pct']:+.2f}%)"
+    )
     print(f"Strategy position: {pos['state']}  ({pos['note']})")
     print(f"Last rebalance   : {sig['last_rebalance']}   Next: {sig['next_rebalance']}")
-    print(f"Since rebalance  : {sig['return_since_rebalance_pct']:+.2f}% (est., net of entry cost)")
+    print(
+        f"Since rebalance  : {sig['return_since_rebalance_pct']:+.2f}% (est., net of entry cost)"
+    )
     br = sig["breadth"]
-    print(f"Breadth          : {br['above_20d_sma_pct']}% above 20d SMA · adv/dec 5d {br['advancers_5d']}/{br['decliners_5d']} of {br['universe_size']}")
+    print(
+        f"Breadth          : {br['above_20d_sma_pct']}% above 20d SMA · adv/dec 5d {br['advancers_5d']}/{br['decliners_5d']} of {br['universe_size']}"
+    )
     print("-" * 62)
 
     if sig["basket"]:
-        print(f"BASKET (top-{len(sig['basket'])} by 20d momentum, equal weight, capital ₹{args.capital:,.0f})")
+        print(
+            f"BASKET (top-{len(sig['basket'])} by 20d momentum, equal weight, capital ₹{args.capital:,.0f})"
+        )
         print(_fmt_basket(sig))
         unaffordable = [b["symbol"] for b in sig["basket"] if b["qty"] == 0]
         if unaffordable:
@@ -82,10 +100,14 @@ def main() -> int:
             )
         print(f"\nNotional ₹{sig['basket_notional']:,.0f} · cash ₹{sig['cash']:,.0f}")
     else:
-        print("NO BASKET — regime filter is OFF (cash). Wait for the proxy to close above its 100-day SMA.")
+        print(
+            "NO BASKET — regime filter is OFF (cash). Wait for the proxy to close above its 100-day SMA."
+        )
 
     if not sig["fresh"]:
-        print("\nWARNING: data is stale. Run `python fetch_data.py` before acting on this signal.")
+        print(
+            "\nWARNING: data is stale. Run `python fetch_data.py` before acting on this signal."
+        )
 
     if args.save:
         out = ROOT / "var" / "signal" / "latest.json"
