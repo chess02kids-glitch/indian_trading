@@ -1,0 +1,13 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "fec851729b16e3f6e719fd2bb33c6536aefd4047997329fa9fbb6fde568ade10",
+  "is_clean": false,
+  "quality_issues": [
+    "long_gap",
+    "off_calendar"
+  ],
+  "rows": 7770,
+  "source": "eod2_data",
+  "symbol": "TITAN",
+  "validated_at": "2026-08-25T23:23:22.428424+00:00"
+}

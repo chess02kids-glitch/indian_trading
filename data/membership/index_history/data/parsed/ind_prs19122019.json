@@ -1,0 +1,47 @@
+{
+  "source_pdf": "ind_prs19122019.pdf",
+  "source_url": "https://niftyindices.com/Press_Release/ind_prs19122019.pdf",
+  "publication_date": null,
+  "effective_date": "2019-12-27",
+  "is_index_maintenance": true,
+  "events": [
+    {
+      "index_name": "Nifty 500",
+      "index_id": 221,
+      "excluded": [
+        "DEN",
+        "HATHWAY"
+      ],
+      "included": [
+        "KENNAMET",
+        "TASTYBITE"
+      ]
+    },
+    {
+      "index_name": "Nifty Smallcap 250",
+      "index_id": 227,
+      "excluded": [
+        "DEN",
+        "HATHWAY"
+      ],
+      "included": [
+        "KENNAMET",
+        "TASTYBITE"
+      ]
+    },
+    {
+      "index_name": "Nifty Media",
+      "index_id": 1013,
+      "excluded": [
+        "HATHWAY",
+        "RADIOCITY"
+      ],
+      "included": [
+        "JUMPNET"
+      ]
+    }
+  ],
+  "notes": [
+    "Nifty Media: |excluded|=2 != |included|=1 (may be legitimate for off-cycle events but flag for review)"
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "source_pdf": "ind_prs20022019.pdf",
+  "source_url": "https://niftyindices.com/Press_Release/ind_prs20022019.pdf",
+  "publication_date": null,
+  "effective_date": "2019-02-26",
+  "is_index_maintenance": true,
+  "events": [
+    {
+      "index_name": "Nifty Realty",
+      "index_id": 1007,
+      "excluded": [
+        "UNITECH"
+      ],
+      "included": [
+        "MAHLIFE",
+        "NIFTY"
+      ]
+    }
+  ],
+  "notes": [
+    "Nifty Realty: |excluded|=1 != |included|=2 (may be legitimate for off-cycle events but flag for review)"
+  ]
+}

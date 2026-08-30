@@ -1,0 +1,13 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "4b425de3c2aab6f72a236fa93bed91d7f3e3331a674dd0651ca587f769878f02",
+  "is_clean": false,
+  "quality_issues": [
+    "long_gap",
+    "off_calendar"
+  ],
+  "rows": 7747,
+  "source": "eod2_data",
+  "symbol": "SUNPHARMA",
+  "validated_at": "2026-08-25T23:23:08.712198+00:00"
+}

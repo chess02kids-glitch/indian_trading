@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "eef5a5b577ad42057e8328b3f129c4ee7e045b53005a1cef2ed70a7608d5cc82",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 3912,
+  "source": "eod2_data",
+  "symbol": "COALINDIA",
+  "validated_at": "2026-08-25T23:21:48.423840+00:00"
+}

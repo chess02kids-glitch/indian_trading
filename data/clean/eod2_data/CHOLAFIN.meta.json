@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "14d3219dedf70ec59d3e0c7a7488fcbaf170e1ac034695e08ec4e44fffe6590c",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 4008,
+  "source": "eod2_data",
+  "symbol": "CHOLAFIN",
+  "validated_at": "2026-08-25T23:21:46.345254+00:00"
+}

@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "34adbe888287d875a9bc979186560ebeb6a02c9a8c02ca2a95f822eaba708601",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 7303,
+  "source": "eod2_data",
+  "symbol": "GAIL",
+  "validated_at": "2026-08-25T23:21:58.337413+00:00"
+}

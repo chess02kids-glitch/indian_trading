@@ -1,0 +1,13 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "1d6e031226567a5003651776a526dd91784cccbf64cf222254a153266fe69676",
+  "is_clean": false,
+  "quality_issues": [
+    "long_gap",
+    "off_calendar"
+  ],
+  "rows": 7770,
+  "source": "eod2_data",
+  "symbol": "EICHERMOT",
+  "validated_at": "2026-08-25T23:21:56.368777+00:00"
+}

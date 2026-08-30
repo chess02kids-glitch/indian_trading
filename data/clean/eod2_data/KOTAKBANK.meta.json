@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "4b9050cddaf67b17cb1b7eee43b5fc74f39828575947e2a80db2c6626c45434a",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 5797,
+  "source": "eod2_data",
+  "symbol": "KOTAKBANK",
+  "validated_at": "2026-08-25T23:22:29.262699+00:00"
+}

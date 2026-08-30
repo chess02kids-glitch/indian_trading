@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "a045f1b8677704748373c8ad93f08a39258189d51e321ef02d9af56cd9b71af6",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 2167,
+  "source": "eod2_data",
+  "symbol": "HDFCLIFE",
+  "validated_at": "2026-08-25T23:22:06.385183+00:00"
+}

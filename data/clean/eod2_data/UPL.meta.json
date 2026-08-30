@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "167c62a4f052344ba2b2c56aac88595139e68ad36788e47cab5a57aacd0c097f",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 5601,
+  "source": "eod2_data",
+  "symbol": "UPL",
+  "validated_at": "2026-08-25T23:23:42.131526+00:00"
+}

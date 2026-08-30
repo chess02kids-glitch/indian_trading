@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "e2c05310715ef060d63010e6856850b80ee5b8e01bbb49629cf6497ecfaf04c8",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 5453,
+  "source": "eod2_data",
+  "symbol": "TCS",
+  "validated_at": "2026-08-25T23:23:17.191305+00:00"
+}

@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "37a5476b2964f85a4b8d5b4709e5d0c039d4dbc202babeec89b74af1c373a03c",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 5165,
+  "source": "eod2_data",
+  "symbol": "TATASTEEL",
+  "validated_at": "2026-08-25T23:23:14.954310+00:00"
+}

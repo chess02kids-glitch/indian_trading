@@ -1,0 +1,13 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "e59c517265da3f71096c0d9239b229096bf293b9f9d3681e676aca5bb69dec79",
+  "is_clean": false,
+  "quality_issues": [
+    "long_gap",
+    "off_calendar"
+  ],
+  "rows": 7765,
+  "source": "eod2_data",
+  "symbol": "DABUR",
+  "validated_at": "2026-08-25T23:21:51.580898+00:00"
+}

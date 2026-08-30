@@ -1,0 +1,326 @@
+{
+  "source_pdf": "ind_prs25022019.pdf",
+  "source_url": "https://niftyindices.com/Press_Release/ind_prs25022019.pdf",
+  "publication_date": null,
+  "effective_date": "2019-03-29",
+  "is_index_maintenance": true,
+  "events": [
+    {
+      "index_name": "Nifty 50",
+      "index_id": 217,
+      "excluded": [
+        "HINDPETRO"
+      ],
+      "included": [
+        "BRITANNIA"
+      ]
+    },
+    {
+      "index_name": "Nifty Next 50",
+      "index_id": 218,
+      "excluded": [
+        "ABCAPITAL",
+        "BEL",
+        "BRITANNIA",
+        "LICHSGFIN",
+        "OIL",
+        "SUNTV"
+      ],
+      "included": [
+        "BAJAJHLDNG",
+        "DIVISLAB",
+        "HDFCAMC",
+        "HINDPETRO",
+        "PAGEIND",
+        "UBL"
+      ]
+    },
+    {
+      "index_name": "Nifty 500",
+      "index_id": 221,
+      "excluded": [
+        "AARTIIND",
+        "DEN",
+        "DREDGECORP",
+        "EROSMEDIA",
+        "EVEREADY",
+        "GREENPLY",
+        "GVKPIL",
+        "HCL-INSYS",
+        "HCC",
+        "IL&FSTRANS",
+        "ICIL",
+        "JKIL",
+        "JPPOWER",
+        "JCHAC",
+        "MANPASAND",
+        "MCLEODRUSS",
+        "NAVKARCORP",
+        "PFS",
+        "RNAVAL",
+        "SADBHIN",
+        "TATASPONGE",
+        "TEXRAIL",
+        "TVSSRICHAK",
+        "UNICHEMLAB"
+      ],
+      "included": [
+        "AAVAS",
+        "ASTRAZEN",
+        "MAHABANK",
+        "CESC",
+        "COX&KINGS",
+        "DEEPAKNTR",
+        "ESSELPACK",
+        "FINEORG",
+        "HDFCAMC",
+        "ICRA",
+        "IBULISL",
+        "INDOSTAR",
+        "IRCON",
+        "JAMNAAUTO",
+        "JKPAPER",
+        "KEI",
+        "KIRLOSENG",
+        "MAHSCOOTER",
+        "MAHSEAMLES",
+        "ORIENTELEC",
+        "SHARDACROP",
+        "SUPRAJIT",
+        "TCNSBRANDS",
+        "TRITURBINE",
+        "VSTIND"
+      ]
+    },
+    {
+      "index_name": "Nifty 100",
+      "index_id": 219,
+      "excluded": [
+        "ABCAPITAL",
+        "BEL",
+        "LICHSGFIN",
+        "OIL",
+        "SUNTV"
+      ],
+      "included": [
+        "BAJAJHLDNG",
+        "DIVISLAB",
+        "HDFCAMC",
+        "PAGEIND",
+        "UBL"
+      ]
+    },
+    {
+      "index_name": "Nifty Midcap 150",
+      "index_id": 223,
+      "excluded": [
+        "AARTIIND",
+        "AVANTIFEED",
+        "BAJAJHLDNG",
+        "DIVISLAB",
+        "GET&D",
+        "PAGEIND",
+        "PCJEWELLER",
+        "TV18BRDCST",
+        "UBL",
+        "VAKRANGEE"
+      ],
+      "included": [
+        "ABCAPITAL",
+        "ATUL",
+        "BEL",
+        "ERIS",
+        "GUJFLUORO",
+        "IPCALAB",
+        "LICHSGFIN",
+        "OIL",
+        "RELAXO",
+        "SUNTV"
+      ]
+    },
+    {
+      "index_name": "Nifty Smallcap 250",
+      "index_id": 227,
+      "excluded": [
+        "ATUL",
+        "DEN",
+        "DREDGECORP",
+        "ERIS",
+        "EROSMEDIA",
+        "EVEREADY",
+        "GREENPLY",
+        "GUJFLUORO",
+        "GVKPIL",
+        "HCL-INSYS",
+        "HCC",
+        "IL&FSTRANS",
+        "ICIL",
+        "IPCALAB",
+        "JKIL",
+        "JPPOWER",
+        "JCHAC",
+        "MANPASAND",
+        "MCLEODRUSS",
+        "NAVKARCORP",
+        "PFS",
+        "RELAXO",
+        "RNAVAL",
+        "SADBHIN",
+        "TATASPONGE",
+        "TEXRAIL",
+        "TVSSRICHAK",
+        "UNICHEMLAB"
+      ],
+      "included": [
+        "AAVAS",
+        "ASTRAZEN",
+        "AVANTIFEED",
+        "MAHABANK",
+        "CESC",
+        "COX&KINGS",
+        "DEEPAKNTR",
+        "ESSELPACK",
+        "FINEORG",
+        "GET&D",
+        "ICRA",
+        "IBULISL",
+        "INDOSTAR",
+        "IRCON",
+        "JAMNAAUTO",
+        "JKPAPER",
+        "KEI",
+        "KIRLOSENG",
+        "MAHSCOOTER",
+        "MAHSEAMLES",
+        "ORIENTELEC",
+        "PCJEWELLER",
+        "SHARDACROP",
+        "SUPRAJIT",
+        "TCNSBRANDS",
+        "TRITURBINE",
+        "TV18BRDCST",
+        "VAKRANGEE",
+        "VSTIND"
+      ]
+    },
+    {
+      "index_name": "Nifty Midcap 50",
+      "index_id": 2009,
+      "excluded": [
+        "DISHTV",
+        "DIVISLAB",
+        "PAGEIND",
+        "RPOWER",
+        "UBL"
+      ],
+      "included": [
+        "ADANIPOWER",
+        "BEL",
+        "LICHSGFIN",
+        "OIL",
+        "SUNTV"
+      ]
+    },
+    {
+      "index_name": "Nifty Smallcap 50",
+      "index_id": 2010,
+      "excluded": [
+        "BEML",
+        "BOMDYEING",
+        "BSE",
+        "CGPOWER",
+        "INDIACEM",
+        "JPASSOCIAT",
+        "JETAIRWAYS",
+        "SOUTHBANK",
+        "SUZLON",
+        "UJJIVAN"
+      ],
+      "included": [
+        "AVANTIFEED",
+        "CESC",
+        "ITI",
+        "KAJARIACER",
+        "KARURVYSYA",
+        "LINDEINDIA",
+        "MERCK",
+        "PERSISTENT",
+        "TV18BRDCST",
+        "VIPIND"
+      ]
+    },
+    {
+      "index_name": "Nifty Auto",
+      "index_id": 1005,
+      "excluded": [
+        "TATAMTRDVR"
+      ],
+      "included": []
+    },
+    {
+      "index_name": "Nifty Financial Services",
+      "index_id": 1012,
+      "excluded": [
+        "MFSL"
+      ],
+      "included": [
+        "ICICIGI"
+      ]
+    },
+    {
+      "index_name": "Nifty Media",
+      "index_id": 1013,
+      "excluded": [
+        "UFO"
+      ],
+      "included": [
+        "NAVNETEDUL"
+      ]
+    },
+    {
+      "index_name": "Nifty Private Bank",
+      "index_id": 1010,
+      "excluded": [
+        "SOUTHBANK"
+      ],
+      "included": [
+        "DCBBANK"
+      ]
+    },
+    {
+      "index_name": "Nifty Infrastructure",
+      "index_id": 3004,
+      "excluded": [
+        "VOLTAS"
+      ],
+      "included": [
+        "CESC"
+      ]
+    },
+    {
+      "index_name": "Nifty Services Sector",
+      "index_id": 3007,
+      "excluded": [
+        "IDEA"
+      ],
+      "included": [
+        "PETRONET"
+      ]
+    },
+    {
+      "index_name": "Nifty50 Value 20",
+      "index_id": 2005,
+      "excluded": [
+        "HINDPETRO"
+      ],
+      "included": [
+        "JSWSTEEL"
+      ]
+    }
+  ],
+  "notes": [
+    "Nifty 500: |excluded|=24 != |included|=25 (may be legitimate for off-cycle events but flag for review)",
+    "Nifty Smallcap 250: |excluded|=28 != |included|=29 (may be legitimate for off-cycle events but flag for review)",
+    "Nifty Auto: |excluded|=1 != |included|=0 (may be legitimate for off-cycle events but flag for review)"
+  ]
+}

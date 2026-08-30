@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "15fd7c2cbe09e01b6e3e4136071e8dd2e7a1e194e02e0f0ae51a16050bf6329c",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 4124,
+  "source": "eod2_data",
+  "symbol": "JSWENERGY",
+  "validated_at": "2026-08-25T23:22:27.156746+00:00"
+}

@@ -1,0 +1,13 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "4a75f0342e53770e36a64a816b0aa4a95486e997f4ef9d0b8f1f20ea4fe08fda",
+  "is_clean": false,
+  "quality_issues": [
+    "long_gap",
+    "off_calendar"
+  ],
+  "rows": 7707,
+  "source": "eod2_data",
+  "symbol": "HDFCBANK",
+  "validated_at": "2026-08-25T23:22:05.658847+00:00"
+}

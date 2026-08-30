@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "ea4969bcaa01b00186066b2275e37b895da63288451a3f572dd1f6be43a6d97b",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 1929,
+  "source": "eod2_data",
+  "symbol": "ATGL",
+  "validated_at": "2026-08-25T23:21:27.250889+00:00"
+}

@@ -1,0 +1,54 @@
+{
+  "source_pdf": "ind_prs29082017.pdf",
+  "source_url": "https://niftyindices.com/Press_Release/ind_prs29082017.pdf",
+  "publication_date": null,
+  "effective_date": "2017-09-29",
+  "is_index_maintenance": true,
+  "events": [
+    {
+      "index_name": "Nifty 500",
+      "index_id": 221,
+      "excluded": [
+        "RELCAPITAL"
+      ],
+      "included": [
+        "MFSL"
+      ]
+    },
+    {
+      "index_name": "Nifty Midcap 150",
+      "index_id": 223,
+      "excluded": [
+        "RELCAPITAL"
+      ],
+      "included": [
+        "MFSL"
+      ]
+    },
+    {
+      "index_name": "Nifty Midcap 50",
+      "index_id": 2009,
+      "excluded": [
+        "RELCAPITAL"
+      ],
+      "included": [
+        "BERGEPAINT"
+      ]
+    },
+    {
+      "index_name": "Nifty High Beta 50",
+      "index_id": 2002,
+      "excluded": [
+        "RELCAPITAL"
+      ],
+      "included": [
+        "JPASSOCIAT",
+        "IISL",
+        "IDFC"
+      ]
+    }
+  ],
+  "notes": [
+    "Nifty High Beta 50: |excluded|=1 != |included|=3 (may be legitimate for off-cycle events but flag for review)"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "520df26c4632bf4cc589a9772c04a9ca8774bc33c7578bb6b73d5d05a35b2679",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 1453,
+  "source": "eod2_data",
+  "symbol": "MAZDOCK",
+  "validated_at": "2026-08-25T23:22:38.906404+00:00"
+}

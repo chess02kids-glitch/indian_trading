@@ -1,0 +1,13 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "6deb5f964a282730ae00e1b8e7966dae8ecfa685101cefdcd78ffce7805a91f1",
+  "is_clean": false,
+  "quality_issues": [
+    "long_gap",
+    "off_calendar"
+  ],
+  "rows": 7736,
+  "source": "eod2_data",
+  "symbol": "INFY",
+  "validated_at": "2026-08-25T23:22:20.296873+00:00"
+}

@@ -1,0 +1,13 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "a958a0b68c4329be1ac1bf87f7f68f97085eb0645e7b60a00651e20a406f2d48",
+  "is_clean": false,
+  "quality_issues": [
+    "long_gap",
+    "off_calendar"
+  ],
+  "rows": 7723,
+  "source": "eod2_data",
+  "symbol": "SRF",
+  "validated_at": "2026-08-25T23:23:07.304393+00:00"
+}

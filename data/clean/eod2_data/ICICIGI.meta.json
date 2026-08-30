@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "e85bafe1c242bfc714e997143b8647d0a5fbce84584d509e30c4bf020c4ce71a",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 2202,
+  "source": "eod2_data",
+  "symbol": "ICICIGI",
+  "validated_at": "2026-08-25T23:22:13.612494+00:00"
+}

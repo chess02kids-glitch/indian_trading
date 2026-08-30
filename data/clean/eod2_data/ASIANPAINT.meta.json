@@ -1,0 +1,13 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "9bdd388a2f4209b38a167ab70cb29f3ac13575b7995cfb42464567ae68900c74",
+  "is_clean": false,
+  "quality_issues": [
+    "long_gap",
+    "off_calendar"
+  ],
+  "rows": 7757,
+  "source": "eod2_data",
+  "symbol": "ASIANPAINT",
+  "validated_at": "2026-08-25T23:21:26.591741+00:00"
+}

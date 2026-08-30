@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "51940706ef7b3851e1ea8b1e36a132949d34b03096739e3ff5b467c63bd1266b",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 2199,
+  "source": "eod2_data",
+  "symbol": "SBILIFE",
+  "validated_at": "2026-08-25T23:23:00.309101+00:00"
+}

@@ -1,0 +1,13 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "c295f99155cbda996ef7216a2fa7175e82b25496f575a4281f90140875553db2",
+  "is_clean": false,
+  "quality_issues": [
+    "long_gap",
+    "off_calendar"
+  ],
+  "rows": 7524,
+  "source": "eod2_data",
+  "symbol": "VEDL",
+  "validated_at": "2026-08-25T23:23:46.050618+00:00"
+}

@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "2157b8e42877fb1e60ea9623515447df18160c20960b6706978502618ecc183c",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 6312,
+  "source": "eod2_data",
+  "symbol": "HAVELLS",
+  "validated_at": "2026-08-25T23:22:02.729816+00:00"
+}

@@ -1,0 +1,13 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "984961d00ecab44cb4db8ce9b79d11a93339154ebba6828a636f072a69a860b8",
+  "is_clean": false,
+  "quality_issues": [
+    "long_gap",
+    "off_calendar"
+  ],
+  "rows": 7672,
+  "source": "eod2_data",
+  "symbol": "BRITANNIA",
+  "validated_at": "2026-08-25T23:21:43.539782+00:00"
+}

@@ -1,0 +1,359 @@
+{
+  "source_pdf": "ind_prs28082018.pdf",
+  "source_url": "https://niftyindices.com/Press_Release/ind_prs28082018.pdf",
+  "publication_date": null,
+  "effective_date": "2018-09-28",
+  "is_index_maintenance": true,
+  "events": [
+    {
+      "index_name": "Nifty 50",
+      "index_id": 217,
+      "excluded": [
+        "LUPIN"
+      ],
+      "included": [
+        "JSWSTEEL"
+      ]
+    },
+    {
+      "index_name": "Nifty Next 50",
+      "index_id": 218,
+      "excluded": [
+        "CUMMINSIND",
+        "EMAMILTD",
+        "JSWSTEEL",
+        "PFC",
+        "PNB",
+        "RECLTD"
+      ],
+      "included": [
+        "BANDHANBNK",
+        "BIOCON",
+        "HDFCLIFE",
+        "ICICIGI",
+        "LUPIN",
+        "NIACL"
+      ]
+    },
+    {
+      "index_name": "Nifty 500",
+      "index_id": 221,
+      "excluded": [
+        "ABAN",
+        "ASAHIINDIA",
+        "BAJAJHIND",
+        "BALLARPUR",
+        "BFUTILITIE",
+        "BGRENERGY",
+        "BHUSANSTL",
+        "BRFL",
+        "DBREALTY",
+        "GATI",
+        "HDIL",
+        "JBFIND",
+        "JINDALPOLY",
+        "KESORAMIND",
+        "KITEX",
+        "KWALITY",
+        "MTNL",
+        "MARKSANS",
+        "RAMCOSYS",
+        "RTNPOWER",
+        "RELIGARE",
+        "SFL",
+        "SMLISUZU",
+        "UNITECH",
+        "ZEELEARN"
+      ],
+      "included": [
+        "BANDHANBNK",
+        "ELGIEQUIP",
+        "EXCELCROP",
+        "FDC",
+        "GALAXYSURF",
+        "GAYAPROJ",
+        "GRINDWELL",
+        "HDFCLIFE",
+        "HAL",
+        "ISEC",
+        "LEMONTREE",
+        "LINDEINDIA",
+        "LUXIND",
+        "MAHLOG",
+        "MONSANTO",
+        "PHILIPCARB",
+        "RNAM",
+        "STAR",
+        "SUNDARMFIN",
+        "TEAMLEASE",
+        "NIACL",
+        "VENKEYS",
+        "VMART",
+        "ZENSARTECH",
+        "ZYDUSWELL"
+      ]
+    },
+    {
+      "index_name": "Nifty 100",
+      "index_id": 219,
+      "excluded": [
+        "CUMMINSIND",
+        "EMAMILTD",
+        "PFC",
+        "PNB",
+        "RECLTD"
+      ],
+      "included": [
+        "BANDHANBNK",
+        "BIOCON",
+        "HDFCLIFE",
+        "ICICIGI",
+        "NIACL"
+      ]
+    },
+    {
+      "index_name": "Nifty Midcap 150",
+      "index_id": 223,
+      "excluded": [
+        "AKZOINDIA",
+        "BIOCON",
+        "GUJFLUORO",
+        "ICICIGI",
+        "IDFC",
+        "IBREALEST",
+        "IRB",
+        "KAJARIACER",
+        "KARURVYSYA",
+        "SCHAEFFLER",
+        "SUZLON",
+        "TTKPRESTIG",
+        "WOCKPHARMA"
+      ],
+      "included": [
+        "ASTRAL",
+        "CUMMINSIND",
+        "EMAMILTD",
+        "ESCORTS",
+        "GRAPHITE",
+        "HEG",
+        "HAL",
+        "ISEC",
+        "PFC",
+        "PNB",
+        "RNAM",
+        "RECLTD",
+        "SUNDARMFIN"
+      ]
+    },
+    {
+      "index_name": "Nifty Smallcap 250",
+      "index_id": 227,
+      "excluded": [
+        "ABAN",
+        "ASAHIINDIA",
+        "ASTRAL",
+        "BAJAJHIND",
+        "BALLARPUR",
+        "BFUTILITIE",
+        "BGRENERGY",
+        "BHUSANSTL",
+        "BRFL",
+        "DBREALTY",
+        "ESCORTS",
+        "GATI",
+        "GRAPHITE",
+        "HEG",
+        "HDIL",
+        "JBFIND",
+        "JINDALPOLY",
+        "KESORAMIND",
+        "KITEX",
+        "KWALITY",
+        "MTNL",
+        "MARKSANS",
+        "RAMCOSYS",
+        "RTNPOWER",
+        "RELIGARE",
+        "SFL",
+        "SMLISUZU",
+        "UNITECH",
+        "ZEELEARN"
+      ],
+      "included": [
+        "AKZOINDIA",
+        "ELGIEQUIP",
+        "EXCELCROP",
+        "FDC",
+        "GALAXYSURF",
+        "GAYAPROJ",
+        "GRINDWELL",
+        "GUJFLUORO",
+        "IDFC",
+        "IBREALEST",
+        "IRB",
+        "KAJARIACER",
+        "KARURVYSYA",
+        "LEMONTREE",
+        "LINDEINDIA",
+        "LUXIND",
+        "MAHLOG",
+        "MONSANTO",
+        "PHILIPCARB",
+        "SCHAEFFLER",
+        "STAR",
+        "SUZLON",
+        "TEAMLEASE",
+        "TTKPRESTIG",
+        "VENKEYS",
+        "VMART",
+        "WOCKPHARMA",
+        "ZENSARTECH",
+        "ZYDUSWELL"
+      ]
+    },
+    {
+      "index_name": "Nifty Midcap 50",
+      "index_id": 2009,
+      "excluded": [
+        "ADANIPOWER",
+        "BIOCON",
+        "ENGINERSIN",
+        "IDFC",
+        "PCJEWELLER"
+      ],
+      "included": [
+        "CUMMINSIND",
+        "JUBLFOOD",
+        "PFC",
+        "PNB",
+        "RECLTD"
+      ]
+    },
+    {
+      "index_name": "Nifty Smallcap 50",
+      "index_id": 2010,
+      "excluded": [
+        "CARERATING",
+        "ESCORTS",
+        "GRAPHITE",
+        "HEG",
+        "IFCI",
+        "KTKBANK",
+        "REPCOHOME",
+        "SCI",
+        "SPTL",
+        "SREINFRA"
+      ],
+      "included": [
+        "BAJAJELEC",
+        "IDFC",
+        "IBREALEST",
+        "IRB",
+        "KPIT",
+        "NIITTECH",
+        "RADICO",
+        "STAR",
+        "SUZLON",
+        "WOCKPHARMA"
+      ]
+    },
+    {
+      "index_name": "Nifty Financial Services",
+      "index_id": 1012,
+      "excluded": [
+        "GICRE"
+      ],
+      "included": [
+        "HDFCLIFE"
+      ]
+    },
+    {
+      "index_name": "Nifty Media",
+      "index_id": 1013,
+      "excluded": [
+        "BALAJITELE",
+        "ENIL"
+      ],
+      "included": [
+        "UFO",
+        "ZEEMEDIA"
+      ]
+    },
+    {
+      "index_name": "Nifty PSU Bank",
+      "index_id": 1009,
+      "excluded": [
+        "ALBK",
+        "ANDHRABANK"
+      ],
+      "included": [
+        "CENTRALBK",
+        "VIJAYABANK"
+      ]
+    },
+    {
+      "index_name": "Nifty Realty",
+      "index_id": 1007,
+      "excluded": [
+        "HDIL"
+      ],
+      "included": [
+        "SUNTECK"
+      ]
+    },
+    {
+      "index_name": "Nifty Commodities",
+      "index_id": 3001,
+      "excluded": [
+        "PIIND"
+      ],
+      "included": [
+        "JINDALSTEL"
+      ]
+    },
+    {
+      "index_name": "Nifty MNC",
+      "index_id": 3005,
+      "excluded": [],
+      "included": [
+        "BATAINDIA",
+        "CRISIL",
+        "GLAXO",
+        "HEXAWARE",
+        "HONAUT",
+        "KANSAINER",
+        "MPHASIS",
+        "PFIZER",
+        "PGHH",
+        "SANOFI",
+        "SCHAEFFLER",
+        "SKFINDIA",
+        "STRTECH",
+        "WHIRLPOOL"
+      ]
+    },
+    {
+      "index_name": "Nifty PSE",
+      "index_id": 3006,
+      "excluded": [
+        "NBCC"
+      ],
+      "included": [
+        "NIACL"
+      ]
+    },
+    {
+      "index_name": "Nifty Services Sector",
+      "index_id": 3007,
+      "excluded": [
+        "RECLTD"
+      ],
+      "included": [
+        "RBLBANK"
+      ]
+    }
+  ],
+  "notes": [
+    "Nifty MNC: |excluded|=0 != |included|=14 (may be legitimate for off-cycle events but flag for review)"
+  ]
+}

@@ -1,0 +1,555 @@
+{
+  "source_pdf": "ind_prs23082024.pdf",
+  "source_url": "https://niftyindices.com/Press_Release/ind_prs23082024.pdf",
+  "publication_date": "2024-08-23",
+  "effective_date": "2024-09-30",
+  "is_index_maintenance": true,
+  "events": [
+    {
+      "index_name": "Nifty 50",
+      "index_id": 217,
+      "excluded": [
+        "DIVISLAB",
+        "LTIM"
+      ],
+      "included": [
+        "BEL",
+        "TRENT"
+      ]
+    },
+    {
+      "index_name": "Nifty Next 50",
+      "index_id": 218,
+      "excluded": [
+        "BERGEPAINT",
+        "BEL",
+        "COLPAL",
+        "MARICO",
+        "SBICARD",
+        "SRF",
+        "TRENT"
+      ],
+      "included": [
+        "BHEL",
+        "DIVISLAB",
+        "JSWENERGY",
+        "LTIM",
+        "LODHA",
+        "NHPC",
+        "UNIONBANK"
+      ]
+    },
+    {
+      "index_name": "Nifty 500",
+      "index_id": 221,
+      "excluded": [
+        "AETHER",
+        "ALLCARGO",
+        "ANURAS",
+        "BORORENEW",
+        "CSBBANK",
+        "DCMSHRIRAM",
+        "EPL",
+        "FDC",
+        "GLS",
+        "GMMPFAUDLR",
+        "HAPPYFORGE",
+        "INDIGOPNTS",
+        "JAIBALAJI",
+        "JKPAPER",
+        "KRBL",
+        "LXCHEM",
+        "MHRIL",
+        "MEDPLUS",
+        "MTARTECH",
+        "PRINCEPIPE",
+        "RBA",
+        "SAFARI",
+        "STLTECH",
+        "SUNTECK",
+        "TMB",
+        "VAIBHAVGBL",
+        "IDEA"
+      ],
+      "included": [
+        "AADHARHFC",
+        "ABSLAMC",
+        "ANANTRAJ",
+        "BASF",
+        "BHARTIHEXA",
+        "GRINFRA",
+        "GET&D",
+        "GODIGIT",
+        "GODREJAGRO",
+        "IFCI",
+        "INDGN",
+        "IREDA",
+        "INOXINDIA",
+        "JPPOWER",
+        "JKTYRE",
+        "JYOTICNC",
+        "KIRLOSBROS",
+        "KIRLOSENG",
+        "NETWEB",
+        "NEWGEN",
+        "PFIZER",
+        "PTCIL",
+        "SCI",
+        "TBOTEK",
+        "TECHNOE",
+        "DBREALTY",
+        "VINATIORGA"
+      ]
+    },
+    {
+      "index_name": "Nifty 100",
+      "index_id": 219,
+      "excluded": [
+        "BERGEPAINT",
+        "COLPAL",
+        "MARICO",
+        "SBICARD",
+        "SRF"
+      ],
+      "included": [
+        "BHEL",
+        "JSWENERGY",
+        "LODHA",
+        "NHPC",
+        "UNIONBANK"
+      ]
+    },
+    {
+      "index_name": "Nifty Midcap 150",
+      "index_id": 223,
+      "excluded": [
+        "ATUL",
+        "BATAINDIA",
+        "BHEL",
+        "DEVYANI",
+        "LALPATHLAB",
+        "ISEC",
+        "JSWENERGY",
+        "KAJARIACER",
+        "KANSAINER",
+        "LAURUSLABS",
+        "LODHA",
+        "NHPC",
+        "PEL",
+        "SUMICHEM",
+        "RAMCOCEM",
+        "UNIONBANK",
+        "MANYAVAR",
+        "IDEA",
+        "ZEEL"
+      ],
+      "included": [
+        "BERGEPAINT",
+        "BHARTIHEXA",
+        "CENTRALBK",
+        "COCHINSHIP",
+        "COLPAL",
+        "EXIDEIND",
+        "MEDANTA",
+        "POWERINDIA",
+        "HUDCO",
+        "IOB",
+        "IREDA",
+        "IRB",
+        "MRPL",
+        "MARICO",
+        "NAM-INDIA",
+        "NLCINDIA",
+        "SBICARD",
+        "SRF",
+        "TATAINVEST"
+      ]
+    },
+    {
+      "index_name": "Nifty Smallcap 250",
+      "index_id": 227,
+      "excluded": [
+        "AETHER",
+        "ALLCARGO",
+        "ANURAS",
+        "BORORENEW",
+        "CENTRALBK",
+        "COCHINSHIP",
+        "CSBBANK",
+        "DCMSHRIRAM",
+        "EPL",
+        "EXIDEIND",
+        "FDC",
+        "GLS",
+        "MEDANTA",
+        "GMMPFAUDLR",
+        "HAPPYFORGE",
+        "POWERINDIA",
+        "HUDCO",
+        "IOB",
+        "INDIGOPNTS",
+        "IRB",
+        "JAIBALAJI",
+        "JKPAPER",
+        "KRBL",
+        "LXCHEM",
+        "MHRIL",
+        "MRPL",
+        "MEDPLUS",
+        "MTARTECH",
+        "NAM-INDIA",
+        "NLCINDIA",
+        "PRINCEPIPE",
+        "RBA",
+        "SAFARI",
+        "STLTECH",
+        "SUNTECK",
+        "TMB",
+        "TATAINVEST",
+        "VAIBHAVGBL"
+      ],
+      "included": [
+        "AADHARHFC",
+        "ABSLAMC",
+        "ANANTRAJ",
+        "ATUL",
+        "BASF",
+        "BATAINDIA",
+        "DEVYANI",
+        "LALPATHLAB",
+        "GRINFRA",
+        "GET&D",
+        "GODIGIT",
+        "GODREJAGRO",
+        "ISEC",
+        "IFCI",
+        "INDGN",
+        "INOXINDIA",
+        "JPPOWER",
+        "JKTYRE",
+        "JYOTICNC",
+        "KAJARIACER",
+        "KANSAINER",
+        "KIRLOSBROS",
+        "KIRLOSENG",
+        "LAURUSLABS",
+        "NETWEB",
+        "NEWGEN",
+        "PFIZER",
+        "PEL",
+        "PTCIL",
+        "SCI",
+        "SUMICHEM",
+        "TBOTEK",
+        "TECHNOE",
+        "RAMCOCEM",
+        "DBREALTY",
+        "MANYAVAR",
+        "VINATIORGA",
+        "ZEEL"
+      ]
+    },
+    {
+      "index_name": "Nifty Midcap 50",
+      "index_id": 2009,
+      "excluded": [
+        "BALKRISIND",
+        "BANDHANBNK",
+        "BHEL",
+        "COFORGE",
+        "DALBHARAT",
+        "ESCORTS",
+        "GUJGASLTD",
+        "JUBLFOOD",
+        "LTTS",
+        "M&MFIN",
+        "MFSL",
+        "PAGEIND",
+        "TIINDIA",
+        "IDEA"
+      ],
+      "included": [
+        "APLAPOLLO",
+        "CGPOWER",
+        "COLPAL",
+        "KPITTECH",
+        "MARICO",
+        "MUTHOOTFIN",
+        "POLICYBZR",
+        "PHOENIXLTD",
+        "SBICARD",
+        "SONACOMS",
+        "SRF",
+        "SUNDARMFIN",
+        "SUPREMEIND",
+        "VOLTAS"
+      ]
+    },
+    {
+      "index_name": "Nifty Smallcap 50",
+      "index_id": 2010,
+      "excluded": [
+        "AAVAS",
+        "CUB",
+        "CREDITACC",
+        "EQUITASBNK",
+        "EXIDEIND",
+        "FIVESTAR",
+        "HAPPSTMNDS",
+        "NAM-INDIA",
+        "RADICO",
+        "RAYMOND",
+        "TANLA"
+      ],
+      "included": [
+        "ATUL",
+        "BRIGADE",
+        "HINDCOPPER",
+        "KPIL",
+        "LAURUSLABS",
+        "NBCC",
+        "PEL",
+        "REDINGTON",
+        "RAMCOCEM",
+        "ZEEL"
+      ]
+    },
+    {
+      "index_name": "Nifty Microcap 250",
+      "index_id": 228,
+      "excluded": [
+        "ACCELYA",
+        "ANANTRAJ",
+        "BARBEQUE",
+        "BASF",
+        "CAMLINFINE",
+        "CARERATING",
+        "DBCORP",
+        "DALMIASUG",
+        "FEDFINA",
+        "FLAIR",
+        "GRINFRA",
+        "GALAXYSURF",
+        "GLOBUSSPR",
+        "GODREJAGRO",
+        "GUFICBIO",
+        "HLEGLAS",
+        "HMAAGRO",
+        "IFCI",
+        "IKIO",
+        "INDOCO",
+        "INOXINDIA",
+        "IOLCP",
+        "JPASSOCIAT",
+        "JPPOWER",
+        "JKTYRE",
+        "JSWHL",
+        "JYOTICNC",
+        "KIRLOSBROS",
+        "KIRLOSENG",
+        "KPIGREEN",
+        "KRSNAA",
+        "LAOPALA",
+        "LGBBROSLTD",
+        "MASFIN",
+        "NAVNETEDUL",
+        "NETWEB",
+        "NEWGEN",
+        "NUCLEUS",
+        "PDSL",
+        "PSPPROJECT",
+        "RTNPOWER",
+        "RPOWER",
+        "SAGCEM",
+        "SCI",
+        "SHOPERSTOP",
+        "SUNCLAY",
+        "TARSONS",
+        "TECHNOE",
+        "TTKPRESTIG",
+        "TVSHLTD",
+        "UFLEX",
+        "UNIPARTS",
+        "VSTTILLERS",
+        "DBREALTY",
+        "VRLLOG"
+      ],
+      "included": [
+        "AETHER",
+        "ALLCARGO",
+        "ANURAS",
+        "PARKHOTELS",
+        "BAJAJELEC",
+        "BBL",
+        "BOROLTD",
+        "BORORENEW",
+        "CSBBANK",
+        "DYNAMATECH",
+        "ENTERO",
+        "EPL",
+        "EXICOM",
+        "FDC",
+        "FORCEMOT",
+        "GLS",
+        "GMMPFAUDLR",
+        "GOPAL",
+        "HAPPYFORGE",
+        "HARSHA",
+        "HCG",
+        "HNDFDS",
+        "IMAGICAA",
+        "INDIGOPNTS",
+        "INOXGREEN",
+        "JAIBALAJI",
+        "JSFB",
+        "JKPAPER",
+        "JNKINDIA",
+        "KIRLPNU",
+        "KRBL",
+        "LXCHEM",
+        "IXIGO",
+        "MHRIL",
+        "MEDPLUS",
+        "MTARTECH",
+        "ORCHPHARMA",
+        "PRINCEPIPE",
+        "PGHL",
+        "PRUDENT",
+        "RBA",
+        "ROLEXRINGS",
+        "SAFARI",
+        "SHRIPISTON",
+        "STLTECH",
+        "SUBROS",
+        "SUNTECK",
+        "SYMPHONY",
+        "TCIEXP",
+        "TIIL",
+        "VAIBHAVGBL",
+        "VENUSPIPES",
+        "VESUVIUS",
+        "VSTIND"
+      ]
+    },
+    {
+      "index_name": "Nifty Bank",
+      "index_id": 1001,
+      "excluded": [
+        "BANDHANBNK"
+      ],
+      "included": [
+        "CANBK"
+      ]
+    },
+    {
+      "index_name": "Nifty Pharma",
+      "index_id": 1004,
+      "excluded": [
+        "SANOFI"
+      ],
+      "included": [
+        "AJANTPHARM"
+      ]
+    },
+    {
+      "index_name": "Nifty Realty",
+      "index_id": 1007,
+      "excluded": [
+        "SUNTECK"
+      ],
+      "included": [
+        "RAYMOND"
+      ]
+    },
+    {
+      "index_name": "Nifty Commodities",
+      "index_id": 3001,
+      "excluded": [
+        "DALBHARAT",
+        "DEEPAKNTR",
+        "TATACHEM"
+      ],
+      "included": [
+        "JSWENERGY",
+        "NHPC",
+        "NMDC"
+      ]
+    },
+    {
+      "index_name": "Nifty Energy",
+      "index_id": 1008,
+      "excluded": [
+        "ADANIENSOL"
+      ],
+      "included": [
+        "ADANIPOWER"
+      ]
+    },
+    {
+      "index_name": "Nifty India Defence",
+      "index_id": 3009,
+      "excluded": [],
+      "included": [
+        "DYNAMATECH"
+      ]
+    },
+    {
+      "index_name": "Nifty India Manufacturing",
+      "index_id": 3008,
+      "excluded": [
+        "BATAINDIA",
+        "GRINDWELL",
+        "KAJARIACER",
+        "NAVINFLUOR",
+        "SUNDRMFAST"
+      ],
+      "included": [
+        "BHEL",
+        "COCHINSHIP",
+        "FLUOROCHEM",
+        "HINDCOPPER",
+        "LLOYDSME",
+        "METROBRAND",
+        "TIMKEN"
+      ]
+    },
+    {
+      "index_name": "Nifty Infrastructure",
+      "index_id": 3004,
+      "excluded": [
+        "BALKRISIND",
+        "PETRONET"
+      ],
+      "included": [
+        "INDUSTOWER",
+        "MOTHERSON"
+      ]
+    },
+    {
+      "index_name": "Nifty MNC",
+      "index_id": 3005,
+      "excluded": [
+        "MPHASIS"
+      ],
+      "included": [
+        "CASTROLIND"
+      ]
+    },
+    {
+      "index_name": "Nifty PSE",
+      "index_id": 3006,
+      "excluded": [
+        "LICI"
+      ],
+      "included": [
+        "IRFC"
+      ]
+    }
+  ],
+  "notes": [
+    "Nifty Smallcap 50: |excluded|=11 != |included|=10 (may be legitimate for off-cycle events but flag for review)",
+    "Nifty Microcap 250: |excluded|=55 != |included|=54 (may be legitimate for off-cycle events but flag for review)",
+    "Nifty India Defence: |excluded|=0 != |included|=1 (may be legitimate for off-cycle events but flag for review)",
+    "Nifty India Manufacturing: |excluded|=5 != |included|=7 (may be legitimate for off-cycle events but flag for review)"
+  ]
+}

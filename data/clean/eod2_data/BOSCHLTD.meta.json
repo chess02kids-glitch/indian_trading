@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "66dfecc10a00fda73cc205a5be8dd907525b82d9baa06daaf0d6f1644b1bdd23",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 4571,
+  "source": "eod2_data",
+  "symbol": "BOSCHLTD",
+  "validated_at": "2026-08-25T23:21:41.252981+00:00"
+}

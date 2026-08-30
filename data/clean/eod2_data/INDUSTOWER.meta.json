@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "d3945dd1dabc2a7650a77cb7d60840d07af73d6ab94d56846324a656738a90f3",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 3376,
+  "source": "eod2_data",
+  "symbol": "INDUSTOWER",
+  "validated_at": "2026-08-25T23:22:19.084587+00:00"
+}

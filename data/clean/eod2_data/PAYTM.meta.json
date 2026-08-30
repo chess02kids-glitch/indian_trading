@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "bee1cc6b76ca03d9864268bff4d327204ccea25807b9f8c37384bd82e0a33add",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 1180,
+  "source": "eod2_data",
+  "symbol": "PAYTM",
+  "validated_at": "2026-08-25T23:22:49.894257+00:00"
+}

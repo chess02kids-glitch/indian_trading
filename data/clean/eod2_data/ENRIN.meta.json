@@ -1,0 +1,10 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "a9eb4073fdc0571fbc329d691f9c6631e4fc81a02e012000a7f6aa8b8975bcbd",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 292,
+  "source": "eod2_data",
+  "symbol": "ENRIN",
+  "validated_at": "2026-08-25T23:21:56.562637+00:00"
+}

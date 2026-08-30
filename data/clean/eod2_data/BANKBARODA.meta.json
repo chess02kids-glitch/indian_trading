@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "8eeec3eed89c8e04fe3173aebe81b06cbeb4c91f98aaf1729a417c32e2b70dee",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 7327,
+  "source": "eod2_data",
+  "symbol": "BANKBARODA",
+  "validated_at": "2026-08-25T23:21:34.661736+00:00"
+}

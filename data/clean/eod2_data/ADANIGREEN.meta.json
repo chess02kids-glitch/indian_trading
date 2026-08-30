@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "647a35dd42512a01a7b7b566636f3f47b07c2f05d42f3ccb83b88ec0a0eea299",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 2023,
+  "source": "eod2_data",
+  "symbol": "ADANIGREEN",
+  "validated_at": "2026-08-25T23:21:20.950309+00:00"
+}

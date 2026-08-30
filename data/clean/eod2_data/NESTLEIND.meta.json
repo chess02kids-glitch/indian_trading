@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "86e83ad2b7593e3e0a58c1d0afb465a48c9086ebf27296d4eac9a13dc3bd2e74",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 4120,
+  "source": "eod2_data",
+  "symbol": "NESTLEIND",
+  "validated_at": "2026-08-25T23:22:44.048859+00:00"
+}

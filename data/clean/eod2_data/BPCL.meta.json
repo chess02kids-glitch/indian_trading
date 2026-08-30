@@ -1,0 +1,13 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "9bd4b9c8ff37f5603b55b6d0f9bbf60a7821ffc8d51bf4f72ab45c0d52a10557",
+  "is_clean": false,
+  "quality_issues": [
+    "long_gap",
+    "off_calendar"
+  ],
+  "rows": 7725,
+  "source": "eod2_data",
+  "symbol": "BPCL",
+  "validated_at": "2026-08-25T23:21:42.369843+00:00"
+}

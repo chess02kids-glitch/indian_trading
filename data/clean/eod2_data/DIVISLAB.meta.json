@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "4098901e56bc1f5d08f1a0a3027ab32fef06c05654f93e70c81d6d68777a295c",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 5822,
+  "source": "eod2_data",
+  "symbol": "DIVISLAB",
+  "validated_at": "2026-08-25T23:21:52.622022+00:00"
+}

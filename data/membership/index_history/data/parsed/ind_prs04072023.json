@@ -1,0 +1,98 @@
+{
+  "source_pdf": "ind_prs04072023.pdf",
+  "source_url": "https://niftyindices.com/Press_Release/ind_prs04072023.pdf",
+  "publication_date": "2023-07-04",
+  "effective_date": "2023-07-13",
+  "is_index_maintenance": true,
+  "events": [
+    {
+      "index_name": "Nifty 50",
+      "index_id": 217,
+      "excluded": [
+        "HDFC"
+      ],
+      "included": [
+        "LTIM"
+      ]
+    },
+    {
+      "index_name": "Nifty 100",
+      "index_id": 219,
+      "excluded": [
+        "HDFC"
+      ],
+      "included": [
+        "JINDALSTEL"
+      ]
+    },
+    {
+      "index_name": "Nifty Next 50",
+      "index_id": 218,
+      "excluded": [],
+      "included": [
+        "JINDALSTEL"
+      ]
+    },
+    {
+      "index_name": "Nifty 500",
+      "index_id": 221,
+      "excluded": [
+        "HDFC"
+      ],
+      "included": [
+        "MANKIND"
+      ]
+    },
+    {
+      "index_name": "Nifty Midcap 150",
+      "index_id": 223,
+      "excluded": [],
+      "included": [
+        "MANKIND"
+      ]
+    },
+    {
+      "index_name": "Nifty Midcap 50",
+      "index_id": 2009,
+      "excluded": [],
+      "included": [
+        "ABCAPITAL"
+      ]
+    },
+    {
+      "index_name": "Nifty Financial Services",
+      "index_id": 1012,
+      "excluded": [
+        "HDFC"
+      ],
+      "included": [
+        "LICHSGFIN"
+      ]
+    },
+    {
+      "index_name": "Nifty Services Sector",
+      "index_id": 3007,
+      "excluded": [
+        "HDFC"
+      ],
+      "included": [
+        "LTIM"
+      ]
+    },
+    {
+      "index_name": "Nifty High Beta 50",
+      "index_id": 2002,
+      "excluded": [
+        "HDFC"
+      ],
+      "included": [
+        "AMBUJACEM"
+      ]
+    }
+  ],
+  "notes": [
+    "Nifty Next 50: |excluded|=0 != |included|=1 (may be legitimate for off-cycle events but flag for review)",
+    "Nifty Midcap 150: |excluded|=0 != |included|=1 (may be legitimate for off-cycle events but flag for review)",
+    "Nifty Midcap 50: |excluded|=0 != |included|=1 (may be legitimate for off-cycle events but flag for review)"
+  ]
+}

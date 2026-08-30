@@ -1,0 +1,13 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "76c713d298cb18066c013f9f9911dc754b3c51631cb9f2b867c971b849faceba",
+  "is_clean": false,
+  "quality_issues": [
+    "long_gap",
+    "off_calendar"
+  ],
+  "rows": 7723,
+  "source": "eod2_data",
+  "symbol": "HEROMOTOCO",
+  "validated_at": "2026-08-25T23:22:07.622717+00:00"
+}

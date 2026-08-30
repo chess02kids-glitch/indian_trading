@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "a7f6c0d30394592eb4b3217794a9fd14a69baf32cb0d5471a05f1702f0c4066a",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 4563,
+  "source": "eod2_data",
+  "symbol": "RECLTD",
+  "validated_at": "2026-08-25T23:22:57.247536+00:00"
+}

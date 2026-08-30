@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "c4b4d83a2c909476dddf747c4ca6da048c090908dfe964d1baca9cc31afa3052",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 5485,
+  "source": "eod2_data",
+  "symbol": "PGHH",
+  "validated_at": "2026-08-25T23:22:51.658783+00:00"
+}

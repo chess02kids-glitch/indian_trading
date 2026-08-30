@@ -1,0 +1,23 @@
+{
+  "source_pdf": "ind_prs07042017.pdf",
+  "source_url": "https://niftyindices.com/Press_Release/ind_prs07042017.pdf",
+  "publication_date": null,
+  "effective_date": "2017-04-17",
+  "is_index_maintenance": true,
+  "events": [
+    {
+      "index_name": "Nifty High Beta 50",
+      "index_id": 2002,
+      "excluded": [
+        "SINTEX"
+      ],
+      "included": [
+        "BHARATFIN",
+        "IISL"
+      ]
+    }
+  ],
+  "notes": [
+    "Nifty High Beta 50: |excluded|=1 != |included|=2 (may be legitimate for off-cycle events but flag for review)"
+  ]
+}

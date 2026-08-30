@@ -1,0 +1,13 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "a37045b562c69fbed6c0a6c8e072250ce9cd115ebada23ffea80195210164a80",
+  "is_clean": false,
+  "quality_issues": [
+    "long_gap",
+    "off_calendar"
+  ],
+  "rows": 7786,
+  "source": "eod2_data",
+  "symbol": "DRREDDY",
+  "validated_at": "2026-08-25T23:21:55.196790+00:00"
+}

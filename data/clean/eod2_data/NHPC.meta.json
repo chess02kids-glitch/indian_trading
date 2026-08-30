@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "3f2ff3fdce2c13e1c76851878c99c237b73be8cb48f1a2073285c041858570ee",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 4205,
+  "source": "eod2_data",
+  "symbol": "NHPC",
+  "validated_at": "2026-08-25T23:22:45.025982+00:00"
+}

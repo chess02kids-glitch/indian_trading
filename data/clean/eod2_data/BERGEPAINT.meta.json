@@ -1,0 +1,13 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "cdaa4af062df9bfb9e86728b80ea6355f4a4f144df065e6ee45f01150be66a40",
+  "is_clean": false,
+  "quality_issues": [
+    "long_gap",
+    "off_calendar"
+  ],
+  "rows": 7644,
+  "source": "eod2_data",
+  "symbol": "BERGEPAINT",
+  "validated_at": "2026-08-25T23:21:36.892382+00:00"
+}

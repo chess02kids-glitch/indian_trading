@@ -1,0 +1,13 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "a48637e8ddec891c133a9d05060e62dc152d3a8b30c728de51ee1213e9cdf63f",
+  "is_clean": false,
+  "quality_issues": [
+    "long_gap",
+    "off_calendar"
+  ],
+  "rows": 7820,
+  "source": "eod2_data",
+  "symbol": "SBIN",
+  "validated_at": "2026-08-25T23:23:01.439136+00:00"
+}

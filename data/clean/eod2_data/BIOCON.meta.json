@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "0c40bd24f93661e4404fe6834137fb0a771ba6e0595ecc8b6511698ca38d74de",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 5551,
+  "source": "eod2_data",
+  "symbol": "BIOCON",
+  "validated_at": "2026-08-25T23:21:40.159213+00:00"
+}

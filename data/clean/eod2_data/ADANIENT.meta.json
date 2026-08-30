@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "c1e2cb79bbe778e5a6c95ba025531eedd2f380a941cc4cfaa17e3734b42e4267",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 4932,
+  "source": "eod2_data",
+  "symbol": "ADANIENT",
+  "validated_at": "2026-08-25T23:21:20.107077+00:00"
+}

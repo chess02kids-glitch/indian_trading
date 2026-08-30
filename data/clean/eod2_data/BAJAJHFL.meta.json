@@ -1,0 +1,10 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "881beb5a98e67650c09deae15f83018aa77bccf733eeaad5d7657a40cf45909b",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 480,
+  "source": "eod2_data",
+  "symbol": "BAJAJHFL",
+  "validated_at": "2026-08-25T23:21:30.979400+00:00"
+}

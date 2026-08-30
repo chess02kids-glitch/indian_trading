@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "45529321db00db208c6904338c2254de66116d880b0226fa8dae5607110097b3",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 4827,
+  "source": "eod2_data",
+  "symbol": "PFC",
+  "validated_at": "2026-08-25T23:22:50.794610+00:00"
+}

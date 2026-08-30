@@ -1,0 +1,13 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "3c3e1cf27251307377d7780fb9c812166a67d130c38b8226f28255df94b316ff",
+  "is_clean": false,
+  "quality_issues": [
+    "long_gap",
+    "off_calendar"
+  ],
+  "rows": 7200,
+  "source": "eod2_data",
+  "symbol": "MOTHERSON",
+  "validated_at": "2026-08-25T23:22:39.876939+00:00"
+}

@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "a518bf489325b42ffd09d326200557ae904b278be52940e719a5cc4228e81db3",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 4636,
+  "source": "eod2_data",
+  "symbol": "ADANIPORTS",
+  "validated_at": "2026-08-25T23:21:22.020019+00:00"
+}

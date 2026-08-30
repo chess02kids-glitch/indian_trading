@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "35ab1f737e2582bc0357d16a89646818b2a11c0f9a0bec69e28e1b9f34ea91af",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 6614,
+  "source": "eod2_data",
+  "symbol": "HCLTECH",
+  "validated_at": "2026-08-25T23:22:03.839140+00:00"
+}

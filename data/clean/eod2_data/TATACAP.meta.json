@@ -1,0 +1,10 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "2d11b94ef046a4e8056599985388471a1a3e8c4101fa9c2fea0ccba16c32f400",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 213,
+  "source": "eod2_data",
+  "symbol": "TATACAP",
+  "validated_at": "2026-08-25T23:23:09.266141+00:00"
+}

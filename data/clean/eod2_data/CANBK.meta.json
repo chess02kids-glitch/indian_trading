@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "218337130429e6ee3ec84d01572b50ba7d0b2cdbc69d2e340a1647b9526fc791",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 5877,
+  "source": "eod2_data",
+  "symbol": "CANBK",
+  "validated_at": "2026-08-25T23:21:44.495107+00:00"
+}

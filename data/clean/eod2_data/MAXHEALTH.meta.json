@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "5afb15bedd8f09d15eaa2bd398e3f2c28828d9a91588c27f13a51bce22b63a59",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 1488,
+  "source": "eod2_data",
+  "symbol": "MAXHEALTH",
+  "validated_at": "2026-08-25T23:22:38.221206+00:00"
+}

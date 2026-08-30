@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "12fd85fa09e5cc1e0d877035350d6e7ebe1ed5e4324b1b4e07bb81198252c165",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 1060,
+  "source": "eod2_data",
+  "symbol": "LICI",
+  "validated_at": "2026-08-25T23:22:30.072766+00:00"
+}

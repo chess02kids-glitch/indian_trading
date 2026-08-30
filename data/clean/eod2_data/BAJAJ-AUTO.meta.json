@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "92bccd56953ec06b99bf3a2e57cf8359e22f09d777bb699d9b189120bbbd216a",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 4516,
+  "source": "eod2_data",
+  "symbol": "BAJAJ-AUTO",
+  "validated_at": "2026-08-25T23:21:29.663401+00:00"
+}

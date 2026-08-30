@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "76009c1dd2a7576683774edeb172ee228038fb4f8cf904bb93607118ecef9161",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 4561,
+  "source": "eod2_data",
+  "symbol": "BAJAJHLDNG",
+  "validated_at": "2026-08-25T23:21:32.026549+00:00"
+}

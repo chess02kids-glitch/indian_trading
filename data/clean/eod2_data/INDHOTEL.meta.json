@@ -1,0 +1,13 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "3762ae384ed112384f7872604fb43ec5f68e4b9bda90fabf02e5eb0d9938fa11",
+  "is_clean": false,
+  "quality_issues": [
+    "long_gap",
+    "off_calendar"
+  ],
+  "rows": 7769,
+  "source": "eod2_data",
+  "symbol": "INDHOTEL",
+  "validated_at": "2026-08-25T23:22:15.809351+00:00"
+}

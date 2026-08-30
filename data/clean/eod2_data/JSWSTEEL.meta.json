@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "97445157437124c49a8db218828f18a9f7ff3cc5f544cc6e8426dac5012e150c",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 5185,
+  "source": "eod2_data",
+  "symbol": "JSWSTEEL",
+  "validated_at": "2026-08-25T23:22:28.211334+00:00"
+}

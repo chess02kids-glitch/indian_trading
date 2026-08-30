@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "a9e5d141b9899e3edb69faf2c7963b3b515d78fbf639c3960a4eb493997ef95e",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 5454,
+  "source": "eod2_data",
+  "symbol": "ULTRACEMCO",
+  "validated_at": "2026-08-25T23:23:35.623871+00:00"
+}

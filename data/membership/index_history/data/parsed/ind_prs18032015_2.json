@@ -1,0 +1,44 @@
+{
+  "source_pdf": "ind_prs18032015_2.pdf",
+  "source_url": "https://niftyindices.com/Press_Release/ind_prs18032015_2.pdf",
+  "publication_date": null,
+  "effective_date": "2015-03-24",
+  "is_index_maintenance": true,
+  "events": [
+    {
+      "index_name": "Nifty Alpha 50",
+      "index_id": 2001,
+      "excluded": [
+        "BALKRISIND"
+      ],
+      "included": [
+        "MANAPPURAM"
+      ]
+    },
+    {
+      "index_name": "Nifty 500",
+      "index_id": 221,
+      "excluded": [
+        "CMC",
+        "MASTEK",
+        "SHASUNPHAR"
+      ],
+      "included": [
+        "MAYURUNIQ",
+        "MUNJALSHOW",
+        "SUVEN"
+      ]
+    },
+    {
+      "index_name": "Nifty IT",
+      "index_id": 1002,
+      "excluded": [
+        "CMC"
+      ],
+      "included": [
+        "POLARIS"
+      ]
+    }
+  ],
+  "notes": []
+}

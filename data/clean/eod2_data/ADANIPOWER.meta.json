@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "731b1ddcf2ff6a68f1f1be84570cf520a9f5078ac8aa0f552f89564f3dc36001",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 4213,
+  "source": "eod2_data",
+  "symbol": "ADANIPOWER",
+  "validated_at": "2026-08-25T23:21:23.016924+00:00"
+}

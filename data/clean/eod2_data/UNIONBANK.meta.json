@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "b9af789ecd94b21219c4162267f3aedb1fc53694408816c8363a60099b227856",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 5937,
+  "source": "eod2_data",
+  "symbol": "UNIONBANK",
+  "validated_at": "2026-08-25T23:23:37.776946+00:00"
+}

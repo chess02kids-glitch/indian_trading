@@ -1,0 +1,13 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "9bf41969ea172266ce977588fe2784e755814b911972f20c3f1119ef00dd2809",
+  "is_clean": false,
+  "quality_issues": [
+    "long_gap",
+    "off_calendar"
+  ],
+  "rows": 7774,
+  "source": "eod2_data",
+  "symbol": "CIPLA",
+  "validated_at": "2026-08-25T23:21:47.410362+00:00"
+}

@@ -1,0 +1,13 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "ba3355a3120c189a475ba584897a677c360dbe1d4b12ff81d898a88992ffacf3",
+  "is_clean": false,
+  "quality_issues": [
+    "long_gap",
+    "off_calendar"
+  ],
+  "rows": 7822,
+  "source": "eod2_data",
+  "symbol": "RELIANCE",
+  "validated_at": "2026-08-25T23:22:58.402753+00:00"
+}

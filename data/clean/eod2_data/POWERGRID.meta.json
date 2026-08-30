@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "1c5d062b913e714b6e249fdff21d0f9ea6a83911308e627e7e3d13553ed2ae5b",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 4673,
+  "source": "eod2_data",
+  "symbol": "POWERGRID",
+  "validated_at": "2026-08-25T23:22:56.055150+00:00"
+}

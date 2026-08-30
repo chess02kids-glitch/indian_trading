@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "b6964975cda72b0a160cc05c683f1a6d6a2d49b21850e8bc36b452dd1e280b41",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 2449,
+  "source": "eod2_data",
+  "symbol": "ICICIPRULI",
+  "validated_at": "2026-08-25T23:22:14.391430+00:00"
+}

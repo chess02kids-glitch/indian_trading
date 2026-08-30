@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "eea9407be55e517519623e00f4d68e86e554b59d6460fe1d8ea93bf24e05258a",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 4708,
+  "source": "eod2_data",
+  "symbol": "AXISBANK",
+  "validated_at": "2026-08-25T23:21:28.741850+00:00"
+}

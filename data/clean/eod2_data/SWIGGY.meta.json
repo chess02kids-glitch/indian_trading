@@ -1,0 +1,10 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "c91783c66335ae77df0f1855ed8e96a2b5600bdd53c48a6238a9be030e0cc345",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 439,
+  "source": "eod2_data",
+  "symbol": "SWIGGY",
+  "validated_at": "2026-08-25T23:23:09.111808+00:00"
+}

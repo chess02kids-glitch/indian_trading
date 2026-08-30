@@ -1,0 +1,13 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "43b1e1d028472d08d0d2d884ec98fa1b2e2c5cd40316c9daa25377117bc2c07b",
+  "is_clean": false,
+  "quality_issues": [
+    "long_gap",
+    "off_calendar"
+  ],
+  "rows": 7751,
+  "source": "eod2_data",
+  "symbol": "ABB",
+  "validated_at": "2026-08-25T23:21:16.808882+00:00"
+}

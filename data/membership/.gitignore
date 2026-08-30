@@ -1,0 +1,38 @@
+# Raw source PDFs are NOT redistributed.
+# Users rebuild these by running fetch scripts (see README).
+**/data/press_releases/
+**/data/circulars/
+**/_fetch.log
+**/_live_failures.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+*.swp
+
+# Claude Code session state
+.claude/
+
+# nse_eod bulk data (raw bhavcopies + consolidated parquet — rebuild via fetch scripts)
+nse_eod/data/bhavcopy/
+nse_eod/data/_daily_ohlc.parquet
+nse_eod/data/*.json
+nse_eod/data/*.log
+
+# shareholding_history bulk XBRL source files (16 GB / 60K XML files — rebuild via fetch_filings + download_xbrl)
+shareholding_history/data/xbrl/
+shareholding_history/data/*.log
+shareholding_history/data/*.txt
+
+# social-card design candidates (only social-preview.png is tracked)
+docs/social/card2.png
+docs/social/card4.png

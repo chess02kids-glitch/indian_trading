@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "b73ea91f562a799637684d6f4385779e30308d44e3128b67e0cfd69c7232b2ea",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 5498,
+  "source": "eod2_data",
+  "symbol": "LT",
+  "validated_at": "2026-08-25T23:22:32.010950+00:00"
+}

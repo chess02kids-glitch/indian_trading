@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "248ee9648b75d8e49793bca2d448ce7dd6c437d110dc5ba7c013e22be104a60d",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 1988,
+  "source": "eod2_data",
+  "symbol": "HDFCAMC",
+  "validated_at": "2026-08-25T23:22:04.520840+00:00"
+}

@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "a88febf92591d055785c67329f706866995fcb28662f8c7e12c8a25ba34bf6d9",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 4301,
+  "source": "eod2_data",
+  "symbol": "SOLARINDS",
+  "validated_at": "2026-08-25T23:23:06.127432+00:00"
+}

@@ -1,0 +1,108 @@
+{
+  "source_pdf": "ind_prs06122022.pdf",
+  "source_url": "https://niftyindices.com/Press_Release/ind_prs06122022.pdf",
+  "publication_date": "2022-12-06",
+  "effective_date": "2022-12-30",
+  "is_index_maintenance": true,
+  "events": [
+    {
+      "index_name": "Nifty 500",
+      "index_id": 221,
+      "excluded": [
+        "ALLCARGO",
+        "NIITLTD",
+        "SCI"
+      ],
+      "included": [
+        "BEML",
+        "LEMONTREE",
+        "UCOBANK"
+      ]
+    },
+    {
+      "index_name": "Nifty Smallcap 250",
+      "index_id": 227,
+      "excluded": [
+        "ALLCARGO",
+        "NIITLTD",
+        "SCI"
+      ],
+      "included": [
+        "BEML",
+        "LEMONTREE",
+        "UCOBANK"
+      ]
+    },
+    {
+      "index_name": "Nifty Microcap 250",
+      "index_id": 228,
+      "excluded": [
+        "LEMONTREE"
+      ],
+      "included": [
+        "TMB"
+      ]
+    },
+    {
+      "index_name": "Nifty100 Quality 30",
+      "index_id": 2008,
+      "excluded": [
+        "TITAN"
+      ],
+      "included": [
+        "HDFCAMC"
+      ]
+    },
+    {
+      "index_name": "Nifty Alpha 50",
+      "index_id": 2001,
+      "excluded": [
+        "BCG",
+        "BSE",
+        "CHAMBLFERT",
+        "HFCL",
+        "IRCTC",
+        "LINDEINDIA",
+        "LODHA",
+        "OBEROIRLTY",
+        "TATAMOTORS",
+        "TATAPOWER",
+        "TTML",
+        "TITAN",
+        "UNOMINDA",
+        "IDEA",
+        "ZEEL"
+      ],
+      "included": [
+        "ADANIPOWER",
+        "AMBUJACEM",
+        "CUMMINSIND",
+        "DEEPAKFERT",
+        "ELGIEQUIP",
+        "FINEORG",
+        "FLUOROCHEM",
+        "IDFC",
+        "IIFL",
+        "INDIANB",
+        "KARURVYSYA",
+        "PHOENIXLTD",
+        "SCHAEFFLER",
+        "TIMKEN",
+        "UNIONBANK"
+      ]
+    },
+    {
+      "index_name": "Nifty High Beta 50",
+      "index_id": 2002,
+      "excluded": [
+        "AXISBANK",
+        "CANFINHOME"
+      ],
+      "included": [
+        "NAUKRI",
+        "POLICYBZR"
+      ]
+    }
+  ],
+  "notes": []
+}

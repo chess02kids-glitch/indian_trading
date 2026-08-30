@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "fa3fd214713eb21307c362aafa1e7bd63cd18108e9aebf6f0429ac22b04711d9",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 1124,
+  "source": "eod2_data",
+  "symbol": "AWL",
+  "validated_at": "2026-08-25T23:21:27.824634+00:00"
+}

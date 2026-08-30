@@ -1,0 +1,13 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "365caa62928dc8b6810fbd17bfde989d128561441dea978bd987e10ca8b50d95",
+  "is_clean": false,
+  "quality_issues": [
+    "long_gap",
+    "off_calendar"
+  ],
+  "rows": 7252,
+  "source": "eod2_data",
+  "symbol": "BEL",
+  "validated_at": "2026-08-25T23:21:35.685669+00:00"
+}

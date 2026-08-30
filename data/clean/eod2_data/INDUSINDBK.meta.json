@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "3da0047d223fd974b3ce5f7c710e0af096bc59b61e6ac58f5c4c737a1bff610f",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 7103,
+  "source": "eod2_data",
+  "symbol": "INDUSINDBK",
+  "validated_at": "2026-08-25T23:22:18.122894+00:00"
+}

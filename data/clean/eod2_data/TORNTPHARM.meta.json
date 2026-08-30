@@ -1,0 +1,13 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "c975b581f92f2507b54a819d639c03879d76638381ad98b9e0bc5d9a8b795f76",
+  "is_clean": false,
+  "quality_issues": [
+    "long_gap",
+    "off_calendar"
+  ],
+  "rows": 7766,
+  "source": "eod2_data",
+  "symbol": "TORNTPHARM",
+  "validated_at": "2026-08-25T23:23:28.725126+00:00"
+}

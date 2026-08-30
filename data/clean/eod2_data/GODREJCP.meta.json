@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "d51efbeb555eb708cb6b0ce6cf7ff6cffd07c8cff6dcd0ec2a820053831dd339",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 6253,
+  "source": "eod2_data",
+  "symbol": "GODREJCP",
+  "validated_at": "2026-08-25T23:21:59.986733+00:00"
+}

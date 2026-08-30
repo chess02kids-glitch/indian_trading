@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "b739012aa7c49b2e7d29a14e2042f65c2d3febd01f87308ff20891e29dc4ff19",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 6541,
+  "source": "eod2_data",
+  "symbol": "ZYDUSLIFE",
+  "validated_at": "2026-08-25T23:23:49.062984+00:00"
+}

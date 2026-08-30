@@ -1,0 +1,12 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "ea260667f7565baa03cce19cee171a4b9fb95226e5c2ed086a7bfd9d148ee146",
+  "is_clean": false,
+  "quality_issues": [
+    "off_calendar"
+  ],
+  "rows": 6690,
+  "source": "eod2_data",
+  "symbol": "JINDALSTEL",
+  "validated_at": "2026-08-25T23:22:25.447023+00:00"
+}

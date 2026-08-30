@@ -1,0 +1,13 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "c215ae199837fc712156dd9d1893004c15544882edc3a5b6d400e7e61a107981",
+  "is_clean": false,
+  "quality_issues": [
+    "long_gap",
+    "off_calendar"
+  ],
+  "rows": 7711,
+  "source": "eod2_data",
+  "symbol": "CGPOWER",
+  "validated_at": "2026-08-25T23:21:45.553345+00:00"
+}

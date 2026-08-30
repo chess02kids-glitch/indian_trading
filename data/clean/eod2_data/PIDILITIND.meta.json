@@ -1,0 +1,13 @@
+{
+  "exchange": "NSE",
+  "fingerprint": "99791e04dc4d2a3553952e4ac029e046ccb698ff9bdac05473fb54b24aec5b76",
+  "is_clean": false,
+  "quality_issues": [
+    "long_gap",
+    "off_calendar"
+  ],
+  "rows": 7739,
+  "source": "eod2_data",
+  "symbol": "PIDILITIND",
+  "validated_at": "2026-08-25T23:22:53.143477+00:00"
+}

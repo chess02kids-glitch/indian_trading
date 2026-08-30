@@ -1,0 +1,54 @@
+{
+  "source_pdf": "ind_prs24052022.pdf",
+  "source_url": "https://niftyindices.com/Press_Release/ind_prs24052022.pdf",
+  "publication_date": "2022-05-24",
+  "effective_date": "2022-05-31",
+  "is_index_maintenance": true,
+  "events": [
+    {
+      "index_name": "Nifty 500",
+      "index_id": 221,
+      "excluded": [
+        "JSLHISAR"
+      ],
+      "included": [
+        "TRIVENI"
+      ]
+    },
+    {
+      "index_name": "Nifty Smallcap 250",
+      "index_id": 227,
+      "excluded": [
+        "JSLHISAR"
+      ],
+      "included": [
+        "TRIVENI"
+      ]
+    },
+    {
+      "index_name": "Nifty Microcap 250",
+      "index_id": 228,
+      "excluded": [],
+      "included": [
+        "GATEWAY"
+      ]
+    },
+    {
+      "index_name": "Nifty Metal",
+      "index_id": 1006,
+      "excluded": [
+        "JSLHISAR"
+      ],
+      "included": [
+        "JSL",
+        "NIFTY",
+        "NSE",
+        "NSE"
+      ]
+    }
+  ],
+  "notes": [
+    "Nifty Microcap 250: |excluded|=0 != |included|=1 (may be legitimate for off-cycle events but flag for review)",
+    "Nifty Metal: |excluded|=1 != |included|=4 (may be legitimate for off-cycle events but flag for review)"
+  ]
+}
