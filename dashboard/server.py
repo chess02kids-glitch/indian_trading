@@ -15,11 +15,18 @@ import html
 import json
 import logging
 import os
+import sys
 import threading
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 from typing import Any
 from urllib.parse import unquote
+
+# Allow `python dashboard/server.py` to run from a checkout without the
+# package being installed: make the repository root importable.
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from dashboard.operational import REQUIRED_FIELDS, collect_status
 
@@ -52,7 +59,8 @@ def render_operational_dashboard(status: dict[str, Any]) -> bytes:
         '<p class="warning">Read-only status; unknown values require operator '
         "investigation.</p>"
         f"<table>{rows}</table><p>Snapshot: {source}; generated: {generated_at}</p>"
-        '<p><a href="/">← Research Cockpit</a></p>'
+        '<p><a href="/">← Strategy Dashboard</a> · '
+        '<a href="/cockpit">Research Cockpit</a></p>'
         "</body></html>"
     )
     return body.encode("utf-8")
@@ -81,8 +89,13 @@ def _get_cockpit_page() -> bytes:
         from dashboard.cockpit_html import render_cockpit_page
         from dashboard.research_api import get_data_status, list_strategies
 
-        strategies = list_strategies()
-        data_status = get_data_status()
+        try:
+            strategies = list_strategies()
+            data_status = get_data_status()
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("cockpit_data_unavailable")
+            strategies = {}
+            data_status = {"error": str(exc)}
         _cockpit_cache = render_cockpit_page(strategies, data_status)
         return _cockpit_cache
 
@@ -96,8 +109,14 @@ class DashboardHandler(BaseHTTPRequestHandler):
     """Serve the research cockpit and operational dashboard."""
 
     def do_GET(self) -> None:  # noqa: N802
-        """Handle GET requests for the cockpit and API endpoints."""
+        """Handle GET requests for the dashboard pages and API endpoints."""
         path = self.path.split("?")[0]
+        query = {}
+        if "?" in self.path:
+            for pair in self.path.split("?", 1)[1].split("&"):
+                if "=" in pair:
+                    k, v = pair.split("=", 1)
+                    query[k] = unquote(v)
 
         if path == "/healthz":
             self._send_json(
@@ -106,7 +125,24 @@ class DashboardHandler(BaseHTTPRequestHandler):
             )
         elif path == "/api/status":
             self._send_json(HTTPStatus.OK, collect_status())
-        elif path == "/" or path == "/cockpit":
+        elif path == "/":
+            from dashboard.strategy_dashboard import render_strategy_page
+
+            capital = float(query.get("capital", 100_000))
+            try:
+                self._send(
+                    HTTPStatus.OK,
+                    "text/html; charset=utf-8",
+                    render_strategy_page(capital),
+                )
+            except Exception:  # noqa: BLE001 — never let the landing page 500
+                logger.exception("strategy_dashboard_render_failed")
+                self._send(
+                    HTTPStatus.INTERNAL_SERVER_ERROR,
+                    "text/plain; charset=utf-8",
+                    b"Strategy dashboard failed to render; see server log.\n",
+                )
+        elif path == "/cockpit":
             self._send(HTTPStatus.OK, "text/html; charset=utf-8", _get_cockpit_page())
         elif path == "/operations":
             status = collect_status()
@@ -115,6 +151,18 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 "text/html; charset=utf-8",
                 render_operational_dashboard(status),
             )
+        elif path == "/api/strategy/signal":
+            from dashboard.strategy_dashboard import build_signal_payload
+
+            capital = float(query.get("capital", 100_000))
+            try:
+                self._send_json(HTTPStatus.OK, build_signal_payload(capital))
+            except Exception as exc:  # noqa: BLE001
+                logger.exception("strategy_signal_failed")
+                self._send_json(
+                    HTTPStatus.INTERNAL_SERVER_ERROR,
+                    {"error": str(exc)},
+                )
         elif path in ("/api/strategies", "/api/research/strategies"):
             from dashboard.research_api import list_strategies
 

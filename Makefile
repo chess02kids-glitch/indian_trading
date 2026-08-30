@@ -38,6 +38,19 @@ generate-sample-data:
 server:
 	python dashboard/server.py
 
+# Strategy dashboard / daily signal
+strategy:
+	python -m dashboard.strategy_dashboard --html
+
+signal:
+	python scripts/daily_signal.py
+
+signal-save:
+	python scripts/daily_signal.py --save
+
+signal-telegram:
+	python scripts/daily_signal.py --save --telegram
+
 # Clean
 clean:
 	rm -rf var/diagnostics/*.json
@@ -45,4 +58,4 @@ clean:
 	rm -rf __pycache__
 	rm -rf *.pyc
 
-.PHONY: install lint format test pre-commit dashboard dashboard-research dashboard-paper diagnostics diagnostics-verbose generate-sample-data server clean
+.PHONY: install lint format test pre-commit dashboard dashboard-research dashboard-paper diagnostics diagnostics-verbose generate-sample-data server strategy signal signal-save signal-telegram clean

@@ -32,7 +32,8 @@ def generate_health_check() -> dict:
         "rate_cap": 10,
         "max_position_concentration": 0.15,
         "concentration_limit": 0.25,
-        "token_expiry": (datetime.now(timezone.utc).timestamp() + 3600 * 24) * 1000,  # 24 hours from now
+        "token_expiry": (datetime.now(timezone.utc).timestamp() + 3600 * 24)
+        * 1000,  # 24 hours from now
         "last_reauth_timestamp": datetime.now(timezone.utc).isoformat(),
         "realized_pnl": 0,
         "unrealized_pnl": 0,
@@ -71,51 +72,80 @@ def generate_risk_state() -> dict:
 def generate_mlflow_experiments() -> list[dict]:
     """Generate sample MLflow experiment data."""
     experiments = []
-    
+
     strategies = [
         {"name": "Momentum", "id": "HYP-001", "status": "live"},
         {"name": "Mean Reversion", "id": "HYP-002", "status": "paper"},
         {"name": "Breakout", "id": "HYP-003", "status": "rejected"},
         {"name": "Trend Following", "id": "HYP-004", "status": "live"},
     ]
-    
+
     for strategy in strategies:
-        experiments.append({
-            "hypothesis_id": strategy["id"],
-            "strategy": strategy["name"],
-            "status": strategy["status"],
-            "date_range": "2020-01-01 to 2026-01-01",
-            "metrics": {
-                "sharpe": 1.2 if strategy["status"] == "live" else 0.8,
-                "sharpe_cost_adjusted": 0.9 if strategy["status"] == "live" else 0.3,
-                "total_return": 0.45 if strategy["status"] == "live" else 0.15,
-                "max_drawdown": 0.12 if strategy["status"] == "live" else 0.25,
-                "turnover": 0.8,
-            },
-            "validation": {
-                "deflated_sharpe": {
-                    "probability": 0.95 if strategy["status"] == "live" else 0.3,
+        experiments.append(
+            {
+                "hypothesis_id": strategy["id"],
+                "strategy": strategy["name"],
+                "status": strategy["status"],
+                "date_range": "2020-01-01 to 2026-01-01",
+                "metrics": {
+                    "sharpe": 1.2 if strategy["status"] == "live" else 0.8,
+                    "sharpe_cost_adjusted": 0.9
+                    if strategy["status"] == "live"
+                    else 0.3,
+                    "total_return": 0.45 if strategy["status"] == "live" else 0.15,
+                    "max_drawdown": 0.12 if strategy["status"] == "live" else 0.25,
+                    "turnover": 0.8,
                 },
-                "cpcv_pass": strategy["status"] == "live",
-            },
-            "gate_result": {
-                "verdict": "pass" if strategy["status"] == "live" else "fail",
-                "score": 0.95 if strategy["status"] == "live" else 0.4,
-                "checks": [
-                    {"name": "beats_all_baselines", "status": "pass" if strategy["status"] == "live" else "fail"},
-                    {"name": "deflated_sharpe_positive", "status": "pass" if strategy["status"] == "live" else "fail"},
-                    {"name": "cpcv_pass", "status": "pass" if strategy["status"] == "live" else "fail"},
-                    {"name": "survives_pessimistic_costs", "status": "pass" if strategy["status"] == "live" else "fail"},
-                    {"name": "live_paper_divergence_ok", "status": "pass" if strategy["status"] == "live" else "fail"},
-                ],
-                "generated_at": datetime.now(timezone.utc).isoformat(),
-            },
-            "variants_tested": 50,
-            "started_at": datetime.now(timezone.utc).isoformat(),
-            "ended_at": datetime.now(timezone.utc).isoformat(),
-            "run_id": f"run_{strategy['id']}",
-        })
-    
+                "validation": {
+                    "deflated_sharpe": {
+                        "probability": 0.95 if strategy["status"] == "live" else 0.3,
+                    },
+                    "cpcv_pass": strategy["status"] == "live",
+                },
+                "gate_result": {
+                    "verdict": "pass" if strategy["status"] == "live" else "fail",
+                    "score": 0.95 if strategy["status"] == "live" else 0.4,
+                    "checks": [
+                        {
+                            "name": "beats_all_baselines",
+                            "status": "pass"
+                            if strategy["status"] == "live"
+                            else "fail",
+                        },
+                        {
+                            "name": "deflated_sharpe_positive",
+                            "status": "pass"
+                            if strategy["status"] == "live"
+                            else "fail",
+                        },
+                        {
+                            "name": "cpcv_pass",
+                            "status": "pass"
+                            if strategy["status"] == "live"
+                            else "fail",
+                        },
+                        {
+                            "name": "survives_pessimistic_costs",
+                            "status": "pass"
+                            if strategy["status"] == "live"
+                            else "fail",
+                        },
+                        {
+                            "name": "live_paper_divergence_ok",
+                            "status": "pass"
+                            if strategy["status"] == "live"
+                            else "fail",
+                        },
+                    ],
+                    "generated_at": datetime.now(timezone.utc).isoformat(),
+                },
+                "variants_tested": 50,
+                "started_at": datetime.now(timezone.utc).isoformat(),
+                "ended_at": datetime.now(timezone.utc).isoformat(),
+                "run_id": f"run_{strategy['id']}",
+            }
+        )
+
     return experiments
 
 
@@ -295,7 +325,7 @@ def main() -> None:
     """Generate all sample data files."""
     print("Generating sample data for Quant India Dashboard...")
     print()
-    
+
     # Create directories
     dirs = [
         "var/diagnostics",
@@ -307,10 +337,10 @@ def main() -> None:
         "observability",
         "config",
     ]
-    
+
     for d in dirs:
         Path(d).mkdir(parents=True, exist_ok=True)
-    
+
     # Generate and save files
     files = {
         "observability/health_check.json": generate_health_check(),
@@ -322,20 +352,20 @@ def main() -> None:
         "var/diagnostics/HYP-DIAG-001.json": generate_diagnostics(),
         "config/capital_ladder.json": generate_capital_ladder(),
     }
-    
+
     for path, data in files.items():
-        if path.endswith('.jsonl'):
+        if path.endswith(".jsonl"):
             # Write as JSONL
-            with open(path, 'w') as f:
+            with open(path, "w") as f:
                 for item in data:
-                    f.write(json.dumps(item) + '\n')
+                    f.write(json.dumps(item) + "\n")
         else:
             # Write as JSON
-            with open(path, 'w') as f:
+            with open(path, "w") as f:
                 json.dump(data, f, indent=2)
-        
+
         print(f"✓ Created: {path}")
-    
+
     print()
     print("Sample data generated successfully!")
     print()

@@ -31,6 +31,16 @@ Architecture:
     - manual kill switch
 """
 
-from .main_dashboard import main
+
+def main() -> None:
+    """Entry point for the Streamlit main dashboard (lazy import).
+
+    Imported lazily so the stdlib HTTP server (``dashboard.server``) keeps
+    working in environments without Streamlit installed.
+    """
+    from .main_dashboard import main as _main
+
+    _main()
+
 
 __all__ = ["main"]
