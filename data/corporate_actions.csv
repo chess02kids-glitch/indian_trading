@@ -1,0 +1,4 @@
+symbol,ex_date,type,ratio,description,adjust_date
+MOCK1,2023-01-01,split,2:1,Mock Split,2023-01-01
+MOCK2,2023-01-01,split,2:1,Mock Split,2023-01-01
+MOCK3,2023-01-01,split,2:1,Mock Split,2023-01-01

@@ -1,0 +1,4 @@
+symbol,index_name,valid_from,valid_to,isin,sector,exchange,delisted
+MOCK1,Nifty 50,2015-01-01,2099-12-31,INE716658209,Technology,NSE,False
+MOCK2,Nifty 50,2015-01-01,2099-12-31,INE640162695,Technology,NSE,False
+MOCK3,Nifty 50,2015-01-01,2099-12-31,INE434325586,Technology,NSE,False
