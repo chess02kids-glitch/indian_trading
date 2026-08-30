@@ -136,12 +136,12 @@ The go-live gate is implemented as UI, not just policy. It's programmatically di
 ```python
 def live_trading_unlockable(strategy_id: str) -> tuple[bool, list[str]]:
     checks = {
-        "beats_all_baselines": ...,      # from backtest/
-        "deflated_sharpe_positive": ..., # from research gate calc
-        "cpcv_pass": ...,                # from research gate calc
+        "beats_all_baselines": ...,  # from backtest/
+        "deflated_sharpe_positive": ...,  # from research gate calc
+        "cpcv_pass": ...,  # from research gate calc
         "survives_pessimistic_costs": ...,
-        "live_paper_divergence_ok": ..., # paper Sharpe within ~30% of backtest
-        "min_paper_trading_days": ...,   # e.g. >= 20 trading days paper
+        "live_paper_divergence_ok": ...,  # paper Sharpe within ~30% of backtest
+        "min_paper_trading_days": ...,  # e.g. >= 20 trading days paper
     }
     unlockable = all(checks.values())
     return unlockable, [k for k, v in checks.items() if not v]
