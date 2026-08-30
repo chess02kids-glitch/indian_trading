@@ -210,7 +210,7 @@ def live_trading_unlockable(strategy_id: str | None = None) -> tuple[bool, list[
     checks = {
         "beats_all_baselines": False,
         "deflated_sharpe_positive": False,
-        "cpcv_pass": False,
+        "cpcv_pass": False,  # nosec B105 (gate-check name, not a credential)
         "survives_pessimistic_costs": False,
         "live_paper_divergence_ok": False,
         "min_paper_trading_days": False,
@@ -768,7 +768,7 @@ def render_reconciliation() -> None:
 
     with col1:
         token_expiry = health.get("token_expiry", "unknown")
-        if token_expiry != "unknown":
+        if token_expiry != "unknown":  # nosec B105 (sentinel literal, not a credential)
             expiry_time = (
                 datetime.fromisoformat(token_expiry)
                 if isinstance(token_expiry, str)

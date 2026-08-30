@@ -18,7 +18,7 @@ SERIES = {
 
 def fetch_series(series_id):
     url = f"https://api.stlouisfed.org/fred/series/observations?series_id={series_id}&api_key={FRED_API_KEY}&file_type=json"
-    response = requests.get(url)
+    response = requests.get(url, timeout=30)
     if response.status_code == 200:
         data = response.json()
         observations = data.get("observations", [])
