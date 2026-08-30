@@ -370,6 +370,50 @@ dashboard/
 - `reconciliation/` - Position and order reconciliation
 - `execution/` - Order execution service
 
+## Strategy Dashboard (HTTP server, no Streamlit required)
+
+**`dashboard/strategy_dashboard.py`** renders the one page that answers "is
+anything working, and what do I do today":
+
+- **Validated strategy card** — MomReM (momentum + market-regime filter):
+  OOS Sharpe 0.97, CAGR 19.3%, MaxDD −16.3%, deflated Sharpe 0.999, robust
+  to 3× costs. Every other researched family is shown on the leaderboard
+  with an honest verdict (rejected / benchmark-like / validated).
+- **Live signal** — recomputes MomReM's exact production logic (20-day
+  cross-sectional momentum, top-20 equal weight, 100-day SMA regime filter
+  on the equal-weight market proxy) from `data/clean/eod2_data`:
+  current regime, strategy position (1-day execution lag), today's basket
+  with share quantities for a given capital, next rebalance date, market
+  breadth, and recent signal history.
+- **Track record charts** — self-contained inline SVG equity curve,
+  drawdown, and yearly returns vs benchmark (no external CDN/JS).
+- **Data freshness** — surfaces stale data with the exact refresh commands,
+  so a stale signal is never mistaken for a broken strategy.
+
+### Routes (served by `dashboard/server.py`)
+
+| Route | Content |
+|---|---|
+| `/` | Strategy dashboard (landing page) |
+| `/cockpit` | Research cockpit (strategy experiments) |
+| `/operations` | Read-only operational status |
+| `/api/strategy/signal?capital=100000` | JSON signal payload |
+| `/healthz` | Health check |
+
+```bash
+# Run the server
+python dashboard/server.py            # or: make server
+
+# Daily signal from the CLI
+python scripts/daily_signal.py --capital 100000 --save
+python scripts/daily_signal.py --capital 100000 --save --telegram  # needs TELEGRAM_BOT_TOKEN/CHAT_ID
+```
+
+Note: `dashboard/__init__.py` imports Streamlit lazily so the HTTP server
+works in a minimal environment. The Streamlit main dashboard
+(`main_dashboard.py`, all 6 screens) still runs via
+`streamlit run dashboard/main_dashboard.py`.
+
 ## License
 
 Part of the Quant India trading system. See repository root for license information.
