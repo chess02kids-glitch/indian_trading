@@ -2,7 +2,7 @@ Metadata-Version: 2.4
 Name: quant-india
 Version: 0.5.0
 Summary: Production repository foundation for Indian Trading
-Requires-Python: <3.13,>=3.11
+Requires-Python: >=3.11
 Requires-Dist: yfinance>=0.2.0
 Requires-Dist: duckdb>=1.0.0
 Requires-Dist: pandas>=2.0.0

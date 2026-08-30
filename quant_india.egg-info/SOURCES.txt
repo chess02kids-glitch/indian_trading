@@ -80,6 +80,7 @@ reconciliation/engine.py
 reconciliation/repositories.py
 reports/__init__.py
 research/__init__.py
+research/candidate_set.py
 research/cli.py
 research/contracts.py
 research/corporate_actions.py
@@ -120,6 +121,7 @@ tests/test_broker_persistence.py
 tests/test_broker_rate_limit.py
 tests/test_broker_status_dashboard.py
 tests/test_broker_token.py
+tests/test_candidate_set.py
 tests/test_cli.py
 tests/test_corporate_actions.py
 tests/test_cost_model.py
