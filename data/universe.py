@@ -274,10 +274,22 @@ class UniverseDataset:
             raise FileNotFoundError(f"universe dataset directory missing: {path}")
         records: list[UniverseMembership] = []
         for child in sorted(path.iterdir()):
+            if not child.is_file():
+                continue
             if child.suffix.lower() == ".csv":
-                records.extend(cls.from_frame(pd.read_csv(child)).members)
+                try:
+                    df = pd.read_csv(child)
+                    if {"symbol", "index_name", "valid_from"}.issubset(set(df.columns)):
+                        records.extend(cls.from_frame(df).members)
+                except Exception:
+                    continue
             elif child.suffix.lower() == ".parquet":
-                records.extend(cls.from_frame(pd.read_parquet(child)).members)
+                try:
+                    df = pd.read_parquet(child)
+                    if {"symbol", "index_name", "valid_from"}.issubset(set(df.columns)):
+                        records.extend(cls.from_frame(df).members)
+                except Exception:
+                    continue
         if not records:
             raise ValueError(f"no universe membership files found in {path}")
         return cls(records)

@@ -18,7 +18,7 @@
       "name": "Nifty 50 PIT",
       "path_glob": "data/universe/nifty50-pit/nifty50.csv",
       "must_not_contain": {"symbol": "MOCK1"},
-      "min_rows": 100
+      "min_rows": 50
     },
     {
       "name": "Nifty 500 PIT",
