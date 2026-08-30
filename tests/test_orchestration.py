@@ -62,7 +62,16 @@ def make_frame(
     return frame.sort_values(["symbol", "date"]).reset_index(drop=True)
 
 
-def build_pipeline(tmp_path, *, gate=None, **guard_limits):
+def build_pipeline(
+    tmp_path, *, gate=None, max_staleness_days: float = 4000.0, **guard_limits
+):
+    """Build a pipeline whose test frames are not time-bombs.
+
+    Test frames use fixed dates (e.g. 2026-08), so the default 6-day
+    staleness gate (which compares against the real wall clock) trips once
+    the calendar passes those dates.  Tests that *want* the staleness gate
+    to fire pass ``max_staleness_days=6.0`` explicitly.
+    """
     broker = PaperBroker(T0, PaperBrokerConfig(fill_probability=1.0, seed=3))
     order_repo = InMemoryOrderRepository()
     position_repo = InMemoryPositionRepository()
@@ -95,6 +104,7 @@ def build_pipeline(tmp_path, *, gate=None, **guard_limits):
         alert_service=AlertService(environ={}),
         approval_gate=gate or ManualApprovalGate(),
         dataset_version="test-v1",
+        max_staleness_days=max_staleness_days,
         cash_for_allocation=1_000_000.0,
     )
     return {
@@ -160,7 +170,8 @@ class TestDailyFlow:
 
     def test_stale_data_prevents_signal_generation(self, tmp_path) -> None:
         """Final suite (test 7): stale data halts before any signal exists."""
-        parts = build_pipeline(tmp_path)
+        # The staleness gate is deliberately enforced here: the frame is 6+ years old.
+        parts = build_pipeline(tmp_path, max_staleness_days=6.0)
         stale_frame = make_frame(start="2020-01-06", days=10)
         result = parts["pipeline"].run_day(
             "run-stale", stale_frame, approved_by="alice"
