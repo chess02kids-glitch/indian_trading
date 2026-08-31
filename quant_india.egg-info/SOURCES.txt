@@ -38,6 +38,7 @@ dashboard/__init__.py
 dashboard/broker_dashboard.py
 dashboard/broker_status.py
 dashboard/cockpit_html.py
+dashboard/main_dashboard.py
 dashboard/operational.py
 dashboard/paper_dashboard.py
 dashboard/research_api.py

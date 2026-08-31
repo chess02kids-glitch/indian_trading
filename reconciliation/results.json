@@ -1,0 +1,20 @@
+{
+  "timestamp": "2026-08-30T06:35:01.337928+00:00",
+  "matched": true,
+  "locked": false,
+  "mismatches": [],
+  "positions": {
+    "RELIANCE": {
+      "expected": 100,
+      "actual": 100
+    },
+    "TCS": {
+      "expected": 50,
+      "actual": 50
+    },
+    "INFY": {
+      "expected": 75,
+      "actual": 75
+    }
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "state": "PAPER",
+  "reason": "paper trading active",
+  "updated_at": "2026-08-30T06:35:01.337619+00:00",
+  "last_run_ts": "2026-08-30 06:35:01",
+  "data_age_min": 5,
+  "broker_last_ping_min": 2,
+  "daily_loss_used": 0,
+  "daily_loss_limit": 10000,
+  "current_drawdown": 0.02,
+  "max_drawdown_limit": 0.2,
+  "orders_this_second": 0,
+  "rate_cap": 10,
+  "max_position_concentration": 0.15,
+  "concentration_limit": 0.25,
+  "token_expiry": 1788158101337.754,
+  "last_reauth_timestamp": "2026-08-30T06:35:01.337771+00:00",
+  "realized_pnl": 0,
+  "unrealized_pnl": 0,
+  "broker_health": {
+    "connected": true,
+    "latency_ms": 45,
+    "last_ping": "2026-08-30T06:35:01.337779+00:00"
+  },
+  "reconciliation": {
+    "matched": true,
+    "locked": false,
+    "mismatches": []
+  },
+  "kill_switch": {
+    "status": "ARMED",
+    "tripped": false,
+    "conditions": []
+  },
+  "demotion_history": []
+}

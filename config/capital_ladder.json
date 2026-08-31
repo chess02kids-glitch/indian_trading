@@ -1,0 +1,33 @@
+{
+  "stages": [
+    {
+      "name": "Paper Trading",
+      "amount": 0,
+      "currency": "\u20b9"
+    },
+    {
+      "name": "Stage 1",
+      "amount": 10000,
+      "currency": "\u20b9"
+    },
+    {
+      "name": "Stage 2",
+      "amount": 50000,
+      "currency": "\u20b9"
+    },
+    {
+      "name": "Stage 3",
+      "amount": 100000,
+      "currency": "\u20b9"
+    }
+  ],
+  "current_stage": 1,
+  "promotion_criteria": [
+    "beats_all_baselines",
+    "deflated_sharpe_positive",
+    "cpcv_pass",
+    "survives_pessimistic_costs",
+    "live_paper_divergence_ok",
+    "min_paper_trading_days"
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "status": "ARMED",
+  "tripped": false,
+  "condition": null,
+  "time": null,
+  "response": null,
+  "triggered_by": null,
+  "history": []
+}
