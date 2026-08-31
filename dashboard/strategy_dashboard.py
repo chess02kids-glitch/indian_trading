@@ -527,7 +527,8 @@ a{color:var(--blue)}
 
 def _page(title: str, body: str, active: str) -> bytes:
     nav_items = [
-        ("/", "Strategy Dashboard", "strategy"),
+        ("/strategy", "Strategy Dashboard", "strategy"),
+        ("/paper", "Paper Trading", "paper"),
         ("/cockpit", "Research Cockpit", "cockpit"),
         ("/operations", "Operations", "ops"),
     ]

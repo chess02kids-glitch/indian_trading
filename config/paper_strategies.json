@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "description": "Only strategies that pass research review and are explicitly marked paper_approved may create virtual paper orders.",
+  "strategies": {
+    "momrem": {
+      "label": "MomReM momentum + regime filter",
+      "status": "RESEARCH_ONLY",
+      "paper_approved": false,
+      "mode": "DAILY",
+      "reason": "The existing report is a research candidate. It must be independently re-run on the selected universe and cost assumptions before paper allocation."
+    }
+  }
+}

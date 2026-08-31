@@ -394,7 +394,8 @@ anything working, and what do I do today":
 
 | Route | Content |
 |---|---|
-| `/` | Strategy dashboard (landing page) |
+| `/` / `/paper` | Local virtual paper account: read-only Upstox quotes, virtual orders and P&L |
+| `/strategy` | Existing strategy-signal dashboard |
 | `/cockpit` | Research cockpit (strategy experiments) |
 | `/operations` | Read-only operational status |
 | `/api/strategy/signal?capital=100000` | JSON signal payload |
