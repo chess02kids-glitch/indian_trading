@@ -151,6 +151,17 @@ def _assert_frozen_config(
         raise SystemExit(f"frozen v0.6 configuration drifted: {drifted}")
 
 
+def _nifty100_dir(universe_dir: Path) -> Path:
+    """Resolve the Nifty 100 PIT directory.
+
+    ``ingest_real_data.py`` writes per-index subdirectories
+    (``{slug}-pit/{slug}.csv``); the repository's flat layout
+    (``data/universe/nifty100.csv``) is still accepted.
+    """
+    sub = Path(universe_dir) / "nifty100-pit"
+    return sub if (sub / "nifty100.csv").is_file() else Path(universe_dir)
+
+
 def _load_real_data(
     *,
     as_of: str,
@@ -160,12 +171,13 @@ def _load_real_data(
 ) -> dict:
     """Load panel + PIT universe + active-membership mask + fundamentals."""
     catalog = CleanDataCatalog()
-    if not (universe_dir / "nifty100.csv").is_file():
+    n100_dir = _nifty100_dir(universe_dir)
+    if not (n100_dir / "nifty100.csv").is_file():
         raise SystemExit(
             "point-in-time universe missing; run: "
             "python scripts/ingest_real_data.py --local ..."
         )
-    dataset = UniverseDataset.from_dir(universe_dir)
+    dataset = UniverseDataset.from_dir(n100_dir)
     requested = realdata.requested_constituents(
         dataset, window_start=window_start, as_of=as_of
     )
@@ -198,9 +210,9 @@ def _load_real_data(
             "then re-run this script (or merge with --from-bundle first)."
         ) from exc
 
-    membership_csv = universe_dir / "nifty100.csv"
+    membership_csv = n100_dir / "nifty100.csv"
     provenance = {}
-    provenance_path = universe_dir / "provenance.json"
+    provenance_path = n100_dir / "provenance.json"
     if provenance_path.is_file():
         provenance = json.loads(provenance_path.read_text(encoding="utf-8"))
     membership_spec = NseMembershipSpec(

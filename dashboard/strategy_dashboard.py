@@ -108,11 +108,18 @@ def _close_wide() -> pd.DataFrame:
         sub = wide.loc[wide.index >= pd.Timestamp("2016-01-01")]
         coverage = sub.notna().mean()
         universe = coverage[coverage >= 0.90].index.tolist()
-        # require the name to have traded recently (still listed / not delisted)
+        # require the name to have traded recently (still listed / not delisted).
+        # Allow a ~3-week window: the clean bundle is updated in batches, so
+        # symbols can legitimately end a few days before the panel's last date.
         last = wide.index[-1]
-        recent = wide.loc[last, universe].notna()
+        recent_window = wide.loc[wide.index >= last - pd.Timedelta(days=21), universe]
+        recent = recent_window.notna().any()
         universe = [s for s in universe if recent.get(s, False)]
-        return wide[universe]
+        wide = wide[universe]
+        # the clean bundle is updated in batches, so column tails are ragged:
+        # carry each name's last known close forward to the panel's last date
+        # (every survivor traded within the window above, so the gap is small)
+        return wide.ffill()
 
     return _cached("close_wide", _load)
 

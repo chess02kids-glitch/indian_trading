@@ -128,8 +128,9 @@ def make_mini_world(
     * ``eod2/`` — ``daily/<lowercase-symbol>.csv`` (eod2 header),
       ``meta.json``, ``isin_symbol_map.json``;
     * ``membership/index_history/data/index_membership_history.csv`` —
-      CRLF upstream membership table (index 219 = "Nifty 100", plus a
-      decoy index-218 row and a DUMMY demerger row);
+      CRLF upstream membership table (index 219 = "Nifty 100", 217 =
+      "Nifty 50" subset, 221 = "Nifty 500" superset, plus a decoy
+      index-218 row and DUMMY demerger rows);
     * ``bundle/`` — the operator fundamentals bundle
       (``fundamentals_quarterly.parquet`` + provenance JSON).
 
@@ -234,6 +235,27 @@ def make_mini_world(
         "1.0,press_release,https://nse.example/ind_prs03.pdf,"
     )
     rows.append('219,"Nifty 100",DUMMYVEDL1,2022-06-01,,1.0,snapshot,,demerger dummy')
+    # The ingest script processes all three NSE indices (217/219/221), so the
+    # world must carry valid rows for each: Nifty 50 is a subset of Nifty 100,
+    # Nifty 500 a superset (same special members).
+    for symbol in complete_symbols[:25]:
+        rows.append(f'217,"Nifty 50",{symbol},2022-01-01,,1.0,snapshot_floor,,')
+    for symbol in complete_symbols:
+        rows.append(f'221,"Nifty 500",{symbol},2022-01-01,,1.0,snapshot_floor,,')
+    rows.append(
+        f'221,"Nifty 500",SPINOFF,2022-01-01,{spinoff_exit},'
+        "1.0,press_release,https://nse.example/ind_prs01.pdf,"
+    )
+    rows.append(
+        f'221,"Nifty 500",OLDBANK,2022-01-01,{spinoff_exit},'
+        "1.0,press_release,https://nse.example/ind_prs02.pdf,"
+        "closed by ind_prs04072023.pdf"
+    )
+    rows.append(
+        f'221,"Nifty 500",NEWCO,{newco_member_from},'
+        "1.0,press_release,https://nse.example/ind_prs03.pdf,"
+    )
+    rows.append('221,"Nifty 500",DUMMYVEDL1,2022-06-01,,1.0,snapshot,,demerger dummy')
     (csv_dir / "index_membership_history.csv").write_text(
         "\r\n".join(rows) + "\r\n", encoding="utf-8"
     )
@@ -325,7 +347,7 @@ def _local_args(world: dict[str, Any], out_base: Path) -> list[str]:
         str(world["eod2"]),
         "--membership-dir",
         str(world["membership"]),
-        "--universe-dir",
+        "--universe-root",
         str(out_base / "universe"),
         "--report-dir",
         str(out_base / "reports"),
@@ -767,7 +789,7 @@ def test_universe_constituent_validation(
     with pytest.raises(ValueError, match="valid_to before valid_from"):
         UniverseDataset.from_frame(bad)
     # The committed PIT CSV loads unchanged through from_dir.
-    disk_dataset = UniverseDataset.from_dir(ingested_world["universe_dir"])
+    disk_dataset = UniverseDataset.from_dir(ingested_world["universe_dir"] / "nifty100-pit")
     assert disk_dataset.all_symbols("nifty100") == dataset.all_symbols("nifty100")
 
 
@@ -775,7 +797,7 @@ def test_missing_constituent_handling(
     world: dict[str, Any], ingested_world: dict[str, Any]
 ) -> None:
     catalog = CleanDataCatalog(world["data_dir"])
-    dataset = UniverseDataset.from_dir(world["universe_dir"])
+    dataset = UniverseDataset.from_dir(world["universe_dir"] / "nifty100-pit")
     requested = realdata.requested_constituents(
         dataset, window_start=world["window_start"], as_of=world["as_of"]
     )
@@ -793,8 +815,11 @@ def test_missing_constituent_handling(
     assert "no validated (clean) data" in panels.excluded["OLDBANK"]
     assert "NEWCO" in panels.excluded
     assert "incomplete price history" in panels.excluded["NEWCO"]
-    assert set(panels.symbols) == set(requested) - {"OLDBANK", "NEWCO"}
-    assert len(panels.symbols) == 51
+    # OLDBANK (no price file in the source) never enters the panel; NEWCO
+    # keeps a place (its gaps are forward/back-filled) and is annotated,
+    # never silently dropped.
+    assert set(panels.symbols) == set(requested) - {"OLDBANK"}
+    assert len(panels.symbols) == 52
     # The completeness report sharpens the source-level reason.
     report_excluded = world["report"]["panel"]["excluded_symbols"]
     assert "no price file" in report_excluded["OLDBANK"]
@@ -804,7 +829,7 @@ def test_missing_constituent_handling(
 def test_universe_version_fingerprinting(
     world: dict[str, Any], ingested_world: dict[str, Any]
 ) -> None:
-    csv_path = world["universe_dir"] / "nifty100.csv"
+    csv_path = world["universe_dir"] / "nifty100-pit" / "nifty100.csv"
     first = nse_membership_adapter.membership_fingerprint(pd.read_csv(csv_path))
     second = nse_membership_adapter.membership_fingerprint(pd.read_csv(csv_path))
     assert first == second
@@ -813,7 +838,7 @@ def test_universe_version_fingerprinting(
     changed.loc[0, "valid_from"] = "2022-02-01"
     assert nse_membership_adapter.membership_fingerprint(changed) != first
 
-    dataset = UniverseDataset.from_dir(world["universe_dir"])
+    dataset = UniverseDataset.from_dir(world["universe_dir"] / "nifty100-pit")
     exit_day = world["spinoff_exit"]
     before = dataset.members_at("nifty100", exit_day - timedelta(days=1))
     on_exit = dataset.members_at("nifty100", exit_day)
@@ -865,7 +890,7 @@ def test_symbol_continuity_isin(
     (Mirrors the real HDFC vs HDFCBANK case: distinct ISINs, the delisted
     name is flagged, the remaining name stays a member throughout.)
     """
-    dataset = UniverseDataset.from_dir(world["universe_dir"])
+    dataset = UniverseDataset.from_dir(world["universe_dir"] / "nifty100-pit")
     old_bank = [m for m in dataset.for_index("nifty100") if m.symbol == "OLDBANK"]
     assert len(old_bank) == 1
     member = old_bank[0]
@@ -909,7 +934,7 @@ def _capture_local_run(
         "clean_sha": clean_sha,
         "clean_fp": clean_fp,
         "report": report,
-        "universe_csv": (out_dir / "universe" / "nifty100.csv").read_bytes(),
+        "universe_csv": (out_dir / "universe" / "nifty100-pit" / "nifty100.csv").read_bytes(),
         "panel_symbols": (out_dir / "universe" / "panel_symbols.txt").read_text(
             encoding="utf-8"
         ),
@@ -1056,7 +1081,7 @@ def test_ingestion_to_research_integration(
 ) -> None:
     """Ingestion -> clean layer -> panels -> PIT mask -> strategy signals."""
     catalog = CleanDataCatalog(world["data_dir"])
-    dataset = UniverseDataset.from_dir(world["universe_dir"])
+    dataset = UniverseDataset.from_dir(world["universe_dir"] / "nifty100-pit")
     requested = realdata.requested_constituents(
         dataset, window_start=world["window_start"], as_of=world["as_of"]
     )
@@ -1067,7 +1092,7 @@ def test_ingestion_to_research_integration(
         window_start=world["window_start"],
         window_end=world["as_of"],
     )
-    assert panels.close.shape == (world["panel_days"], 51)
+    assert panels.close.shape == (world["panel_days"], 52)
     assert not panels.close.isna().any().any()
     assert (panels.close > 0).all().all()
 
@@ -1229,7 +1254,7 @@ def test_full_real_data_pipeline_ledger_and_reproducibility(
     assert first_summary["status"] in {"accepted", "rejected", "insufficient_data"}
 
     # -- panel / exclusions (v0.7 §7) --------------------------------------
-    assert first_summary["panel_symbols"] == 51
+    assert first_summary["panel_symbols"] == 52
     excluded = first_summary["excluded_symbols"]
     assert "OLDBANK" in excluded
     assert "NEWCO" in excluded

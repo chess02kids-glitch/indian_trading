@@ -240,6 +240,9 @@ def ingest_membership(
         write_pit_universe(
             u_dir,
             pit_frame,
+            slug=slug,
+            index_id=idx_id,
+            index_label=idx_name,
             spec=NseMembershipSpec(
                 commit=_git_head(membership_dir),
                 coverage_note=(
@@ -272,7 +275,10 @@ def ingest_membership(
             },
         }
 
-    return combined_audit
+    # Report contract (and the research pipeline) is nifty100-centric: the
+    # top-level block describes the primary universe; the per-index
+    # breakdown is preserved under "by_index".
+    return {**combined_audit["nifty100"], "by_index": combined_audit}
 
 
 def requested_constituents(
@@ -508,6 +514,15 @@ def render_completeness_markdown(report: dict[str, Any]) -> str:
     if universe.get("excluded_symbols"):
         lines.append(
             f"- Non-tradeable rows excluded (reported): {', '.join(universe['excluded_symbols'])}"
+        )
+    by_index = universe.get("by_index")
+    if by_index:
+        lines.append(
+            "- Per index: "
+            + ", ".join(
+                f"{slug} {block['rows']} rows"
+                for slug, block in sorted(by_index.items())
+            )
         )
     lines.append(f"- ISIN coverage: {universe['isin_coverage']}")
     lines.append("")

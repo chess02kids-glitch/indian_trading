@@ -149,10 +149,43 @@ def symbol_to_filename(symbol: str) -> str:
     return normalized.lower() + ".csv"
 
 
+# The eod2 upstream publishes the same 10-field daily layout under two
+# header spellings; anything else is corruption and must be rejected up
+# front (a silently misaligned column is worse than a reported error).
+EOD2_DAILY_HEADER_VARIANTS = (
+    EOD2_DAILY_HEADER,
+    (
+        "date",
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume",
+        "series",
+        "value",
+        "trades",
+        "deliverable_volume",
+    ),
+)
+
+
+def _check_eod2_header(path: Path) -> None:
+    with path.open("r", encoding="utf-8", newline="") as fh:
+        header_line = fh.readline()
+    actual = tuple(h.strip().lower() for h in header_line.split(",") if h.strip())
+    expected = {tuple(h.lower() for h in variant) for variant in EOD2_DAILY_HEADER_VARIANTS}
+    if actual not in expected:
+        raise DataQualityError(
+            f"unexpected header in {path.name}: {list(actual)!r} "
+            f"(expected {list(EOD2_DAILY_HEADER)})"
+        )
+
+
 def _read_raw_csv(path: str | Path) -> pd.DataFrame:
     path = Path(path)
     if not path.is_file():
         raise FileNotFoundError(f"eod2 source file missing: {path}")
+    _check_eod2_header(path)
     raw = pd.read_csv(path)
     # Map headers to standard title-case format
     header_map = {

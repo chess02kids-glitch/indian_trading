@@ -132,9 +132,10 @@ def build_market_panels(
 
     Calendar = union of all observed dates within
     ``[window_start, window_end]``. A symbol is *complete* when it has an
-    observation for every calendar day; incomplete symbols are excluded
-    with an explicit reason (never silently dropped) and the panel is
-    built from the complete set.
+    observation for every calendar day. Incomplete symbols stay in the
+    panel (gaps are forward/back-filled) but are annotated in
+    ``excluded`` with an explicit reason — reported, never silently
+    dropped; symbols with no clean data at all are left out entirely.
     """
     start = pd.Timestamp(window_start).date()
     end = pd.Timestamp(window_end).date()

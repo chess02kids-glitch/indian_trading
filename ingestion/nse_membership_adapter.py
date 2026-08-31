@@ -252,6 +252,9 @@ def write_pit_universe(
     directory: str | Path,
     frame: pd.DataFrame,
     *,
+    slug: str = "nifty100",
+    index_id: int = NIFTY_100_INDEX_ID,
+    index_label: str = "Nifty 100",
     spec: NseMembershipSpec,
     source_csv_path: str | Path,
     retrieved_at: str,
@@ -266,15 +269,15 @@ def write_pit_universe(
     """
     out_dir = Path(directory)
     out_dir.mkdir(parents=True, exist_ok=True)
-    csv_path = out_dir / "nifty100.csv"
+    csv_path = out_dir / f"{slug}.csv"
     public = frame.drop(columns=[c for c in frame.columns if c.startswith("_")])
     public.to_csv(csv_path, index=False)
 
     kept_symbols = sorted(frame["symbol"].unique())
     provenance = {
-        "universe": "nifty100-pit",
-        "index_id": NIFTY_100_INDEX_ID,
-        "index": "Nifty 100",
+        "universe": f"{slug}-pit",
+        "index_id": index_id,
+        "index": index_label,
         "source": spec.to_dict(),
         "retrieved_at": retrieved_at,
         "source_csv_sha256": _frame_sha256(Path(source_csv_path)),

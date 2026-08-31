@@ -8,8 +8,6 @@ paper account is never touched by the test suite.
 from __future__ import annotations
 
 import json
-import shutil
-import sys
 from pathlib import Path
 
 import pytest
@@ -27,8 +25,9 @@ def feed_root(tmp_path: Path) -> Path:
     return tmp_path
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def feed(feed_root: Path):
+    """One fresh feed per test (isolated temp root + ledger, no bleed-over)."""
     from dashboard.live.feed import LiveFeed
 
     instance = LiveFeed(feed_root)
@@ -81,9 +80,9 @@ def test_candle_aggregation_invariants(feed):
     c5 = feed.candles("RELIANCE", "5m", 500)["candles"]
     assert len(c5) >= 50
     for bar in c5:
-        t, o, h, l, c, v = bar
+        t, o, h, lo, c, v = bar
         assert h >= max(o, c) - 1e-9
-        assert l <= min(o, c) + 1e-9
+        assert lo <= min(o, c) + 1e-9
         assert v >= 0
     # sum of aggregated volumes equals the sum of the 1-minute volumes
     total_1m = sum(b["v"] for b in feed.symbols["RELIANCE"].bars)
@@ -304,7 +303,6 @@ def test_live_mode_prices_driven_by_real_quotes(feed_root: Path):
     try:
         assert feed.mode == "LIVE"
         src = feed.symbols["RELIANCE"]
-        before = src.last_price
         feed._cycle()  # QUOTE_POLL_SECONDS=0 → quotes applied this cycle
         assert src.last_price == 1200.0, "live price must equal the real quote exactly"
         feed._cycle()
