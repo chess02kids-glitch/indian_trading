@@ -26,7 +26,9 @@ def main():
         parquet_path = clean_dir / f"{symbol}.parquet"
         if parquet_path.exists():
             try:
-                df = pd.read_parquet(parquet_path, columns=["close"])
+                df = pd.read_parquet(parquet_path, columns=["date", "close"])
+                df["date"] = pd.to_datetime(df["date"])
+                df.set_index("date", inplace=True)
                 df.rename(columns={"close": symbol}, inplace=True)
                 all_closes.append(df)
             except Exception as e:

@@ -604,10 +604,18 @@ def fetch_fundamentals(
                 series = frame.loc[in_window].set_index("date")["close"].sort_index()
                 eod2_closes[symbol] = series
 
+    import requests
+    session = requests.Session()
+    session.headers.update({
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9'
+    })
+
     for number, symbol in enumerate(sorted(panel_symbols), start=1):
         ticker = symbol + ".NS"
         try:
-            handle = yf.Ticker(ticker)
+            handle = yf.Ticker(ticker, session=session)
             history_raw = handle.history(
                 start=window_start, end=window_end, auto_adjust=False, actions=False
             )

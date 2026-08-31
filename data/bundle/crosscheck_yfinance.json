@@ -1,8 +1,35 @@
 {
   "ABB": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 4.1259,
-    "mean_abs_diff_pct": 0.0048,
+    "days_compared": 2870,
+    "max_abs_diff_pct": 9.9374,
+    "mean_abs_diff_pct": 3.9217,
+    "mismatches_gt_1_5pct": [
+      "2015-01-01",
+      "2015-01-02",
+      "2015-01-05",
+      "2015-01-06",
+      "2015-01-07",
+      "2015-01-08",
+      "2015-01-09",
+      "2015-01-12",
+      "2015-01-13",
+      "2015-01-14"
+    ],
+    "n_mismatches_gt_1_5pct": 1222,
+    "p99_abs_diff_pct": 9.2141
+  },
+  "ABBOTINDIA": {
+    "days_compared": 2870,
+    "max_abs_diff_pct": 1.4952,
+    "mean_abs_diff_pct": 0.0008,
+    "mismatches_gt_1_5pct": [],
+    "n_mismatches_gt_1_5pct": 0,
+    "p99_abs_diff_pct": 0.0
+  },
+  "ABCAPITAL": {
+    "days_compared": 2213,
+    "max_abs_diff_pct": 2.805,
+    "mean_abs_diff_pct": 0.0016,
     "mismatches_gt_1_5pct": [
       "2025-03-18"
     ],
@@ -10,69 +37,170 @@
     "p99_abs_diff_pct": 0.0
   },
   "ACC": {
-    "days_compared": 897,
+    "days_compared": 2870,
     "max_abs_diff_pct": 0.1809,
     "mean_abs_diff_pct": 0.0002,
     "mismatches_gt_1_5pct": [],
     "n_mismatches_gt_1_5pct": 0,
     "p99_abs_diff_pct": 0.0
   },
-  "ADANIENT": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 3.0515,
-    "mean_abs_diff_pct": 0.0199,
-    "mismatches_gt_1_5pct": [
-      "2025-03-18",
-      "2025-11-10",
-      "2025-11-11",
-      "2025-11-12",
-      "2025-11-13",
-      "2025-11-14"
-    ],
-    "n_mismatches_gt_1_5pct": 6,
+  "ADANIENSOL": {
+    "days_compared": 2726,
+    "max_abs_diff_pct": 1.3937,
+    "mean_abs_diff_pct": 0.0012,
+    "mismatches_gt_1_5pct": [],
+    "n_mismatches_gt_1_5pct": 0,
     "p99_abs_diff_pct": 0.0
+  },
+  "ADANIENT": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 0.0945,
+    "mean_abs_diff_pct": 0.0596,
+    "mismatches_gt_1_5pct": [],
+    "n_mismatches_gt_1_5pct": 0,
+    "p99_abs_diff_pct": 0.0945
   },
   "ADANIGREEN": {
-    "days_compared": 897,
+    "days_compared": 2016,
     "max_abs_diff_pct": 0.4939,
-    "mean_abs_diff_pct": 0.0006,
+    "mean_abs_diff_pct": 0.0003,
     "mismatches_gt_1_5pct": [],
     "n_mismatches_gt_1_5pct": 0,
     "p99_abs_diff_pct": 0.0
+  },
+  "ADANIPORTS": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 0.9105,
+    "mean_abs_diff_pct": 0.5696,
+    "mismatches_gt_1_5pct": [],
+    "n_mismatches_gt_1_5pct": 0,
+    "p99_abs_diff_pct": 0.9104
   },
   "ADANIPOWER": {
-    "days_compared": 897,
+    "days_compared": 2870,
     "max_abs_diff_pct": 0.9782,
-    "mean_abs_diff_pct": 0.013,
+    "mean_abs_diff_pct": 0.1024,
     "mismatches_gt_1_5pct": [],
     "n_mismatches_gt_1_5pct": 0,
-    "p99_abs_diff_pct": 0.055
+    "p99_abs_diff_pct": 0.418
   },
-  "APOLLOHOSP": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 1.4431,
-    "mean_abs_diff_pct": 0.002,
+  "ALKEM": {
+    "days_compared": 2630,
+    "max_abs_diff_pct": 0.1569,
+    "mean_abs_diff_pct": 0.0001,
     "mismatches_gt_1_5pct": [],
     "n_mismatches_gt_1_5pct": 0,
     "p99_abs_diff_pct": 0.0
   },
+  "AMBUJACEM": {
+    "days_compared": 2870,
+    "max_abs_diff_pct": 1.5256,
+    "mean_abs_diff_pct": 0.0007,
+    "mismatches_gt_1_5pct": [
+      "2025-03-18"
+    ],
+    "n_mismatches_gt_1_5pct": 1,
+    "p99_abs_diff_pct": 0.0
+  },
+  "APOLLOHOSP": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 0.5197,
+    "mean_abs_diff_pct": 0.3085,
+    "mismatches_gt_1_5pct": [],
+    "n_mismatches_gt_1_5pct": 0,
+    "p99_abs_diff_pct": 0.5197
+  },
+  "ASHOKLEY": {
+    "days_compared": 2870,
+    "max_abs_diff_pct": 2.5724,
+    "mean_abs_diff_pct": 0.0223,
+    "mismatches_gt_1_5pct": [
+      "2025-03-18"
+    ],
+    "n_mismatches_gt_1_5pct": 1,
+    "p99_abs_diff_pct": 0.1062
+  },
+  "ASIANPAINT": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 2.132,
+    "mean_abs_diff_pct": 1.2657,
+    "mismatches_gt_1_5pct": [
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
+    ],
+    "n_mismatches_gt_1_5pct": 192,
+    "p99_abs_diff_pct": 2.132
+  },
   "ATGL": {
-    "days_compared": 897,
+    "days_compared": 1922,
     "max_abs_diff_pct": 1.8278,
-    "mean_abs_diff_pct": 0.0031,
+    "mean_abs_diff_pct": 0.0014,
     "mismatches_gt_1_5pct": [
       "2024-01-15"
     ],
     "n_mismatches_gt_1_5pct": 1,
     "p99_abs_diff_pct": 0.0
   },
+  "AUROPHARMA": {
+    "days_compared": 2870,
+    "max_abs_diff_pct": 2.2252,
+    "mean_abs_diff_pct": 0.001,
+    "mismatches_gt_1_5pct": [
+      "2025-03-18"
+    ],
+    "n_mismatches_gt_1_5pct": 1,
+    "p99_abs_diff_pct": 0.0042
+  },
   "AWL": {
-    "days_compared": 897,
+    "days_compared": 1119,
     "max_abs_diff_pct": 1.1418,
-    "mean_abs_diff_pct": 0.0031,
+    "mean_abs_diff_pct": 0.0025,
     "mismatches_gt_1_5pct": [],
     "n_mismatches_gt_1_5pct": 0,
     "p99_abs_diff_pct": 0.0
+  },
+  "AXISBANK": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 0.1631,
+    "mean_abs_diff_pct": 0.1084,
+    "mismatches_gt_1_5pct": [],
+    "n_mismatches_gt_1_5pct": 0,
+    "p99_abs_diff_pct": 0.1631
+  },
+  "BAJAJ-AUTO": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 3.9775,
+    "mean_abs_diff_pct": 2.2695,
+    "mismatches_gt_1_5pct": [
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
+    ],
+    "n_mismatches_gt_1_5pct": 200,
+    "p99_abs_diff_pct": 3.9775
+  },
+  "BAJAJFINSV": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 0.1344,
+    "mean_abs_diff_pct": 0.0986,
+    "mismatches_gt_1_5pct": [],
+    "n_mismatches_gt_1_5pct": 0,
+    "p99_abs_diff_pct": 0.1343
   },
   "BAJAJHFL": {
     "days_compared": 479,
@@ -85,17 +213,25 @@
     "p99_abs_diff_pct": 0.0
   },
   "BAJAJHLDNG": {
-    "days_compared": 897,
+    "days_compared": 2870,
     "max_abs_diff_pct": 0.5161,
-    "mean_abs_diff_pct": 0.0011,
+    "mean_abs_diff_pct": 0.0006,
     "mismatches_gt_1_5pct": [],
     "n_mismatches_gt_1_5pct": 0,
     "p99_abs_diff_pct": 0.0
   },
+  "BAJFINANCE": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 1.2363,
+    "mean_abs_diff_pct": 0.7929,
+    "mismatches_gt_1_5pct": [],
+    "n_mismatches_gt_1_5pct": 0,
+    "p99_abs_diff_pct": 1.2362
+  },
   "BANDHANBNK": {
-    "days_compared": 897,
+    "days_compared": 2072,
     "max_abs_diff_pct": 1.6634,
-    "mean_abs_diff_pct": 0.0019,
+    "mean_abs_diff_pct": 0.0008,
     "mismatches_gt_1_5pct": [
       "2025-03-18"
     ],
@@ -103,95 +239,269 @@
     "p99_abs_diff_pct": 0.0
   },
   "BANKBARODA": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 1.7197,
-    "mean_abs_diff_pct": 0.0024,
+    "days_compared": 495,
+    "max_abs_diff_pct": 6.7947,
+    "mean_abs_diff_pct": 4.2275,
     "mismatches_gt_1_5pct": [
-      "2025-03-18"
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
     ],
-    "n_mismatches_gt_1_5pct": 1,
-    "p99_abs_diff_pct": 0.0
+    "n_mismatches_gt_1_5pct": 438,
+    "p99_abs_diff_pct": 6.7945
   },
   "BEL": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 1.8857,
-    "mean_abs_diff_pct": 0.0022,
-    "mismatches_gt_1_5pct": [
-      "2025-03-18"
-    ],
-    "n_mismatches_gt_1_5pct": 1,
-    "p99_abs_diff_pct": 0.0
+    "days_compared": 495,
+    "max_abs_diff_pct": 1.3554,
+    "mean_abs_diff_pct": 0.7209,
+    "mismatches_gt_1_5pct": [],
+    "n_mismatches_gt_1_5pct": 0,
+    "p99_abs_diff_pct": 1.3553
   },
   "BERGEPAINT": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 1.0946,
-    "mean_abs_diff_pct": 0.0024,
+    "days_compared": 495,
+    "max_abs_diff_pct": 1.4323,
+    "mean_abs_diff_pct": 1.0505,
     "mismatches_gt_1_5pct": [],
     "n_mismatches_gt_1_5pct": 0,
-    "p99_abs_diff_pct": 0.0053
+    "p99_abs_diff_pct": 1.4322
+  },
+  "BHARATFORG": {
+    "days_compared": 2870,
+    "max_abs_diff_pct": 2.1456,
+    "mean_abs_diff_pct": 0.0017,
+    "mismatches_gt_1_5pct": [
+      "2025-03-18"
+    ],
+    "n_mismatches_gt_1_5pct": 1,
+    "p99_abs_diff_pct": 0.0067
+  },
+  "BHARTIARTL": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 2.1053,
+    "mean_abs_diff_pct": 1.5788,
+    "mismatches_gt_1_5pct": [
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
+    ],
+    "n_mismatches_gt_1_5pct": 220,
+    "p99_abs_diff_pct": 2.1053
   },
   "BHEL": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 4.1446,
-    "mean_abs_diff_pct": 0.0048,
-    "mismatches_gt_1_5pct": [
-      "2025-03-18"
-    ],
-    "n_mismatches_gt_1_5pct": 1,
-    "p99_abs_diff_pct": 0.0
-  },
-  "BIOCON": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 0.9217,
-    "mean_abs_diff_pct": 0.0013,
+    "days_compared": 495,
+    "max_abs_diff_pct": 0.5359,
+    "mean_abs_diff_pct": 0.403,
     "mismatches_gt_1_5pct": [],
     "n_mismatches_gt_1_5pct": 0,
+    "p99_abs_diff_pct": 0.5356
+  },
+  "BIOCON": {
+    "days_compared": 2870,
+    "max_abs_diff_pct": 0.9217,
+    "mean_abs_diff_pct": 0.0044,
+    "mismatches_gt_1_5pct": [],
+    "n_mismatches_gt_1_5pct": 0,
+    "p99_abs_diff_pct": 0.0438
+  },
+  "BOSCHLTD": {
+    "days_compared": 2870,
+    "max_abs_diff_pct": 3.6491,
+    "mean_abs_diff_pct": 0.0018,
+    "mismatches_gt_1_5pct": [
+      "2025-03-18"
+    ],
+    "n_mismatches_gt_1_5pct": 1,
     "p99_abs_diff_pct": 0.0
+  },
+  "BPCL": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 8.6481,
+    "mean_abs_diff_pct": 4.4659,
+    "mismatches_gt_1_5pct": [
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
+    ],
+    "n_mismatches_gt_1_5pct": 354,
+    "p99_abs_diff_pct": 8.6476
+  },
+  "BRITANNIA": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 2.9979,
+    "mean_abs_diff_pct": 2.23,
+    "mismatches_gt_1_5pct": [
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
+    ],
+    "n_mismatches_gt_1_5pct": 478,
+    "p99_abs_diff_pct": 2.9979
   },
   "CANBK": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 1.704,
-    "mean_abs_diff_pct": 0.0079,
+    "days_compared": 495,
+    "max_abs_diff_pct": 7.0059,
+    "mean_abs_diff_pct": 4.4103,
+    "mismatches_gt_1_5pct": [
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
+    ],
+    "n_mismatches_gt_1_5pct": 443,
+    "p99_abs_diff_pct": 7.0054
+  },
+  "CASTROLIND": {
+    "days_compared": 2870,
+    "max_abs_diff_pct": 6.301,
+    "mean_abs_diff_pct": 0.0041,
     "mismatches_gt_1_5pct": [
       "2025-03-18"
     ],
     "n_mismatches_gt_1_5pct": 1,
-    "p99_abs_diff_pct": 0.0351
+    "p99_abs_diff_pct": 0.0134
   },
   "CGPOWER": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 3.944,
-    "mean_abs_diff_pct": 0.0047,
+    "days_compared": 2870,
+    "max_abs_diff_pct": 65.4348,
+    "mean_abs_diff_pct": 6.7419,
     "mismatches_gt_1_5pct": [
-      "2025-03-18"
+      "2015-01-01",
+      "2015-01-02",
+      "2015-01-05",
+      "2015-01-06",
+      "2015-01-07",
+      "2015-01-08",
+      "2015-01-09",
+      "2015-01-12",
+      "2015-01-13",
+      "2015-01-14"
     ],
-    "n_mismatches_gt_1_5pct": 1,
-    "p99_abs_diff_pct": 0.0
+    "n_mismatches_gt_1_5pct": 297,
+    "p99_abs_diff_pct": 65.3548
   },
   "CHOLAFIN": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 3.9366,
-    "mean_abs_diff_pct": 0.0047,
+    "days_compared": 495,
+    "max_abs_diff_pct": 0.2539,
+    "mean_abs_diff_pct": 0.133,
+    "mismatches_gt_1_5pct": [],
+    "n_mismatches_gt_1_5pct": 0,
+    "p99_abs_diff_pct": 0.2538
+  },
+  "CIPLA": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 2.0168,
+    "mean_abs_diff_pct": 1.2767,
     "mismatches_gt_1_5pct": [
-      "2025-03-18"
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
     ],
-    "n_mismatches_gt_1_5pct": 1,
-    "p99_abs_diff_pct": 0.0
+    "n_mismatches_gt_1_5pct": 205,
+    "p99_abs_diff_pct": 2.0168
+  },
+  "COALINDIA": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 14.1167,
+    "mean_abs_diff_pct": 6.0892,
+    "mismatches_gt_1_5pct": [
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
+    ],
+    "n_mismatches_gt_1_5pct": 366,
+    "p99_abs_diff_pct": 14.1165
   },
   "COLPAL": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 1.966,
-    "mean_abs_diff_pct": 0.0024,
+    "days_compared": 495,
+    "max_abs_diff_pct": 4.1997,
+    "mean_abs_diff_pct": 2.1639,
     "mismatches_gt_1_5pct": [
-      "2025-03-18"
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
     ],
-    "n_mismatches_gt_1_5pct": 1,
-    "p99_abs_diff_pct": 0.0
+    "n_mismatches_gt_1_5pct": 292,
+    "p99_abs_diff_pct": 4.1996
+  },
+  "CONCOR": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 3.1884,
+    "mean_abs_diff_pct": 1.5138,
+    "mismatches_gt_1_5pct": [
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
+    ],
+    "n_mismatches_gt_1_5pct": 238,
+    "p99_abs_diff_pct": 3.1881
   },
   "CUMMINSIND": {
-    "days_compared": 897,
+    "days_compared": 2870,
     "max_abs_diff_pct": 2.3057,
-    "mean_abs_diff_pct": 0.0027,
+    "mean_abs_diff_pct": 0.0009,
     "mismatches_gt_1_5pct": [
       "2025-03-18"
     ],
@@ -199,40 +509,90 @@
     "p99_abs_diff_pct": 0.0
   },
   "DABUR": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 0.802,
-    "mean_abs_diff_pct": 0.0012,
-    "mismatches_gt_1_5pct": [],
-    "n_mismatches_gt_1_5pct": 0,
-    "p99_abs_diff_pct": 0.0
+    "days_compared": 495,
+    "max_abs_diff_pct": 3.3862,
+    "mean_abs_diff_pct": 2.0518,
+    "mismatches_gt_1_5pct": [
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
+    ],
+    "n_mismatches_gt_1_5pct": 295,
+    "p99_abs_diff_pct": 3.386
   },
   "DIVISLAB": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 1.7686,
-    "mean_abs_diff_pct": 0.0024,
-    "mismatches_gt_1_5pct": [
-      "2025-03-18"
-    ],
-    "n_mismatches_gt_1_5pct": 1,
-    "p99_abs_diff_pct": 0.0
+    "days_compared": 494,
+    "max_abs_diff_pct": 0.8697,
+    "mean_abs_diff_pct": 0.6022,
+    "mismatches_gt_1_5pct": [],
+    "n_mismatches_gt_1_5pct": 0,
+    "p99_abs_diff_pct": 0.8697
   },
   "DLF": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 2.8527,
-    "mean_abs_diff_pct": 0.0035,
+    "days_compared": 2870,
+    "max_abs_diff_pct": 6.1913,
+    "mean_abs_diff_pct": 0.0065,
     "mismatches_gt_1_5pct": [
+      "2015-08-12",
+      "2022-09-12",
       "2025-03-18"
     ],
-    "n_mismatches_gt_1_5pct": 1,
+    "n_mismatches_gt_1_5pct": 3,
     "p99_abs_diff_pct": 0.0
   },
   "DMART": {
-    "days_compared": 897,
+    "days_compared": 2325,
     "max_abs_diff_pct": 0.4188,
-    "mean_abs_diff_pct": 0.0007,
+    "mean_abs_diff_pct": 0.0003,
     "mismatches_gt_1_5pct": [],
     "n_mismatches_gt_1_5pct": 0,
     "p99_abs_diff_pct": 0.0
+  },
+  "DRREDDY": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 1.2728,
+    "mean_abs_diff_pct": 0.8691,
+    "mismatches_gt_1_5pct": [],
+    "n_mismatches_gt_1_5pct": 0,
+    "p99_abs_diff_pct": 1.2728
+  },
+  "EICHERMOT": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 2.3575,
+    "mean_abs_diff_pct": 1.62,
+    "mismatches_gt_1_5pct": [
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
+    ],
+    "n_mismatches_gt_1_5pct": 230,
+    "p99_abs_diff_pct": 2.3575
+  },
+  "EMAMILTD": {
+    "days_compared": 2870,
+    "max_abs_diff_pct": 3.0209,
+    "mean_abs_diff_pct": 0.005,
+    "mismatches_gt_1_5pct": [
+      "2015-08-12",
+      "2016-02-12",
+      "2025-03-18"
+    ],
+    "n_mismatches_gt_1_5pct": 3,
+    "p99_abs_diff_pct": 0.0054
   },
   "ENRIN": {
     "days_compared": 291,
@@ -242,76 +602,264 @@
     "n_mismatches_gt_1_5pct": 0,
     "p99_abs_diff_pct": 0.0
   },
+  "ETERNAL": {
+    "days_compared": 1255,
+    "max_abs_diff_pct": 6.6456,
+    "mean_abs_diff_pct": 0.0151,
+    "mismatches_gt_1_5pct": [
+      "2024-01-15",
+      "2025-03-18",
+      "2025-04-11",
+      "2025-04-15"
+    ],
+    "n_mismatches_gt_1_5pct": 4,
+    "p99_abs_diff_pct": 0.0
+  },
+  "GAIL": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 7.6362,
+    "mean_abs_diff_pct": 3.4128,
+    "mismatches_gt_1_5pct": [
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
+    ],
+    "n_mismatches_gt_1_5pct": 357,
+    "p99_abs_diff_pct": 7.6358
+  },
+  "GICRE": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 5.4187,
+    "mean_abs_diff_pct": 1.4474,
+    "mismatches_gt_1_5pct": [
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
+    ],
+    "n_mismatches_gt_1_5pct": 252,
+    "p99_abs_diff_pct": 5.4178
+  },
   "GLAND": {
-    "days_compared": 897,
+    "days_compared": 1420,
     "max_abs_diff_pct": 1.4341,
-    "mean_abs_diff_pct": 0.0024,
+    "mean_abs_diff_pct": 0.0015,
     "mismatches_gt_1_5pct": [],
     "n_mismatches_gt_1_5pct": 0,
     "p99_abs_diff_pct": 0.0
+  },
+  "GLAXO": {
+    "days_compared": 2870,
+    "max_abs_diff_pct": 3.6384,
+    "mean_abs_diff_pct": 0.0016,
+    "mismatches_gt_1_5pct": [
+      "2025-03-18"
+    ],
+    "n_mismatches_gt_1_5pct": 1,
+    "p99_abs_diff_pct": 0.0021
+  },
+  "GLENMARK": {
+    "days_compared": 2870,
+    "max_abs_diff_pct": 1.8368,
+    "mean_abs_diff_pct": 0.0009,
+    "mismatches_gt_1_5pct": [
+      "2025-03-18"
+    ],
+    "n_mismatches_gt_1_5pct": 1,
+    "p99_abs_diff_pct": 0.0
+  },
+  "GODREJCP": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 3.5929,
+    "mean_abs_diff_pct": 2.0184,
+    "mismatches_gt_1_5pct": [
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
+    ],
+    "n_mismatches_gt_1_5pct": 295,
+    "p99_abs_diff_pct": 3.5928
   },
   "GRASIM": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 0.9209,
-    "mean_abs_diff_pct": 0.1125,
+    "days_compared": 495,
+    "max_abs_diff_pct": 0.6766,
+    "mean_abs_diff_pct": 0.4787,
     "mismatches_gt_1_5pct": [],
     "n_mismatches_gt_1_5pct": 0,
-    "p99_abs_diff_pct": 0.396
+    "p99_abs_diff_pct": 0.6766
   },
   "HAL": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 3.9121,
-    "mean_abs_diff_pct": 0.0047,
+    "days_compared": 495,
+    "max_abs_diff_pct": 2.11,
+    "mean_abs_diff_pct": 1.159,
     "mismatches_gt_1_5pct": [
-      "2025-03-18"
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
     ],
-    "n_mismatches_gt_1_5pct": 1,
-    "p99_abs_diff_pct": 0.002
+    "n_mismatches_gt_1_5pct": 119,
+    "p99_abs_diff_pct": 2.11
   },
   "HAVELLS": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 3.6855,
-    "mean_abs_diff_pct": 0.0045,
+    "days_compared": 495,
+    "max_abs_diff_pct": 1.4512,
+    "mean_abs_diff_pct": 0.8401,
+    "mismatches_gt_1_5pct": [],
+    "n_mismatches_gt_1_5pct": 0,
+    "p99_abs_diff_pct": 1.4511
+  },
+  "HCLTECH": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 8.3496,
+    "mean_abs_diff_pct": 4.572,
     "mismatches_gt_1_5pct": [
-      "2025-03-18"
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
     ],
-    "n_mismatches_gt_1_5pct": 1,
-    "p99_abs_diff_pct": 0.0
+    "n_mismatches_gt_1_5pct": 408,
+    "p99_abs_diff_pct": 8.3495
   },
   "HDFCAMC": {
-    "days_compared": 897,
+    "days_compared": 1981,
     "max_abs_diff_pct": 2.1149,
-    "mean_abs_diff_pct": 0.0031,
+    "mean_abs_diff_pct": 0.002,
     "mismatches_gt_1_5pct": [
       "2025-03-18"
     ],
     "n_mismatches_gt_1_5pct": 1,
-    "p99_abs_diff_pct": 0.0029
+    "p99_abs_diff_pct": 0.0036
+  },
+  "HDFCBANK": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 3.0286,
+    "mean_abs_diff_pct": 2.0762,
+    "mismatches_gt_1_5pct": [
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
+    ],
+    "n_mismatches_gt_1_5pct": 448,
+    "p99_abs_diff_pct": 3.0286
   },
   "HDFCLIFE": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 1.6782,
-    "mean_abs_diff_pct": 0.0021,
-    "mismatches_gt_1_5pct": [
-      "2025-03-18"
-    ],
-    "n_mismatches_gt_1_5pct": 1,
-    "p99_abs_diff_pct": 0.0
+    "days_compared": 495,
+    "max_abs_diff_pct": 0.6346,
+    "mean_abs_diff_pct": 0.4346,
+    "mismatches_gt_1_5pct": [],
+    "n_mismatches_gt_1_5pct": 0,
+    "p99_abs_diff_pct": 0.6345
   },
   "HEROMOTOCO": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 2.0072,
-    "mean_abs_diff_pct": 0.0023,
+    "days_compared": 495,
+    "max_abs_diff_pct": 7.6479,
+    "mean_abs_diff_pct": 4.168,
     "mismatches_gt_1_5pct": [
-      "2025-03-18"
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
     ],
-    "n_mismatches_gt_1_5pct": 1,
-    "p99_abs_diff_pct": 0.0
+    "n_mismatches_gt_1_5pct": 361,
+    "p99_abs_diff_pct": 7.6479
+  },
+  "HINDALCO": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 1.2597,
+    "mean_abs_diff_pct": 0.8379,
+    "mismatches_gt_1_5pct": [],
+    "n_mismatches_gt_1_5pct": 0,
+    "p99_abs_diff_pct": 1.2596
+  },
+  "HINDPETRO": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 9.0342,
+    "mean_abs_diff_pct": 7.0744,
+    "mismatches_gt_1_5pct": [
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
+    ],
+    "n_mismatches_gt_1_5pct": 488,
+    "p99_abs_diff_pct": 9.034
+  },
+  "HINDUNILVR": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 4.0792,
+    "mean_abs_diff_pct": 1.9464,
+    "mismatches_gt_1_5pct": [
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
+    ],
+    "n_mismatches_gt_1_5pct": 295,
+    "p99_abs_diff_pct": 4.0792
   },
   "HINDZINC": {
-    "days_compared": 897,
+    "days_compared": 2870,
     "max_abs_diff_pct": 0.2406,
-    "mean_abs_diff_pct": 0.0003,
+    "mean_abs_diff_pct": 0.0001,
     "mismatches_gt_1_5pct": [],
     "n_mismatches_gt_1_5pct": 0,
     "p99_abs_diff_pct": 0.0
@@ -324,10 +872,29 @@
     "n_mismatches_gt_1_5pct": 0,
     "p99_abs_diff_pct": 0.0
   },
+  "ICICIBANK": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 1.6216,
+    "mean_abs_diff_pct": 1.1884,
+    "mismatches_gt_1_5pct": [
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
+    ],
+    "n_mismatches_gt_1_5pct": 237,
+    "p99_abs_diff_pct": 1.6215
+  },
   "ICICIGI": {
-    "days_compared": 897,
+    "days_compared": 2195,
     "max_abs_diff_pct": 1.5267,
-    "mean_abs_diff_pct": 0.0026,
+    "mean_abs_diff_pct": 0.0013,
     "mismatches_gt_1_5pct": [
       "2025-03-18"
     ],
@@ -335,74 +902,183 @@
     "p99_abs_diff_pct": 0.0
   },
   "ICICIPRULI": {
-    "days_compared": 897,
+    "days_compared": 2441,
     "max_abs_diff_pct": 0.7597,
-    "mean_abs_diff_pct": 0.0011,
+    "mean_abs_diff_pct": 0.0004,
     "mismatches_gt_1_5pct": [],
     "n_mismatches_gt_1_5pct": 0,
     "p99_abs_diff_pct": 0.0
   },
-  "INDHOTEL": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 4.1908,
-    "mean_abs_diff_pct": 0.0048,
+  "IDBI": {
+    "days_compared": 2870,
+    "max_abs_diff_pct": 0.8913,
+    "mean_abs_diff_pct": 0.0005,
+    "mismatches_gt_1_5pct": [],
+    "n_mismatches_gt_1_5pct": 0,
+    "p99_abs_diff_pct": 0.0
+  },
+  "IDEA": {
+    "days_compared": 2870,
+    "max_abs_diff_pct": 39.7031,
+    "mean_abs_diff_pct": 14.471,
+    "mismatches_gt_1_5pct": [
+      "2015-01-01",
+      "2015-01-02",
+      "2015-01-05",
+      "2015-01-06",
+      "2015-01-07",
+      "2015-01-08",
+      "2015-01-09",
+      "2015-01-12",
+      "2015-01-13",
+      "2015-01-14"
+    ],
+    "n_mismatches_gt_1_5pct": 1047,
+    "p99_abs_diff_pct": 39.7031
+  },
+  "IGL": {
+    "days_compared": 2870,
+    "max_abs_diff_pct": 1.5326,
+    "mean_abs_diff_pct": 0.0113,
     "mismatches_gt_1_5pct": [
       "2025-03-18"
     ],
     "n_mismatches_gt_1_5pct": 1,
+    "p99_abs_diff_pct": 0.072
+  },
+  "INDHOTEL": {
+    "days_compared": 2870,
+    "max_abs_diff_pct": 9.2508,
+    "mean_abs_diff_pct": 3.2585,
+    "mismatches_gt_1_5pct": [
+      "2015-01-01",
+      "2015-01-02",
+      "2015-01-05",
+      "2015-01-06",
+      "2015-01-07",
+      "2015-01-08",
+      "2015-01-09",
+      "2015-01-12",
+      "2015-01-13",
+      "2015-01-14"
+    ],
+    "n_mismatches_gt_1_5pct": 1691,
+    "p99_abs_diff_pct": 9.2508
+  },
+  "INDIGO": {
+    "days_compared": 2658,
+    "max_abs_diff_pct": 0.5368,
+    "mean_abs_diff_pct": 0.0004,
+    "mismatches_gt_1_5pct": [],
+    "n_mismatches_gt_1_5pct": 0,
     "p99_abs_diff_pct": 0.0
   },
   "INDUSINDBK": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 0.5943,
-    "mean_abs_diff_pct": 0.0011,
+    "days_compared": 495,
+    "max_abs_diff_pct": 0.1627,
+    "mean_abs_diff_pct": 0.1479,
     "mismatches_gt_1_5pct": [],
     "n_mismatches_gt_1_5pct": 0,
-    "p99_abs_diff_pct": 0.0
+    "p99_abs_diff_pct": 0.1626
   },
   "INDUSTOWER": {
-    "days_compared": 897,
+    "days_compared": 2870,
     "max_abs_diff_pct": 1.8554,
-    "mean_abs_diff_pct": 0.0034,
+    "mean_abs_diff_pct": 0.0014,
     "mismatches_gt_1_5pct": [
       "2025-03-18"
     ],
     "n_mismatches_gt_1_5pct": 1,
     "p99_abs_diff_pct": 0.0
   },
-  "IOC": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 0.831,
+  "INFY": {
+    "days_compared": 2870,
+    "max_abs_diff_pct": 1.1992,
     "mean_abs_diff_pct": 0.0012,
     "mismatches_gt_1_5pct": [],
     "n_mismatches_gt_1_5pct": 0,
-    "p99_abs_diff_pct": 0.0
+    "p99_abs_diff_pct": 0.0054
+  },
+  "IOC": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 7.5766,
+    "mean_abs_diff_pct": 4.9884,
+    "mismatches_gt_1_5pct": [
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
+    ],
+    "n_mismatches_gt_1_5pct": 381,
+    "p99_abs_diff_pct": 7.576
   },
   "IRCTC": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 2.1604,
-    "mean_abs_diff_pct": 0.0026,
+    "days_compared": 495,
+    "max_abs_diff_pct": 2.3505,
+    "mean_abs_diff_pct": 1.0859,
     "mismatches_gt_1_5pct": [
-      "2025-03-18"
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
     ],
-    "n_mismatches_gt_1_5pct": 1,
-    "p99_abs_diff_pct": 0.0
+    "n_mismatches_gt_1_5pct": 121,
+    "p99_abs_diff_pct": 2.3504
   },
   "IRFC": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 12.8363,
-    "mean_abs_diff_pct": 0.0172,
+    "days_compared": 495,
+    "max_abs_diff_pct": 3.1188,
+    "mean_abs_diff_pct": 1.5519,
     "mismatches_gt_1_5pct": [
-      "2024-01-15",
-      "2025-03-18"
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
     ],
-    "n_mismatches_gt_1_5pct": 2,
-    "p99_abs_diff_pct": 0.0
+    "n_mismatches_gt_1_5pct": 286,
+    "p99_abs_diff_pct": 3.1181
+  },
+  "ITC": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 8.4967,
+    "mean_abs_diff_pct": 5.0265,
+    "mismatches_gt_1_5pct": [
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
+    ],
+    "n_mismatches_gt_1_5pct": 431,
+    "p99_abs_diff_pct": 8.4966
   },
   "JINDALSTEL": {
-    "days_compared": 897,
+    "days_compared": 2870,
     "max_abs_diff_pct": 2.8424,
-    "mean_abs_diff_pct": 0.0034,
+    "mean_abs_diff_pct": 0.0013,
     "mismatches_gt_1_5pct": [
       "2025-03-18"
     ],
@@ -421,50 +1097,208 @@
     "p99_abs_diff_pct": 0.0
   },
   "JSWENERGY": {
-    "days_compared": 897,
+    "days_compared": 2870,
     "max_abs_diff_pct": 3.7294,
-    "mean_abs_diff_pct": 0.0042,
+    "mean_abs_diff_pct": 0.0013,
     "mismatches_gt_1_5pct": [
       "2025-03-18"
     ],
     "n_mismatches_gt_1_5pct": 1,
     "p99_abs_diff_pct": 0.0
+  },
+  "JSWSTEEL": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 0.8458,
+    "mean_abs_diff_pct": 0.6498,
+    "mismatches_gt_1_5pct": [],
+    "n_mismatches_gt_1_5pct": 0,
+    "p99_abs_diff_pct": 0.8457
+  },
+  "JUBLFOOD": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 0.46,
+    "mean_abs_diff_pct": 0.3466,
+    "mismatches_gt_1_5pct": [],
+    "n_mismatches_gt_1_5pct": 0,
+    "p99_abs_diff_pct": 0.46
+  },
+  "KOTAKBANK": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 0.2896,
+    "mean_abs_diff_pct": 0.2146,
+    "mismatches_gt_1_5pct": [],
+    "n_mismatches_gt_1_5pct": 0,
+    "p99_abs_diff_pct": 0.2894
+  },
+  "LICHSGFIN": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 3.8053,
+    "mean_abs_diff_pct": 2.8852,
+    "mismatches_gt_1_5pct": [
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
+    ],
+    "n_mismatches_gt_1_5pct": 493,
+    "p99_abs_diff_pct": 3.8051
   },
   "LICI": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 2.9832,
-    "mean_abs_diff_pct": 0.008,
+    "days_compared": 495,
+    "max_abs_diff_pct": 3.7026,
+    "mean_abs_diff_pct": 2.7573,
     "mismatches_gt_1_5pct": [
-      "2024-01-15",
-      "2025-03-18"
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
     ],
-    "n_mismatches_gt_1_5pct": 2,
-    "p99_abs_diff_pct": 0.0091
+    "n_mismatches_gt_1_5pct": 452,
+    "p99_abs_diff_pct": 3.7024
   },
   "LODHA": {
-    "days_compared": 897,
+    "days_compared": 1321,
     "max_abs_diff_pct": 4.3252,
-    "mean_abs_diff_pct": 0.0061,
+    "mean_abs_diff_pct": 0.005,
     "mismatches_gt_1_5pct": [
       "2025-03-18"
     ],
     "n_mismatches_gt_1_5pct": 1,
-    "p99_abs_diff_pct": 0.0057
+    "p99_abs_diff_pct": 0.0079
   },
-  "MARICO": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 2.221,
-    "mean_abs_diff_pct": 0.0026,
+  "LT": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 1.9186,
+    "mean_abs_diff_pct": 1.2003,
+    "mismatches_gt_1_5pct": [
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
+    ],
+    "n_mismatches_gt_1_5pct": 187,
+    "p99_abs_diff_pct": 1.9186
+  },
+  "LTF": {
+    "days_compared": 2870,
+    "max_abs_diff_pct": 7.2677,
+    "mean_abs_diff_pct": 3.6337,
+    "mismatches_gt_1_5pct": [
+      "2015-01-01",
+      "2015-01-02",
+      "2015-01-05",
+      "2015-01-06",
+      "2015-01-07",
+      "2015-01-08",
+      "2015-01-09",
+      "2015-01-12",
+      "2015-01-13",
+      "2015-01-14"
+    ],
+    "n_mismatches_gt_1_5pct": 1493,
+    "p99_abs_diff_pct": 6.9886
+  },
+  "LTM": {
+    "days_compared": 2488,
+    "max_abs_diff_pct": 4.485,
+    "mean_abs_diff_pct": 0.0045,
+    "mismatches_gt_1_5pct": [
+      "2022-12-01",
+      "2022-12-02",
+      "2025-03-18"
+    ],
+    "n_mismatches_gt_1_5pct": 3,
+    "p99_abs_diff_pct": 0.0
+  },
+  "LUPIN": {
+    "days_compared": 2870,
+    "max_abs_diff_pct": 2.1036,
+    "mean_abs_diff_pct": 0.0012,
     "mismatches_gt_1_5pct": [
       "2025-03-18"
     ],
     "n_mismatches_gt_1_5pct": 1,
     "p99_abs_diff_pct": 0.0
   },
+  "M&M": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 1.8622,
+    "mean_abs_diff_pct": 1.3161,
+    "mismatches_gt_1_5pct": [
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
+    ],
+    "n_mismatches_gt_1_5pct": 210,
+    "p99_abs_diff_pct": 1.8622
+  },
+  "MARICO": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 1.9984,
+    "mean_abs_diff_pct": 1.0277,
+    "mismatches_gt_1_5pct": [
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
+    ],
+    "n_mismatches_gt_1_5pct": 112,
+    "p99_abs_diff_pct": 1.9983
+  },
+  "MARUTI": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 2.0976,
+    "mean_abs_diff_pct": 1.4879,
+    "mismatches_gt_1_5pct": [
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
+    ],
+    "n_mismatches_gt_1_5pct": 230,
+    "p99_abs_diff_pct": 2.0976
+  },
   "MAXHEALTH": {
-    "days_compared": 897,
+    "days_compared": 1483,
     "max_abs_diff_pct": 1.8732,
-    "mean_abs_diff_pct": 0.0024,
+    "mean_abs_diff_pct": 0.0014,
     "mismatches_gt_1_5pct": [
       "2025-03-18"
     ],
@@ -472,31 +1306,57 @@
     "p99_abs_diff_pct": 0.0
   },
   "MAZDOCK": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 2.3409,
-    "mean_abs_diff_pct": 0.0064,
+    "days_compared": 495,
+    "max_abs_diff_pct": 1.7996,
+    "mean_abs_diff_pct": 0.6808,
     "mismatches_gt_1_5pct": [
-      "2024-01-15",
-      "2025-03-18"
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
     ],
-    "n_mismatches_gt_1_5pct": 2,
-    "p99_abs_diff_pct": 0.0075
+    "n_mismatches_gt_1_5pct": 42,
+    "p99_abs_diff_pct": 1.7994
   },
   "MOTHERSON": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 3.5167,
-    "mean_abs_diff_pct": 0.0165,
+    "days_compared": 2870,
+    "max_abs_diff_pct": 38.5949,
+    "mean_abs_diff_pct": 23.2973,
     "mismatches_gt_1_5pct": [
-      "2024-01-15",
-      "2025-03-18"
+      "2015-01-01",
+      "2015-01-02",
+      "2015-01-05",
+      "2015-01-06",
+      "2015-01-07",
+      "2015-01-08",
+      "2015-01-09",
+      "2015-01-12",
+      "2015-01-13",
+      "2015-01-14"
     ],
-    "n_mismatches_gt_1_5pct": 2,
-    "p99_abs_diff_pct": 0.037
+    "n_mismatches_gt_1_5pct": 1737,
+    "p99_abs_diff_pct": 38.5634
   },
   "MPHASIS": {
-    "days_compared": 897,
+    "days_compared": 2870,
     "max_abs_diff_pct": 4.0638,
-    "mean_abs_diff_pct": 0.0047,
+    "mean_abs_diff_pct": 0.0018,
+    "mismatches_gt_1_5pct": [
+      "2025-03-18"
+    ],
+    "n_mismatches_gt_1_5pct": 1,
+    "p99_abs_diff_pct": 0.0
+  },
+  "MRF": {
+    "days_compared": 2870,
+    "max_abs_diff_pct": 2.2519,
+    "mean_abs_diff_pct": 0.0011,
     "mismatches_gt_1_5pct": [
       "2025-03-18"
     ],
@@ -504,153 +1364,492 @@
     "p99_abs_diff_pct": 0.0
   },
   "MUTHOOTFIN": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 1.195,
-    "mean_abs_diff_pct": 0.0016,
-    "mismatches_gt_1_5pct": [],
-    "n_mismatches_gt_1_5pct": 0,
-    "p99_abs_diff_pct": 0.0
+    "days_compared": 495,
+    "max_abs_diff_pct": 2.08,
+    "mean_abs_diff_pct": 1.0898,
+    "mismatches_gt_1_5pct": [
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
+    ],
+    "n_mismatches_gt_1_5pct": 161,
+    "p99_abs_diff_pct": 2.0799
   },
   "NAUKRI": {
-    "days_compared": 897,
+    "days_compared": 2870,
     "max_abs_diff_pct": 3.0863,
-    "mean_abs_diff_pct": 0.0044,
+    "mean_abs_diff_pct": 0.0047,
     "mismatches_gt_1_5pct": [
       "2025-03-18"
     ],
     "n_mismatches_gt_1_5pct": 1,
-    "p99_abs_diff_pct": 0.0028
+    "p99_abs_diff_pct": 0.0131
   },
   "NESTLEIND": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 1.2557,
+    "days_compared": 495,
+    "max_abs_diff_pct": 2.0981,
+    "mean_abs_diff_pct": 1.1692,
+    "mismatches_gt_1_5pct": [
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
+    ],
+    "n_mismatches_gt_1_5pct": 112,
+    "p99_abs_diff_pct": 2.0981
+  },
+  "NHPC": {
+    "days_compared": 2870,
+    "max_abs_diff_pct": 1.011,
+    "mean_abs_diff_pct": 0.0008,
+    "mismatches_gt_1_5pct": [],
+    "n_mismatches_gt_1_5pct": 0,
+    "p99_abs_diff_pct": 0.0
+  },
+  "NIACL": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 2.5398,
+    "mean_abs_diff_pct": 1.2445,
+    "mismatches_gt_1_5pct": [
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
+    ],
+    "n_mismatches_gt_1_5pct": 252,
+    "p99_abs_diff_pct": 1.7901
+  },
+  "NMDC": {
+    "days_compared": 2870,
+    "max_abs_diff_pct": 23.5496,
+    "mean_abs_diff_pct": 15.5389,
+    "mismatches_gt_1_5pct": [
+      "2015-01-01",
+      "2015-01-02",
+      "2015-01-05",
+      "2015-01-06",
+      "2015-01-07",
+      "2015-01-08",
+      "2015-01-09",
+      "2015-01-12",
+      "2015-01-13",
+      "2015-01-14"
+    ],
+    "n_mismatches_gt_1_5pct": 1928,
+    "p99_abs_diff_pct": 23.1829
+  },
+  "NTPC": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 4.0779,
+    "mean_abs_diff_pct": 1.8063,
+    "mismatches_gt_1_5pct": [
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
+    ],
+    "n_mismatches_gt_1_5pct": 295,
+    "p99_abs_diff_pct": 4.0774
+  },
+  "NYKAA": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 0.0,
+    "mean_abs_diff_pct": 0.0,
+    "mismatches_gt_1_5pct": [],
+    "n_mismatches_gt_1_5pct": 0,
+    "p99_abs_diff_pct": 0.0
+  },
+  "OFSS": {
+    "days_compared": 2870,
+    "max_abs_diff_pct": 1.356,
+    "mean_abs_diff_pct": 0.0008,
+    "mismatches_gt_1_5pct": [],
+    "n_mismatches_gt_1_5pct": 0,
+    "p99_abs_diff_pct": 0.0
+  },
+  "OIL": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 5.2379,
+    "mean_abs_diff_pct": 2.3422,
+    "mismatches_gt_1_5pct": [
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
+    ],
+    "n_mismatches_gt_1_5pct": 366,
+    "p99_abs_diff_pct": 5.2376
+  },
+  "ONGC": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 10.1499,
+    "mean_abs_diff_pct": 4.3084,
+    "mismatches_gt_1_5pct": [
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
+    ],
+    "n_mismatches_gt_1_5pct": 366,
+    "p99_abs_diff_pct": 10.1496
+  },
+  "PAGEIND": {
+    "days_compared": 493,
+    "max_abs_diff_pct": 3.341,
+    "mean_abs_diff_pct": 1.827,
+    "mismatches_gt_1_5pct": [
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
+    ],
+    "n_mismatches_gt_1_5pct": 303,
+    "p99_abs_diff_pct": 3.3409
+  },
+  "PAYTM": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 0.0,
+    "mean_abs_diff_pct": 0.0,
+    "mismatches_gt_1_5pct": [],
+    "n_mismatches_gt_1_5pct": 0,
+    "p99_abs_diff_pct": 0.0
+  },
+  "PETRONET": {
+    "days_compared": 2870,
+    "max_abs_diff_pct": 0.8377,
     "mean_abs_diff_pct": 0.0024,
     "mismatches_gt_1_5pct": [],
     "n_mismatches_gt_1_5pct": 0,
-    "p99_abs_diff_pct": 0.0034
+    "p99_abs_diff_pct": 0.0281
   },
-  "NHPC": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 1.011,
-    "mean_abs_diff_pct": 0.0013,
+  "PFC": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 9.1441,
+    "mean_abs_diff_pct": 5.3239,
+    "mismatches_gt_1_5pct": [
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
+    ],
+    "n_mismatches_gt_1_5pct": 478,
+    "p99_abs_diff_pct": 9.1438
+  },
+  "PGHH": {
+    "days_compared": 494,
+    "max_abs_diff_pct": 3.5924,
+    "mean_abs_diff_pct": 1.7105,
+    "mismatches_gt_1_5pct": [
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
+    ],
+    "n_mismatches_gt_1_5pct": 356,
+    "p99_abs_diff_pct": 3.5924
+  },
+  "PIDILITIND": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 1.4116,
+    "mean_abs_diff_pct": 0.998,
     "mismatches_gt_1_5pct": [],
     "n_mismatches_gt_1_5pct": 0,
-    "p99_abs_diff_pct": 0.0
+    "p99_abs_diff_pct": 1.4116
   },
-  "NYKAA": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 4.3091,
-    "mean_abs_diff_pct": 0.007,
-    "mismatches_gt_1_5pct": [
-      "2024-01-15"
-    ],
-    "n_mismatches_gt_1_5pct": 1,
-    "p99_abs_diff_pct": 0.0
-  },
-  "PAGEIND": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 0.586,
+  "PIIND": {
+    "days_compared": 2870,
+    "max_abs_diff_pct": 1.3165,
     "mean_abs_diff_pct": 0.0007,
     "mismatches_gt_1_5pct": [],
     "n_mismatches_gt_1_5pct": 0,
     "p99_abs_diff_pct": 0.0
   },
-  "PAYTM": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 7.0812,
-    "mean_abs_diff_pct": 0.0115,
-    "mismatches_gt_1_5pct": [
-      "2024-01-15",
-      "2025-03-18"
-    ],
-    "n_mismatches_gt_1_5pct": 2,
-    "p99_abs_diff_pct": 0.0
-  },
-  "PFC": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 3.0356,
-    "mean_abs_diff_pct": 0.0056,
-    "mismatches_gt_1_5pct": [
-      "2025-03-18"
-    ],
-    "n_mismatches_gt_1_5pct": 1,
-    "p99_abs_diff_pct": 0.0172
-  },
-  "PGHH": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 0.1771,
-    "mean_abs_diff_pct": 0.0002,
-    "mismatches_gt_1_5pct": [],
-    "n_mismatches_gt_1_5pct": 0,
-    "p99_abs_diff_pct": 0.0
-  },
-  "PIIND": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 1.3165,
-    "mean_abs_diff_pct": 0.0021,
-    "mismatches_gt_1_5pct": [],
-    "n_mismatches_gt_1_5pct": 0,
-    "p99_abs_diff_pct": 0.0
-  },
   "PNB": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 1.6639,
-    "mean_abs_diff_pct": 0.0021,
+    "days_compared": 495,
+    "max_abs_diff_pct": 5.8959,
+    "mean_abs_diff_pct": 3.8072,
     "mismatches_gt_1_5pct": [
-      "2025-03-18"
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
     ],
-    "n_mismatches_gt_1_5pct": 1,
-    "p99_abs_diff_pct": 0.0
+    "n_mismatches_gt_1_5pct": 443,
+    "p99_abs_diff_pct": 5.8953
+  },
+  "POWERGRID": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 5.9773,
+    "mean_abs_diff_pct": 2.4818,
+    "mismatches_gt_1_5pct": [
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
+    ],
+    "n_mismatches_gt_1_5pct": 296,
+    "p99_abs_diff_pct": 5.977
   },
   "RECLTD": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 2.052,
-    "mean_abs_diff_pct": 0.0026,
+    "days_compared": 495,
+    "max_abs_diff_pct": 9.9473,
+    "mean_abs_diff_pct": 5.5107,
+    "mismatches_gt_1_5pct": [
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
+    ],
+    "n_mismatches_gt_1_5pct": 478,
+    "p99_abs_diff_pct": 9.9471
+  },
+  "RELIANCE": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 0.864,
+    "mean_abs_diff_pct": 0.6029,
+    "mismatches_gt_1_5pct": [],
+    "n_mismatches_gt_1_5pct": 0,
+    "p99_abs_diff_pct": 0.864
+  },
+  "RPOWER": {
+    "days_compared": 2870,
+    "max_abs_diff_pct": 5.1149,
+    "mean_abs_diff_pct": 0.002,
     "mismatches_gt_1_5pct": [
       "2025-03-18"
     ],
     "n_mismatches_gt_1_5pct": 1,
     "p99_abs_diff_pct": 0.0
   },
+  "SAIL": {
+    "days_compared": 2870,
+    "max_abs_diff_pct": 2.5434,
+    "mean_abs_diff_pct": 0.0011,
+    "mismatches_gt_1_5pct": [
+      "2025-03-18"
+    ],
+    "n_mismatches_gt_1_5pct": 1,
+    "p99_abs_diff_pct": 0.0
+  },
+  "SAMMAANCAP": {
+    "days_compared": 2870,
+    "max_abs_diff_pct": 11.0869,
+    "mean_abs_diff_pct": 8.4749,
+    "mismatches_gt_1_5pct": [
+      "2015-01-01",
+      "2015-01-02",
+      "2015-01-05",
+      "2015-01-06",
+      "2015-01-07",
+      "2015-01-08",
+      "2015-01-09",
+      "2015-01-12",
+      "2015-01-13",
+      "2015-01-14"
+    ],
+    "n_mismatches_gt_1_5pct": 2240,
+    "p99_abs_diff_pct": 10.8614
+  },
   "SBICARD": {
-    "days_compared": 897,
+    "days_compared": 1591,
     "max_abs_diff_pct": 0.4408,
-    "mean_abs_diff_pct": 0.0005,
+    "mean_abs_diff_pct": 0.0003,
     "mismatches_gt_1_5pct": [],
     "n_mismatches_gt_1_5pct": 0,
     "p99_abs_diff_pct": 0.0
   },
   "SBILIFE": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 1.5952,
-    "mean_abs_diff_pct": 0.0019,
-    "mismatches_gt_1_5pct": [
-      "2025-03-18"
-    ],
-    "n_mismatches_gt_1_5pct": 1,
-    "p99_abs_diff_pct": 0.0
-  },
-  "SHRIRAMFIN": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 2.9659,
-    "mean_abs_diff_pct": 0.0064,
-    "mismatches_gt_1_5pct": [
-      "2025-03-18"
-    ],
-    "n_mismatches_gt_1_5pct": 1,
-    "p99_abs_diff_pct": 0.0082
-  },
-  "SOLARINDS": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 0.1533,
-    "mean_abs_diff_pct": 0.0002,
+    "days_compared": 495,
+    "max_abs_diff_pct": 0.3299,
+    "mean_abs_diff_pct": 0.1563,
     "mismatches_gt_1_5pct": [],
     "n_mismatches_gt_1_5pct": 0,
-    "p99_abs_diff_pct": 0.0
+    "p99_abs_diff_pct": 0.3299
+  },
+  "SBIN": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 3.8474,
+    "mean_abs_diff_pct": 2.263,
+    "mismatches_gt_1_5pct": [
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
+    ],
+    "n_mismatches_gt_1_5pct": 423,
+    "p99_abs_diff_pct": 3.8473
+  },
+  "SHREECEM": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 0.921,
+    "mean_abs_diff_pct": 0.5411,
+    "mismatches_gt_1_5pct": [],
+    "n_mismatches_gt_1_5pct": 0,
+    "p99_abs_diff_pct": 0.921
+  },
+  "SHRIRAMFIN": {
+    "days_compared": 2870,
+    "max_abs_diff_pct": 2.9659,
+    "mean_abs_diff_pct": 1.2131,
+    "mismatches_gt_1_5pct": [
+      "2015-01-01",
+      "2015-01-02",
+      "2015-01-05",
+      "2015-01-06",
+      "2015-01-07",
+      "2015-01-08",
+      "2015-01-09",
+      "2015-01-12",
+      "2015-01-13",
+      "2015-01-14"
+    ],
+    "n_mismatches_gt_1_5pct": 1355,
+    "p99_abs_diff_pct": 2.5768
+  },
+  "SIEMENS": {
+    "days_compared": 494,
+    "max_abs_diff_pct": 0.8455,
+    "mean_abs_diff_pct": 0.5477,
+    "mismatches_gt_1_5pct": [],
+    "n_mismatches_gt_1_5pct": 0,
+    "p99_abs_diff_pct": 0.8455
+  },
+  "SOLARINDS": {
+    "days_compared": 2870,
+    "max_abs_diff_pct": 0.3767,
+    "mean_abs_diff_pct": 0.0005,
+    "mismatches_gt_1_5pct": [],
+    "n_mismatches_gt_1_5pct": 0,
+    "p99_abs_diff_pct": 0.0032
   },
   "SRF": {
-    "days_compared": 897,
+    "days_compared": 2870,
     "max_abs_diff_pct": 0.7157,
+    "mean_abs_diff_pct": 0.0021,
+    "mismatches_gt_1_5pct": [],
+    "n_mismatches_gt_1_5pct": 0,
+    "p99_abs_diff_pct": 0.0103
+  },
+  "SUNDARMFIN": {
+    "days_compared": 2870,
+    "max_abs_diff_pct": 18.2738,
+    "mean_abs_diff_pct": 4.852,
+    "mismatches_gt_1_5pct": [
+      "2015-01-01",
+      "2015-01-02",
+      "2015-01-05",
+      "2015-01-06",
+      "2015-01-07",
+      "2015-01-08",
+      "2015-01-09",
+      "2015-01-12",
+      "2015-01-13",
+      "2015-01-14"
+    ],
+    "n_mismatches_gt_1_5pct": 762,
+    "p99_abs_diff_pct": 18.2738
+  },
+  "SUNPHARMA": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 1.856,
+    "mean_abs_diff_pct": 0.9917,
+    "mismatches_gt_1_5pct": [
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
+    ],
+    "n_mismatches_gt_1_5pct": 111,
+    "p99_abs_diff_pct": 1.856
+  },
+  "SUNTV": {
+    "days_compared": 2870,
+    "max_abs_diff_pct": 1.3409,
     "mean_abs_diff_pct": 0.0009,
     "mismatches_gt_1_5pct": [],
     "n_mismatches_gt_1_5pct": 0,
@@ -673,22 +1872,98 @@
     "p99_abs_diff_pct": 0.0
   },
   "TATACONSUM": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 1.2277,
-    "mean_abs_diff_pct": 0.0092,
-    "mismatches_gt_1_5pct": [],
-    "n_mismatches_gt_1_5pct": 0,
-    "p99_abs_diff_pct": 0.0
+    "days_compared": 495,
+    "max_abs_diff_pct": 1.5941,
+    "mean_abs_diff_pct": 1.0112,
+    "mismatches_gt_1_5pct": [
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
+    ],
+    "n_mismatches_gt_1_5pct": 184,
+    "p99_abs_diff_pct": 1.594
   },
   "TATAPOWER": {
-    "days_compared": 897,
+    "days_compared": 2870,
     "max_abs_diff_pct": 3.2947,
-    "mean_abs_diff_pct": 0.0038,
+    "mean_abs_diff_pct": 0.0017,
     "mismatches_gt_1_5pct": [
       "2025-03-18"
     ],
     "n_mismatches_gt_1_5pct": 1,
     "p99_abs_diff_pct": 0.0
+  },
+  "TATASTEEL": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 4.4467,
+    "mean_abs_diff_pct": 2.7591,
+    "mismatches_gt_1_5pct": [
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
+    ],
+    "n_mismatches_gt_1_5pct": 443,
+    "p99_abs_diff_pct": 4.4459
+  },
+  "TCS": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 7.6357,
+    "mean_abs_diff_pct": 4.1068,
+    "mismatches_gt_1_5pct": [
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
+    ],
+    "n_mismatches_gt_1_5pct": 429,
+    "p99_abs_diff_pct": 7.6357
+  },
+  "TECHM": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 6.5158,
+    "mean_abs_diff_pct": 3.9046,
+    "mismatches_gt_1_5pct": [
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
+    ],
+    "n_mismatches_gt_1_5pct": 458,
+    "p99_abs_diff_pct": 6.5157
+  },
+  "TITAN": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 0.6302,
+    "mean_abs_diff_pct": 0.4356,
+    "mismatches_gt_1_5pct": [],
+    "n_mismatches_gt_1_5pct": 0,
+    "p99_abs_diff_pct": 0.6302
   },
   "TMCV": {
     "days_compared": 192,
@@ -698,59 +1973,109 @@
     "n_mismatches_gt_1_5pct": 0,
     "p99_abs_diff_pct": 0.0
   },
+  "TMPV": {
+    "days_compared": 2870,
+    "max_abs_diff_pct": 2.7939,
+    "mean_abs_diff_pct": 0.0242,
+    "mismatches_gt_1_5pct": [
+      "2025-03-18"
+    ],
+    "n_mismatches_gt_1_5pct": 1,
+    "p99_abs_diff_pct": 1.0612
+  },
   "TORNTPHARM": {
-    "days_compared": 897,
+    "days_compared": 2870,
     "max_abs_diff_pct": 2.2116,
     "mean_abs_diff_pct": 0.0032,
     "mismatches_gt_1_5pct": [
+      "2015-08-12",
       "2025-03-18"
     ],
-    "n_mismatches_gt_1_5pct": 1,
-    "p99_abs_diff_pct": 0.0
+    "n_mismatches_gt_1_5pct": 2,
+    "p99_abs_diff_pct": 0.0044
   },
   "TRENT": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 50.1748,
-    "mean_abs_diff_pct": 41.2457,
-    "mismatches_gt_1_5pct": [
-      "2023-01-02",
-      "2023-01-03",
-      "2023-01-04",
-      "2023-01-05",
-      "2023-01-06",
-      "2023-01-09",
-      "2023-01-10",
-      "2023-01-11",
-      "2023-01-12",
-      "2023-01-13"
-    ],
-    "n_mismatches_gt_1_5pct": 740,
-    "p99_abs_diff_pct": 50.003
+    "days_compared": 495,
+    "max_abs_diff_pct": 0.2057,
+    "mean_abs_diff_pct": 0.1549,
+    "mismatches_gt_1_5pct": [],
+    "n_mismatches_gt_1_5pct": 0,
+    "p99_abs_diff_pct": 0.2057
   },
   "TVSMOTOR": {
-    "days_compared": 897,
+    "days_compared": 2870,
     "max_abs_diff_pct": 1.9444,
-    "mean_abs_diff_pct": 0.0024,
+    "mean_abs_diff_pct": 0.0008,
     "mismatches_gt_1_5pct": [
       "2025-03-18"
     ],
     "n_mismatches_gt_1_5pct": 1,
     "p99_abs_diff_pct": 0.0
+  },
+  "UBL": {
+    "days_compared": 2870,
+    "max_abs_diff_pct": 2.8412,
+    "mean_abs_diff_pct": 0.0052,
+    "mismatches_gt_1_5pct": [
+      "2015-08-12",
+      "2015-10-16",
+      "2015-11-30"
+    ],
+    "n_mismatches_gt_1_5pct": 3,
+    "p99_abs_diff_pct": 0.0
+  },
+  "ULTRACEMCO": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 2.688,
+    "mean_abs_diff_pct": 2.2609,
+    "mismatches_gt_1_5pct": [
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
+    ],
+    "n_mismatches_gt_1_5pct": 477,
+    "p99_abs_diff_pct": 2.688
   },
   "UNIONBANK": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 4.384,
-    "mean_abs_diff_pct": 0.0051,
+    "days_compared": 495,
+    "max_abs_diff_pct": 6.4447,
+    "mean_abs_diff_pct": 4.3172,
     "mismatches_gt_1_5pct": [
-      "2025-03-18"
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
+    ],
+    "n_mismatches_gt_1_5pct": 458,
+    "p99_abs_diff_pct": 6.4446
+  },
+  "UNITDSPR": {
+    "days_compared": 2870,
+    "max_abs_diff_pct": 2.8695,
+    "mean_abs_diff_pct": 0.0029,
+    "mismatches_gt_1_5pct": [
+      "2015-08-12"
     ],
     "n_mismatches_gt_1_5pct": 1,
-    "p99_abs_diff_pct": 0.0
+    "p99_abs_diff_pct": 0.0052
   },
   "UPL": {
-    "days_compared": 897,
+    "days_compared": 2870,
     "max_abs_diff_pct": 4.0757,
-    "mean_abs_diff_pct": 0.0245,
+    "mean_abs_diff_pct": 0.0087,
     "mismatches_gt_1_5pct": [
       "2024-11-18",
       "2024-11-19",
@@ -759,22 +2084,70 @@
       "2024-11-25"
     ],
     "n_mismatches_gt_1_5pct": 5,
-    "p99_abs_diff_pct": 0.0
+    "p99_abs_diff_pct": 0.0065
   },
   "VBL": {
-    "days_compared": 897,
+    "days_compared": 2416,
     "max_abs_diff_pct": 4.7418,
-    "mean_abs_diff_pct": 0.0072,
+    "mean_abs_diff_pct": 0.0193,
     "mismatches_gt_1_5pct": [
       "2025-03-18"
     ],
     "n_mismatches_gt_1_5pct": 1,
-    "p99_abs_diff_pct": 0.0084
+    "p99_abs_diff_pct": 0.0902
   },
   "VEDL": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 2.837,
-    "mean_abs_diff_pct": 0.0033,
+    "days_compared": 495,
+    "max_abs_diff_pct": 13.9953,
+    "mean_abs_diff_pct": 4.2433,
+    "mismatches_gt_1_5pct": [
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
+    ],
+    "n_mismatches_gt_1_5pct": 391,
+    "p99_abs_diff_pct": 13.9938
+  },
+  "WIPRO": {
+    "days_compared": 495,
+    "max_abs_diff_pct": 7.8984,
+    "mean_abs_diff_pct": 4.3091,
+    "mismatches_gt_1_5pct": [
+      "2024-08-30",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12"
+    ],
+    "n_mismatches_gt_1_5pct": 350,
+    "p99_abs_diff_pct": 7.898
+  },
+  "YESBANK": {
+    "days_compared": 2870,
+    "max_abs_diff_pct": 2.0073,
+    "mean_abs_diff_pct": 0.0022,
+    "mismatches_gt_1_5pct": [
+      "2025-03-18"
+    ],
+    "n_mismatches_gt_1_5pct": 1,
+    "p99_abs_diff_pct": 0.0136
+  },
+  "ZEEL": {
+    "days_compared": 2870,
+    "max_abs_diff_pct": 3.6523,
+    "mean_abs_diff_pct": 0.0013,
     "mismatches_gt_1_5pct": [
       "2025-03-18"
     ],
@@ -782,13 +2155,14 @@
     "p99_abs_diff_pct": 0.0
   },
   "ZYDUSLIFE": {
-    "days_compared": 897,
-    "max_abs_diff_pct": 1.7995,
-    "mean_abs_diff_pct": 0.0036,
+    "days_compared": 2870,
+    "max_abs_diff_pct": 4.8813,
+    "mean_abs_diff_pct": 0.005,
     "mismatches_gt_1_5pct": [
+      "2015-08-12",
       "2024-01-15"
     ],
-    "n_mismatches_gt_1_5pct": 1,
-    "p99_abs_diff_pct": 0.0
+    "n_mismatches_gt_1_5pct": 2,
+    "p99_abs_diff_pct": 0.0063
   }
 }

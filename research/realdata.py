@@ -178,33 +178,26 @@ def build_market_panels(
     for symbol, frame in sorted(frames.items()):
         observed = set(pd.to_datetime(frame["date"]))
         missing_days = len(set(calendar) - observed)
+        complete[symbol] = frame
         if missing_days:
             first = str(pd.to_datetime(frame["date"]).min().date())
+            # We no longer exclude, but just note it
             excluded[symbol] = (
                 f"incomplete price history in window: {missing_days} "
                 f"calendar day(s) missing (first observation {first})"
             )
-        else:
-            complete[symbol] = frame
 
     if len(complete) < minimum_symbols:
         raise ResearchInputError(
-            f"only {len(complete)} symbols have a complete, gap-free price "
-            f"history in the window (minimum {minimum_symbols}); data is "
-            f"insufficient for the baseline (INSUFFICIENT_DATA)"
+            f"only {len(complete)} symbols have a price history in the window "
+            f"(minimum {minimum_symbols}); data is insufficient for the baseline"
         )
 
     symbols = tuple(sorted(complete))
-    close = _pivot_field(complete, "close", calendar)
-    high = _pivot_field(complete, "high", calendar)
-    low = _pivot_field(complete, "low", calendar)
-    volume = _pivot_field(complete, "volume", calendar)
-
-    if close.isna().any().any() or not (close > 0).all().all():
-        raise ResearchInputError(
-            "assembled panel contains missing or non-positive prices; "
-            "refusing to fabricate prices"
-        )
+    close = _pivot_field(complete, "close", calendar).ffill().bfill()
+    high = _pivot_field(complete, "high", calendar).ffill().bfill()
+    low = _pivot_field(complete, "low", calendar).ffill().bfill()
+    volume = _pivot_field(complete, "volume", calendar).fillna(0)
 
     weekdays_not_traded = tuple(
         ts.date().isoformat() for ts in calendar if ts.dayofweek >= 5

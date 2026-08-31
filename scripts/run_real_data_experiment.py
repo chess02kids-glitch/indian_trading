@@ -243,7 +243,7 @@ def main(argv: list[str] | None = None) -> int:
         default=ROOT / "reports" / "generated" / "real_data",
     )
     parser.add_argument("--as-of", default="2026-08-25")
-    parser.add_argument("--window-start", default="2023-01-02")
+    parser.add_argument("--window-start", default="2015-01-01")
     parser.add_argument(
         "--universe-dir",
         type=Path,
