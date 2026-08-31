@@ -14,17 +14,20 @@ def main():
     all_closes = []
 
     # We only care about the Nifty 100 symbols for breadth
-    with open("data/universe/nifty100_symbols.txt", "r") as f:
-        symbols = [
-            s.strip() for s in f.readlines() if s.strip() and s.strip() != "symbol"
-        ]
+    symbols = []
+    nifty100_csv = Path("data/universe/nifty100-pit/nifty100.csv")
+    if nifty100_csv.exists():
+        df_universe = pd.read_csv(nifty100_csv)
+        symbols = df_universe["symbol"].unique().tolist()
+    else:
+        print(f"Warning: {nifty100_csv} not found. Ensure ingestion is run.")
 
     for symbol in symbols:
         parquet_path = clean_dir / f"{symbol}.parquet"
         if parquet_path.exists():
             try:
-                df = pd.read_parquet(parquet_path, columns=["Close"])
-                df.rename(columns={"Close": symbol}, inplace=True)
+                df = pd.read_parquet(parquet_path, columns=["close"])
+                df.rename(columns={"close": symbol}, inplace=True)
                 all_closes.append(df)
             except Exception as e:
                 print(f"Error reading {symbol}: {e}")
@@ -57,6 +60,7 @@ def main():
     # Drop rows where everything is 0 (weekends/holidays)
     breadth_df = breadth_df[(breadth_df["advances"] > 0) | (breadth_df["declines"] > 0)]
 
+    breadth_df["date"] = pd.to_datetime(breadth_df["date"])
     # Ensure timezone naive
     if breadth_df["date"].dt.tz is not None:
         breadth_df["date"] = breadth_df["date"].dt.tz_localize(None)

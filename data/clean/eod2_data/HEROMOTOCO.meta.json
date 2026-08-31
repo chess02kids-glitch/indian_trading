@@ -1,13 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "76c713d298cb18066c013f9f9911dc754b3c51631cb9f2b867c971b849faceba",
-  "is_clean": false,
-  "quality_issues": [
-    "long_gap",
-    "off_calendar"
-  ],
-  "rows": 7723,
+  "fingerprint": "21f857a6a788a8a5595cb6a0631796957ff79c9a49535391284fbb107f2dd735",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 496,
   "source": "eod2_data",
   "symbol": "HEROMOTOCO",
-  "validated_at": "2026-08-25T23:22:07.622717+00:00"
+  "validated_at": "2026-08-31T14:31:00.131840+00:00"
 }

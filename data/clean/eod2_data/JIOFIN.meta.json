@@ -1,10 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "aeb660acc257cb86fa3c1ab7d4d9aaf0f44bd65ab664a49ecfe8fc7ce9aa86e8",
+  "fingerprint": "8d85d935138cdb371e018014fd545e04b4c243afc90b53ea828538c4604c1686",
   "is_clean": true,
   "quality_issues": [],
   "rows": 746,
   "source": "eod2_data",
   "symbol": "JIOFIN",
-  "validated_at": "2026-08-25T23:22:26.046521+00:00"
+  "validated_at": "2026-08-31T14:31:52.863105+00:00"
 }

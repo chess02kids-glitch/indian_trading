@@ -1,6 +1,6 @@
 {
   "exchange": "NSE",
-  "fingerprint": "86785dc27b927ce7b435a23a1548f551498bf4b4534fad256856599cf6ae99c1",
+  "fingerprint": "c372acdfbde00a40cc3a782867898c72b2225271a8add2c9ef709a2cf6580bf6",
   "is_clean": false,
   "quality_issues": [
     "off_calendar"
@@ -8,5 +8,5 @@
   "rows": 4866,
   "source": "eod2_data",
   "symbol": "MPHASIS",
-  "validated_at": "2026-08-25T23:22:40.699892+00:00"
+  "validated_at": "2026-08-31T14:32:29.803466+00:00"
 }

@@ -1,13 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "ea99d0083567ee5e7b5b3281557e649a5ae1e96be797677130d06c0df19ac99e",
-  "is_clean": false,
-  "quality_issues": [
-    "long_gap",
-    "off_calendar"
-  ],
-  "rows": 7675,
+  "fingerprint": "2ec013076dadcf9fd7a4607a9de72089a677b7a8a96a9d41548ef33c55cc5fb5",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 496,
   "source": "eod2_data",
   "symbol": "APOLLOHOSP",
-  "validated_at": "2026-08-25T23:21:25.314891+00:00"
+  "validated_at": "2026-08-31T14:29:29.233193+00:00"
 }

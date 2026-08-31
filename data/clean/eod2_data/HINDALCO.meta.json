@@ -1,12 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "a1b7570797ed208d18e8036dc122aa4577d4d2a606b8b5fae569cc060e02f613",
-  "is_clean": false,
-  "quality_issues": [
-    "off_calendar"
-  ],
-  "rows": 4701,
+  "fingerprint": "209f01de3caea0fc6a3e4e2d846916ebdfa1a30520bff030526b52cf3be510e7",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 496,
   "source": "eod2_data",
   "symbol": "HINDALCO",
-  "validated_at": "2026-08-25T23:22:08.729941+00:00"
+  "validated_at": "2026-08-31T14:31:01.076330+00:00"
 }

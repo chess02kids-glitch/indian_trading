@@ -66,7 +66,9 @@ from ingestion.eod2_adapter import (  # noqa: E402
     symbol_to_filename,
 )
 from ingestion.nse_membership_adapter import (  # noqa: E402
+    NIFTY_50_INDEX_ID,
     NIFTY_100_INDEX_ID,
+    NIFTY_500_INDEX_ID,
     NseMembershipSpec,
     build_pit_universe_frame,
     extract_index_rows,
@@ -212,60 +214,82 @@ def ingest_membership(
     isin_map: dict[str, str],
     as_of: str,
     retrieved_at: str,
-    universe_dir: Path,
+    universe_root: Path,
 ) -> dict[str, Any]:
-    """Build the point-in-time Nifty 100 universe (mode A)."""
+    """Build the point-in-time Nifty 50, 100, 500 universes (mode A)."""
     source_csv = (
         membership_dir / "index_history" / "data" / "index_membership_history.csv"
     )
     frame = parse_membership_csv(source_csv)
-    rows = extract_index_rows(
-        frame, index_id=NIFTY_100_INDEX_ID, index_name="Nifty 100"
-    )
-    pit_frame = build_pit_universe_frame(rows, isin_map=isin_map)
-    write_pit_universe(
-        universe_dir,
-        pit_frame,
-        spec=NseMembershipSpec(
-            commit=_git_head(membership_dir),
-            coverage_note=(
-                "membership data through 2026-05-15 (upstream coverage); "
-                "no NSE reconstitution occurred between 2026-05-15 and the "
-                "next scheduled October 2026 review, so membership is stable "
-                "through the as-of date (verified against upstream "
-                "current_snapshot)"
+
+    indices = [
+        (NIFTY_50_INDEX_ID, "Nifty 50", "nifty50"),
+        (NIFTY_100_INDEX_ID, "Nifty 100", "nifty100"),
+        (NIFTY_500_INDEX_ID, "Nifty 500", "nifty500"),
+    ]
+
+    combined_audit = {}
+    
+    # ensure parent root exists
+    universe_root.mkdir(parents=True, exist_ok=True)
+    
+    for idx_id, idx_name, slug in indices:
+        rows = extract_index_rows(frame, index_id=idx_id, index_name=idx_name)
+        pit_frame = build_pit_universe_frame(rows, index_name=slug, isin_map=isin_map)
+        u_dir = universe_root / f"{slug}-pit"
+        write_pit_universe(
+            u_dir,
+            pit_frame,
+            spec=NseMembershipSpec(
+                commit=_git_head(membership_dir),
+                coverage_note=(
+                    "membership data through 2026-05-15 (upstream coverage); "
+                    "no NSE reconstitution occurred between 2026-05-15 and the "
+                    "next scheduled October 2026 review, so membership is stable "
+                    "through the as-of date (verified against upstream "
+                    "current_snapshot)"
+                ),
             ),
-        ),
-        source_csv_path=source_csv,
-        retrieved_at=retrieved_at,
-    )
-    dataset = UniverseDataset.from_dir(universe_dir)
-    members_as_of = dataset.members_at("nifty100", as_of)
-    return {
-        "universe_dir": str(universe_dir),
-        "rows": int(pit_frame.attrs.get("kept_row_count", len(pit_frame))),
-        "symbols_ever": len(dataset.all_symbols("nifty100")),
-        "members_at_as_of": list(members_as_of),
-        "members_at_as_of_count": len(members_as_of),
-        "excluded_symbols": list(pit_frame.attrs.get("excluded_symbols", [])),
-        "membership_fingerprint": membership_fingerprint(
-            pd.read_csv(universe_dir / "nifty100.csv")
-        ),
-        "isin_coverage": {
-            "mapped": int(pit_frame["isin"].notna().sum()),
-            "unmapped": int(pit_frame["isin"].isna().sum()),
-        },
-    }
+            source_csv_path=source_csv,
+            retrieved_at=retrieved_at,
+        )
+        dataset = UniverseDataset.from_dir(u_dir)
+        members_as_of = dataset.members_at(slug, as_of)
+        
+        combined_audit[slug] = {
+            "universe_dir": str(u_dir),
+            "rows": int(pit_frame.attrs.get("kept_row_count", len(pit_frame))),
+            "symbols_ever": len(dataset.all_symbols(slug)),
+            "members_at_as_of": list(members_as_of),
+            "members_at_as_of_count": len(members_as_of),
+            "excluded_symbols": list(pit_frame.attrs.get("excluded_symbols", [])),
+            "membership_fingerprint": membership_fingerprint(
+                pd.read_csv(u_dir / f"{slug}.csv")
+            ),
+            "isin_coverage": {
+                "mapped": int(pit_frame["isin"].notna().sum()),
+                "unmapped": int(pit_frame["isin"].isna().sum()),
+            },
+        }
+
+    return combined_audit
 
 
 def requested_constituents(
-    universe_dir: Path, *, window_start: str, as_of: str
+    universe_root: Path, *, window_start: str, as_of: str
 ) -> list[str]:
-    """Every symbol that was a Nifty 100 member at any point in the window."""
-    dataset = UniverseDataset.from_dir(universe_dir)
-    return realdata.requested_constituents(
-        dataset, window_start=window_start, as_of=as_of
-    )
+    """Return all symbols that were members of Nifty 50, 100, or 500 at any point."""
+    symbols = set()
+    for slug in ("nifty50", "nifty100", "nifty500"):
+        u_dir = universe_root / f"{slug}-pit"
+        if u_dir.is_dir():
+            dataset = UniverseDataset.from_dir(u_dir)
+            members = realdata.requested_constituents(dataset, window_start=window_start, as_of=as_of)
+            symbols.update(members)
+    
+    if not symbols:
+        raise SystemExit(f"No symbols found in {universe_root}")
+    return sorted(symbols)
 
 
 # --------------------------------------------------------------------------
@@ -791,17 +815,17 @@ def fetch_fundamentals(
 def _panels_and_bundle_context(
     as_of: str,
     window_start: str,
-    universe_dir: Path,
+    universe_root: Path,
 ) -> tuple[realdata.ResearchPanels, list[str], Path]:
     """Load the validated clean layer + PIT universe; build the panels."""
     catalog = CleanDataCatalog()
-    if not (universe_dir / "nifty100.csv").is_file():
+    if not (universe_root / "nifty100-pit" / "nifty100.csv").is_file():
         raise SystemExit(
             "point-in-time universe missing — run the local ingestion first: "
             "python scripts/ingest_real_data.py --local ..."
         )
     symbols = requested_constituents(
-        universe_dir, window_start=window_start, as_of=as_of
+        universe_root, window_start=window_start, as_of=as_of
     )
     panels = realdata.build_market_panels(
         catalog,
@@ -810,7 +834,7 @@ def _panels_and_bundle_context(
         window_start=window_start,
         window_end=as_of,
     )
-    return panels, symbols, universe_dir
+    return panels, symbols, universe_root
 
 
 def _read_symbol_list(path: Path) -> list[str]:
@@ -825,12 +849,12 @@ def _panel_symbols_for_fetch(
     as_of: str,
     window_start: str,
     panel_symbols_file: Path | None,
-    universe_dir: Path,
+    universe_root: Path,
 ) -> list[str]:
     """Resolve the research panel symbols for the operator fetch.
 
     Precedence: explicit ``--panel-symbols-file`` > the milestone
-    ``<universe_dir>/panel_symbols.txt`` (keeps a fresh machine
+    ``<universe_root>/panel_symbols.txt`` (keeps a fresh machine
     self-contained) > derivation from the local clean layer (this
     workspace, where ingestion already ran).
     """
@@ -838,10 +862,10 @@ def _panel_symbols_for_fetch(
         if not panel_symbols_file.is_file():
             raise SystemExit(f"panel symbols file missing: {panel_symbols_file}")
         return _read_symbol_list(panel_symbols_file)
-    committed = universe_dir / "panel_symbols.txt"
+    committed = universe_root / "panel_symbols.txt"
     if committed.is_file():
         return _read_symbol_list(committed)
-    panels, _, _ = _panels_and_bundle_context(as_of, window_start, universe_dir)
+    panels, _, _ = _panels_and_bundle_context(as_of, window_start, universe_root)
     return list(panels.symbols)
 
 
@@ -868,10 +892,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--eod2-dir", type=Path, default=None)
     parser.add_argument("--membership-dir", type=Path, default=None)
     parser.add_argument(
-        "--universe-dir",
+        "--universe-root",
         type=Path,
-        default=ROOT / "data" / "universe" / "nifty100-pit",
-        help="where the point-in-time universe CSV + provenance are written",
+        default=ROOT / "data" / "universe",
+        help="where the point-in-time universe CSVs + provenance are written",
     )
     parser.add_argument(
         "--report-dir",
@@ -896,7 +920,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     output_root = args.report_dir
-    universe_dir = args.universe_dir
+    universe_root = args.universe_root
 
     if args.local:
         if args.eod2_dir is None or args.membership_dir is None:
@@ -913,10 +937,10 @@ def main(argv: list[str] | None = None) -> int:
             isin_map=isin_map,
             as_of=args.as_of,
             retrieved_at=retrieved_at,
-            universe_dir=universe_dir,
+            universe_root=universe_root,
         )
         symbols = requested_constituents(
-            universe_dir, window_start=args.window_start, as_of=args.as_of
+            universe_root, window_start=args.window_start, as_of=args.as_of
         )
         # Parse once; the data-derived market calendar (holidays + special
         # sessions included) drives the clean layer's off-calendar checks.
@@ -950,7 +974,7 @@ def main(argv: list[str] | None = None) -> int:
         )
 
         panels, _, _ = _panels_and_bundle_context(
-            args.as_of, args.window_start, universe_dir
+            args.as_of, args.window_start, universe_root
         )
         staleness = detect_data_staleness(
             panels.close.index,
@@ -980,7 +1004,7 @@ def main(argv: list[str] | None = None) -> int:
         # Committed derived artifact: the exact research panel symbol list
         # (keeps the operator fundamentals command self-contained on a
         # fresh machine; see docs/real_data.md).
-        panel_symbols_path = universe_dir / "panel_symbols.txt"
+        panel_symbols_path = universe_root / "panel_symbols.txt"
         panel_symbols_path.write_text(
             "# v0.7 research panel symbols (complete gap-free price history\n"
             "# in window; derived deterministically — see completeness report)\n"
@@ -1008,7 +1032,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.fetch_fundamentals:
         symbols = _panel_symbols_for_fetch(
-            args.as_of, args.window_start, args.panel_symbols_file, universe_dir
+            args.as_of, args.window_start, args.panel_symbols_file, universe_root
         )
         catalog = CleanDataCatalog()
         fetch_fundamentals(
@@ -1029,7 +1053,7 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit(f"bundle directory missing: {bundle}")
     frame, provenance = realdata.load_fundamentals_bundle(bundle, as_of=args.as_of)
     panels, _, _ = _panels_and_bundle_context(
-        args.as_of, args.window_start, universe_dir
+        args.as_of, args.window_start, universe_root
     )
     missing = set(panels.symbols) - set(frame["symbol"])
     extra = set(frame["symbol"]) - set(panels.symbols)

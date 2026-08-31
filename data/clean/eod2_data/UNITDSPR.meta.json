@@ -1,6 +1,6 @@
 {
   "exchange": "NSE",
-  "fingerprint": "bf8cc2329bf3a56f6a9024590877c8da0aff94bec93f37e4491c78a12549b38a",
+  "fingerprint": "258463b613a861579b216a9b492256394e193edf6e91e67b8c8f9d2106769071",
   "is_clean": false,
   "quality_issues": [
     "off_calendar"
@@ -8,5 +8,5 @@
   "rows": 6184,
   "source": "eod2_data",
   "symbol": "UNITDSPR",
-  "validated_at": "2026-08-25T23:23:39.859367+00:00"
+  "validated_at": "2026-08-31T14:34:12.903142+00:00"
 }

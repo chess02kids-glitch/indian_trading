@@ -1,12 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "eea9407be55e517519623e00f4d68e86e554b59d6460fe1d8ea93bf24e05258a",
-  "is_clean": false,
-  "quality_issues": [
-    "off_calendar"
-  ],
-  "rows": 4708,
+  "fingerprint": "c51eda13328a28a53cb158ea2fd04a00c6ad7f3c048cad4bb0b795cd043a459f",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 496,
   "source": "eod2_data",
   "symbol": "AXISBANK",
-  "validated_at": "2026-08-25T23:21:28.741850+00:00"
+  "validated_at": "2026-08-31T14:29:38.721415+00:00"
 }

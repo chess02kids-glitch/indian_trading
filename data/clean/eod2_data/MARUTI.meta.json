@@ -1,12 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "90773e8a452307a51a2fddc749a00c5d2886d58a4f6e0467d63cd9fba85e9379",
-  "is_clean": false,
-  "quality_issues": [
-    "off_calendar"
-  ],
-  "rows": 5741,
+  "fingerprint": "e763d32002b27ee4be7e6fcb81d4fcfe959fe774931354cd0a60fd72e4a79df5",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 496,
   "source": "eod2_data",
   "symbol": "MARUTI",
-  "validated_at": "2026-08-25T23:22:37.176187+00:00"
+  "validated_at": "2026-08-31T14:32:14.450065+00:00"
 }

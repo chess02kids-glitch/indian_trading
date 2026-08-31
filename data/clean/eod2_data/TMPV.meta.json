@@ -1,6 +1,6 @@
 {
   "exchange": "NSE",
-  "fingerprint": "881fe388fdf83c5d3a673477cb4b7afa5602f7e3bbafd87435655f73ef803a26",
+  "fingerprint": "62cf5275c93d38a3521d49cbdb47b624cabf4c058fc009f8f77d525de96ca1fd",
   "is_clean": false,
   "quality_issues": [
     "off_calendar"
@@ -8,5 +8,5 @@
   "rows": 5621,
   "source": "eod2_data",
   "symbol": "TMPV",
-  "validated_at": "2026-08-25T23:23:25.291433+00:00"
+  "validated_at": "2026-08-31T14:33:52.537223+00:00"
 }

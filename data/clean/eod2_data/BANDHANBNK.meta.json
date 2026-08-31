@@ -1,12 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "780a6f26bea1f27dfdd6a046ff64f835a1caf07aae7c0909a9fdc19f20b76795",
-  "is_clean": false,
-  "quality_issues": [
-    "off_calendar"
-  ],
+  "fingerprint": "afe07fec43eab2d642b2b229b193e8573b714471f14c6d15ac1f4c02197662ad",
+  "is_clean": true,
+  "quality_issues": [],
   "rows": 2079,
   "source": "eod2_data",
   "symbol": "BANDHANBNK",
-  "validated_at": "2026-08-25T23:21:33.526110+00:00"
+  "validated_at": "2026-08-31T14:29:50.944102+00:00"
 }

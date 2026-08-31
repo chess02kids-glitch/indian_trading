@@ -1,12 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "a7478dd669a1ee63f721f1c62f9729c9e4b30a5bfbaaa1a1abac10a744f10003",
-  "is_clean": false,
-  "quality_issues": [
-    "off_calendar"
-  ],
-  "rows": 7185,
+  "fingerprint": "d4456167c7132fc1eda36b55263a7aacd41e8638150e3b4723443d4832981c5f",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 496,
   "source": "eod2_data",
   "symbol": "ICICIBANK",
-  "validated_at": "2026-08-25T23:22:12.719605+00:00"
+  "validated_at": "2026-08-31T14:31:09.759385+00:00"
 }

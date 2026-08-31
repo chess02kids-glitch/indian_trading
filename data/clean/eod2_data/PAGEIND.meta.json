@@ -1,12 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "e565dec9f4a97c0d7eea54340b519531dccca7eb6114e40efa8629d79b8df032",
-  "is_clean": false,
-  "quality_issues": [
-    "off_calendar"
-  ],
-  "rows": 4800,
+  "fingerprint": "27589ae38dbf4ebdd9d34093e340b1a900795c216ba2b5fba8d035f7b1d916d3",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 494,
   "source": "eod2_data",
   "symbol": "PAGEIND",
-  "validated_at": "2026-08-25T23:22:49.154571+00:00"
+  "validated_at": "2026-08-31T14:32:50.484821+00:00"
 }

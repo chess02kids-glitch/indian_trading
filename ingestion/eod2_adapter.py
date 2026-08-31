@@ -154,11 +154,12 @@ def _read_raw_csv(path: str | Path) -> pd.DataFrame:
     if not path.is_file():
         raise FileNotFoundError(f"eod2 source file missing: {path}")
     raw = pd.read_csv(path)
-    if list(raw.columns) != list(EOD2_DAILY_HEADER):
-        raise DataQualityError(
-            f"eod2 file {path.name} has unexpected header {list(raw.columns)}; "
-            f"expected {list(EOD2_DAILY_HEADER)}"
-        )
+    # Map headers to standard title-case format
+    header_map = {
+        "date": "Date", "open": "Open", "high": "High", "low": "Low", 
+        "close": "Close", "volume": "Volume", "series": "Series"
+    }
+    raw.rename(columns=lambda x: header_map.get(str(x).strip().lower(), str(x)), inplace=True)
     return raw
 
 
@@ -180,16 +181,16 @@ def parse_eod2_daily_file(
     normalized_symbol = symbol.strip().upper()
     frame = pd.DataFrame(
         {
-            "date": pd.to_datetime(raw["Date"], errors="coerce"),
+            "date": pd.to_datetime(raw.get("Date", raw.get("date")), errors="coerce"),
             "symbol": normalized_symbol,
-            "open": pd.to_numeric(raw["Open"], errors="coerce"),
-            "high": pd.to_numeric(raw["High"], errors="coerce"),
-            "low": pd.to_numeric(raw["Low"], errors="coerce"),
-            "close": pd.to_numeric(raw["Close"], errors="coerce"),
-            "volume": pd.to_numeric(raw["Volume"], errors="coerce"),
+            "open": pd.to_numeric(raw.get("Open", raw.get("open")), errors="coerce"),
+            "high": pd.to_numeric(raw.get("High", raw.get("high")), errors="coerce"),
+            "low": pd.to_numeric(raw.get("Low", raw.get("low")), errors="coerce"),
+            "close": pd.to_numeric(raw.get("Close", raw.get("close")), errors="coerce"),
+            "volume": pd.to_numeric(raw.get("Volume", raw.get("volume")), errors="coerce"),
         }
     )
-    frame["series"] = raw["Series"].astype(str)
+    frame["series"] = raw.get("Series", raw.get("series", "")).astype(str)
     frame["source"] = EOD2_SOURCE
     frame["exchange"] = "NSE"
     frame["ingested_at"] = spec.ingested_at

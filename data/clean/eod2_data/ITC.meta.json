@@ -1,13 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "171ac7be2f00eb925b22a773b278829d3edea3627871e27e703baa57e893658a",
-  "is_clean": false,
-  "quality_issues": [
-    "long_gap",
-    "off_calendar"
-  ],
-  "rows": 7806,
+  "fingerprint": "fc38000681060a6f773781ce8ca958382ff773971da8074c06454b576b3e59e8",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 496,
   "source": "eod2_data",
   "symbol": "ITC",
-  "validated_at": "2026-08-25T23:22:24.123534+00:00"
+  "validated_at": "2026-08-31T14:31:45.825397+00:00"
 }

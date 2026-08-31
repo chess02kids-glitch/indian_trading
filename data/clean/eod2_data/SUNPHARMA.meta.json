@@ -1,13 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "4b425de3c2aab6f72a236fa93bed91d7f3e3331a674dd0651ca587f769878f02",
-  "is_clean": false,
-  "quality_issues": [
-    "long_gap",
-    "off_calendar"
-  ],
-  "rows": 7747,
+  "fingerprint": "64877d362b0911b914bf83ea0ce48fed499f542c7f230a917ecf6d11b428b85d",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 496,
   "source": "eod2_data",
   "symbol": "SUNPHARMA",
-  "validated_at": "2026-08-25T23:23:08.712198+00:00"
+  "validated_at": "2026-08-31T14:33:34.311508+00:00"
 }

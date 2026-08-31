@@ -1,12 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "45529321db00db208c6904338c2254de66116d880b0226fa8dae5607110097b3",
-  "is_clean": false,
-  "quality_issues": [
-    "off_calendar"
-  ],
-  "rows": 4827,
+  "fingerprint": "068feb500b24bb51ca9903d98e5bad04b45c06da5c27bd83887c6afadf66dc0c",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 496,
   "source": "eod2_data",
   "symbol": "PFC",
-  "validated_at": "2026-08-25T23:22:50.794610+00:00"
+  "validated_at": "2026-08-31T14:32:54.856211+00:00"
 }

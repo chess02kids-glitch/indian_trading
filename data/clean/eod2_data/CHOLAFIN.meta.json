@@ -1,12 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "14d3219dedf70ec59d3e0c7a7488fcbaf170e1ac034695e08ec4e44fffe6590c",
-  "is_clean": false,
-  "quality_issues": [
-    "off_calendar"
-  ],
-  "rows": 4008,
+  "fingerprint": "90ba41b7a11d33c905d8339bce34d599bd3b887de1884ec1b93d622f8cdda47f",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 496,
   "source": "eod2_data",
   "symbol": "CHOLAFIN",
-  "validated_at": "2026-08-25T23:21:46.345254+00:00"
+  "validated_at": "2026-08-31T14:30:18.787763+00:00"
 }

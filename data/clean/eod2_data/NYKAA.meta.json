@@ -1,12 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "1aca1cbf835dd318b57c302ec66bfb290a9ee1b6194ed0e164d77af4e9e245c3",
-  "is_clean": false,
-  "quality_issues": [
-    "off_calendar"
-  ],
-  "rows": 1186,
+  "fingerprint": "16791a479a12ff3eb61e05d8f9be84f1e3554b50455fe00a7866bca8ee85ad4c",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 496,
   "source": "eod2_data",
   "symbol": "NYKAA",
-  "validated_at": "2026-08-25T23:22:46.929470+00:00"
+  "validated_at": "2026-08-31T14:32:47.694422+00:00"
 }

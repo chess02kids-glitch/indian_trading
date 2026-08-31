@@ -1,12 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "afd8d521fb812c3c1edff64f9e187b9252454275f7665cda1735ad1b98144ab7",
-  "is_clean": false,
-  "quality_issues": [
-    "off_calendar"
-  ],
+  "fingerprint": "2dcfe0e5731528dca53121845f5bd793dd51be6a53c574b1357d4c781cdef9db",
+  "is_clean": true,
+  "quality_issues": [],
   "rows": 1425,
   "source": "eod2_data",
   "symbol": "GLAND",
-  "validated_at": "2026-08-25T23:21:58.920726+00:00"
+  "validated_at": "2026-08-31T14:30:46.790525+00:00"
 }

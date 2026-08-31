@@ -1,12 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "5b539917ca31e0bed08b8e676d414fa3b2bea69dedaa287d3212ef4144c705a1",
-  "is_clean": false,
-  "quality_issues": [
-    "off_calendar"
-  ],
+  "fingerprint": "8eedc4df8de2d67ebcf986d2a54707967e4399da65b04ebb96d671c9b16ff46f",
+  "is_clean": true,
+  "quality_issues": [],
   "rows": 1326,
   "source": "eod2_data",
   "symbol": "LODHA",
-  "validated_at": "2026-08-25T23:22:30.924403+00:00"
+  "validated_at": "2026-08-31T14:32:05.038667+00:00"
 }

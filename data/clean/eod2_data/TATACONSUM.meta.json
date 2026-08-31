@@ -1,12 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "d0a4f6db2bc5d1f3cd3dbb11f63565ab5c1435acb1756821c17a0b614c1e78a3",
-  "is_clean": false,
-  "quality_issues": [
-    "off_calendar"
-  ],
-  "rows": 3987,
+  "fingerprint": "163d02275ec5f0a34d35eb649df931d563b36a957a8e2da4adaaa8c503d9ca16",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 496,
   "source": "eod2_data",
   "symbol": "TATACONSUM",
-  "validated_at": "2026-08-25T23:23:10.245064+00:00"
+  "validated_at": "2026-08-31T14:33:37.879704+00:00"
 }

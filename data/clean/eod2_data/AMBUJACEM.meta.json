@@ -1,6 +1,6 @@
 {
   "exchange": "NSE",
-  "fingerprint": "f4fcaf0d1e0985b5c4b4812472f06b2ec0551d50977f7bbb21c7087cec06ca99",
+  "fingerprint": "2ca51969816051af62890b21c7e2d0a94db333d9576bec4e19f95a32e43fac52",
   "is_clean": false,
   "quality_issues": [
     "off_calendar"
@@ -8,5 +8,5 @@
   "rows": 4724,
   "source": "eod2_data",
   "symbol": "AMBUJACEM",
-  "validated_at": "2026-08-25T23:21:24.016986+00:00"
+  "validated_at": "2026-08-31T14:29:28.253573+00:00"
 }

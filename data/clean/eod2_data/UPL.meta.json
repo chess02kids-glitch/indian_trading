@@ -1,6 +1,6 @@
 {
   "exchange": "NSE",
-  "fingerprint": "167c62a4f052344ba2b2c56aac88595139e68ad36788e47cab5a57aacd0c097f",
+  "fingerprint": "2fd87aaa48de1bb0cbe532609ec046a41c909d5b5ec63d424b6e502cb0b82755",
   "is_clean": false,
   "quality_issues": [
     "off_calendar"
@@ -8,5 +8,5 @@
   "rows": 5601,
   "source": "eod2_data",
   "symbol": "UPL",
-  "validated_at": "2026-08-25T23:23:42.131526+00:00"
+  "validated_at": "2026-08-31T14:34:18.600025+00:00"
 }

@@ -1,12 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "df87033c49f69c4ed8c63a4521686b84213b63f0c354b5d9225759f28da25c68",
-  "is_clean": false,
-  "quality_issues": [
-    "off_calendar"
-  ],
+  "fingerprint": "1317af769b4ad8de8bf7db4852a8d363e698b7ac4bee93fbed4e885c18b0eb37",
+  "is_clean": true,
+  "quality_issues": [],
   "rows": 1596,
   "source": "eod2_data",
   "symbol": "SBICARD",
-  "validated_at": "2026-08-25T23:22:59.319956+00:00"
+  "validated_at": "2026-08-31T14:33:11.017390+00:00"
 }

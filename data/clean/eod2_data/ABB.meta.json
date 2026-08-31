@@ -1,6 +1,6 @@
 {
   "exchange": "NSE",
-  "fingerprint": "43b1e1d028472d08d0d2d884ec98fa1b2e2c5cd40316c9daa25377117bc2c07b",
+  "fingerprint": "4dafae555c5978bedb3243c27ff9f789b3e73d73eff285eff9394ba10a9ebf8e",
   "is_clean": false,
   "quality_issues": [
     "long_gap",
@@ -9,5 +9,5 @@
   "rows": 7751,
   "source": "eod2_data",
   "symbol": "ABB",
-  "validated_at": "2026-08-25T23:21:16.808882+00:00"
+  "validated_at": "2026-08-31T14:29:00.518956+00:00"
 }

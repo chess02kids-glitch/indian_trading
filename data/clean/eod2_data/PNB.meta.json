@@ -1,12 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "db4f25a74325698d4f5592d917891407451b98ff6f18488d484c14941d72c78b",
-  "is_clean": false,
-  "quality_issues": [
-    "off_calendar"
-  ],
-  "rows": 6041,
+  "fingerprint": "706e973d16d30a670c2093e1460f225ec7e2c5a2fde7ee79d9637458225e3529",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 496,
   "source": "eod2_data",
   "symbol": "PNB",
-  "validated_at": "2026-08-25T23:22:55.277353+00:00"
+  "validated_at": "2026-08-31T14:33:02.193597+00:00"
 }

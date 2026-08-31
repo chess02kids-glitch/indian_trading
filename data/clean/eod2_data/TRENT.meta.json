@@ -1,12 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "5b36fa9165ebedc6374c4ea933b5203ecd7fba88d95113bfe93743343f8160b6",
-  "is_clean": false,
-  "quality_issues": [
-    "off_calendar"
-  ],
-  "rows": 5509,
+  "fingerprint": "af74f6cf35e8d5b51dfe5785961c358d6035bb9ff16b121c7be82f725db11b14",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 496,
   "source": "eod2_data",
   "symbol": "TRENT",
-  "validated_at": "2026-08-25T23:23:31.117418+00:00"
+  "validated_at": "2026-08-31T14:33:58.831958+00:00"
 }

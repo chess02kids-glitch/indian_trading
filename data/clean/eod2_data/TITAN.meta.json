@@ -1,13 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "fec851729b16e3f6e719fd2bb33c6536aefd4047997329fa9fbb6fde568ade10",
-  "is_clean": false,
-  "quality_issues": [
-    "long_gap",
-    "off_calendar"
-  ],
-  "rows": 7770,
+  "fingerprint": "abd1c67ccd685dff6cdfb7eb963ac94d4a39f49fcf9826e4022ecd2e19401c0c",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 496,
   "source": "eod2_data",
   "symbol": "TITAN",
-  "validated_at": "2026-08-25T23:23:22.428424+00:00"
+  "validated_at": "2026-08-31T14:33:46.719465+00:00"
 }

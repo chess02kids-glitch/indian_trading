@@ -40,7 +40,9 @@ from typing import Any, Mapping, Sequence
 import pandas as pd
 
 __all__ = [
+    "NIFTY_50_INDEX_ID",
     "NIFTY_100_INDEX_ID",
+    "NIFTY_500_INDEX_ID",
     "NseMembershipSpec",
     "parse_membership_csv",
     "extract_index_rows",
@@ -50,8 +52,12 @@ __all__ = [
     "write_pit_universe",
 ]
 
+#: Upstream registry id for the Nifty 50 (index_registry.json).
+NIFTY_50_INDEX_ID = 217
 #: Upstream registry id for the Nifty 100 (index_registry.json).
 NIFTY_100_INDEX_ID = 219
+#: Upstream registry id for the Nifty 500 (index_registry.json).
+NIFTY_500_INDEX_ID = 221
 
 _MEMBERSHIP_COLUMNS = (
     "index_id",

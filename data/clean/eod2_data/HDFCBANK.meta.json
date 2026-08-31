@@ -1,13 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "4a75f0342e53770e36a64a816b0aa4a95486e997f4ef9d0b8f1f20ea4fe08fda",
-  "is_clean": false,
-  "quality_issues": [
-    "long_gap",
-    "off_calendar"
-  ],
-  "rows": 7707,
+  "fingerprint": "38f2fad778d22e7a0c592e2e61d11529a95b792fd466d8e19e74b89ed3e06dc5",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 496,
   "source": "eod2_data",
   "symbol": "HDFCBANK",
-  "validated_at": "2026-08-25T23:22:05.658847+00:00"
+  "validated_at": "2026-08-31T14:30:58.271332+00:00"
 }

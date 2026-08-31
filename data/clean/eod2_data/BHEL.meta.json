@@ -1,13 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "4b6a441e51c3bfbb767c0c4ecd8801d0707e308b3c1c9dc445cd0aead5529f86",
-  "is_clean": false,
-  "quality_issues": [
-    "long_gap",
-    "off_calendar"
-  ],
-  "rows": 7719,
+  "fingerprint": "df9db275e2d8f28e52f8a7c61405824603c975040a49d61b62fc693316e81f09",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 496,
   "source": "eod2_data",
   "symbol": "BHEL",
-  "validated_at": "2026-08-25T23:21:39.113539+00:00"
+  "validated_at": "2026-08-31T14:29:57.351511+00:00"
 }

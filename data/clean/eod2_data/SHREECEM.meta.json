@@ -1,13 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "35804c283f73ba0357a8b571a70739f8f1250bae14554ace4a7fcd16ac350ec3",
-  "is_clean": false,
-  "quality_issues": [
-    "long_gap",
-    "off_calendar"
-  ],
-  "rows": 7759,
+  "fingerprint": "770c7271abb6abb9e3cfe9f2204d6597b8dca26b183b3c08188c012ec2fcd8ce",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 496,
   "source": "eod2_data",
   "symbol": "SHREECEM",
-  "validated_at": "2026-08-25T23:23:02.746846+00:00"
+  "validated_at": "2026-08-31T14:33:13.821073+00:00"
 }

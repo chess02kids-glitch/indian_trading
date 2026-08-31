@@ -1,6 +1,6 @@
 {
   "exchange": "NSE",
-  "fingerprint": "7c8be618d76279e12604e12c5054f5e231bd2d1e91d38867bae23380cfc07b73",
+  "fingerprint": "d9d7e10dcd8523e7fc4f84f91a8b21c6374c30c8be8eceddd2050b978bc11af1",
   "is_clean": false,
   "quality_issues": [
     "off_calendar"
@@ -8,5 +8,5 @@
   "rows": 6141,
   "source": "eod2_data",
   "symbol": "TVSMOTOR",
-  "validated_at": "2026-08-25T23:23:33.335665+00:00"
+  "validated_at": "2026-08-31T14:34:04.304267+00:00"
 }

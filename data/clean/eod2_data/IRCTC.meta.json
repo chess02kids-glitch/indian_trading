@@ -1,12 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "9c30912ac45fabd0e5c17970c5ea48ffb827ecf36f1c141950b46a256f500c6b",
-  "is_clean": false,
-  "quality_issues": [
-    "off_calendar"
-  ],
-  "rows": 1700,
+  "fingerprint": "1edbdd5d5fa0542f991b18bead3d23f60b363e9dc57f6400eb68b4db1b1b904e",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 496,
   "source": "eod2_data",
   "symbol": "IRCTC",
-  "validated_at": "2026-08-25T23:22:22.293971+00:00"
+  "validated_at": "2026-08-31T14:31:43.826643+00:00"
 }

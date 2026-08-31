@@ -1,6 +1,6 @@
 {
   "exchange": "NSE",
-  "fingerprint": "65fb80728fffc9be6200c2aa84bb271b8a76b16ee77aeec20856229201de3b7e",
+  "fingerprint": "233cfb8b59432b6572ea98ee318ffb9291ce60a361c1a2aaea2c1895c701c0af",
   "is_clean": false,
   "quality_issues": [
     "long_gap",
@@ -9,5 +9,5 @@
   "rows": 7245,
   "source": "eod2_data",
   "symbol": "SHRIRAMFIN",
-  "validated_at": "2026-08-25T23:23:03.839598+00:00"
+  "validated_at": "2026-08-31T14:33:19.618021+00:00"
 }

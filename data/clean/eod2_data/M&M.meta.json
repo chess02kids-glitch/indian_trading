@@ -1,13 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "6a56ad1e2914659a4c0fbe4b171e55ff1827f209cb932d47b94b77f638141c9a",
-  "is_clean": false,
-  "quality_issues": [
-    "long_gap",
-    "off_calendar"
-  ],
-  "rows": 7775,
+  "fingerprint": "193dc1d2216b76d8f7a771194dc235b384f5ace455b0f775f106f6572e20ff14",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 496,
   "source": "eod2_data",
   "symbol": "M&M",
-  "validated_at": "2026-08-25T23:22:34.524978+00:00"
+  "validated_at": "2026-08-31T14:32:12.586535+00:00"
 }

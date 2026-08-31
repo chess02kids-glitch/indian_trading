@@ -1,12 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "6f72b5977e646f110930e7a5d05f107eb51bdd71f301a9c7b2fcbb7fc8ee1b77",
-  "is_clean": false,
-  "quality_issues": [
-    "off_calendar"
-  ],
-  "rows": 4727,
+  "fingerprint": "4092e03c05264b56d1cf3a706d4a9fc99248266f2369b9f0662ba2dd65612f67",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 496,
   "source": "eod2_data",
   "symbol": "HINDUNILVR",
-  "validated_at": "2026-08-25T23:22:09.815274+00:00"
+  "validated_at": "2026-08-31T14:31:02.235129+00:00"
 }

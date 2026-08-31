@@ -1,12 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "a518bf489325b42ffd09d326200557ae904b278be52940e719a5cc4228e81db3",
-  "is_clean": false,
-  "quality_issues": [
-    "off_calendar"
-  ],
-  "rows": 4636,
+  "fingerprint": "043c2da64860ab8e9ec3b43a67dd847d8c8faebcd8347af1a2f1795ccd228d00",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 496,
   "source": "eod2_data",
   "symbol": "ADANIPORTS",
-  "validated_at": "2026-08-25T23:21:22.020019+00:00"
+  "validated_at": "2026-08-31T14:29:16.620517+00:00"
 }

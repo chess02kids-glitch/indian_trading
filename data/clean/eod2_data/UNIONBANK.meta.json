@@ -1,12 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "b9af789ecd94b21219c4162267f3aedb1fc53694408816c8363a60099b227856",
-  "is_clean": false,
-  "quality_issues": [
-    "off_calendar"
-  ],
-  "rows": 5937,
+  "fingerprint": "80cd163c396faba761b2e9c7d668392cfdf53d9954b8f9fd3cea87266f5c6147",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 496,
   "source": "eod2_data",
   "symbol": "UNIONBANK",
-  "validated_at": "2026-08-25T23:23:37.776946+00:00"
+  "validated_at": "2026-08-31T14:34:07.535136+00:00"
 }

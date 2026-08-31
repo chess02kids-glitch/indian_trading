@@ -1,12 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "39b08349840ec2eedce248be87eb160c86c9d57c05bc2aac3b81bd828e13bec7",
-  "is_clean": false,
-  "quality_issues": [
-    "off_calendar"
-  ],
-  "rows": 5250,
+  "fingerprint": "b6bcdb52efecd35985a79d8014f60d79c4f90fc867b50eaf5946ad0337f4077c",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 496,
   "source": "eod2_data",
   "symbol": "MARICO",
-  "validated_at": "2026-08-25T23:22:35.934182+00:00"
+  "validated_at": "2026-08-31T14:32:13.506949+00:00"
 }

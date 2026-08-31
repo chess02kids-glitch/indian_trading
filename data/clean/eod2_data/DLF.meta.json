@@ -1,6 +1,6 @@
 {
   "exchange": "NSE",
-  "fingerprint": "45a4f8a0bf809d1aae51525d3e02dd83d86be473b2c4678e457468c54a58b2cc",
+  "fingerprint": "667bd87d891817e8b30d1045d8de46da360ee1d004a45fb31ca5e937bfdc8ea6",
   "is_clean": false,
   "quality_issues": [
     "off_calendar"
@@ -8,5 +8,5 @@
   "rows": 4737,
   "source": "eod2_data",
   "symbol": "DLF",
-  "validated_at": "2026-08-25T23:21:53.534156+00:00"
+  "validated_at": "2026-08-31T14:30:34.458274+00:00"
 }

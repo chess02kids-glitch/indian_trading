@@ -1,10 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "076e44c4ca12d1670a3f5cd77f7c3b5ae996759c99ae5dd7f1428321a0cb8579",
+  "fingerprint": "ff5a6e962a2a12bfdbd35e131812ea50acd625c971904fe827119cc6e8ae7b0f",
   "is_clean": true,
   "quality_issues": [],
   "rows": 455,
   "source": "eod2_data",
   "symbol": "HYUNDAI",
-  "validated_at": "2026-08-25T23:22:11.425650+00:00"
+  "validated_at": "2026-08-31T14:31:08.796036+00:00"
 }

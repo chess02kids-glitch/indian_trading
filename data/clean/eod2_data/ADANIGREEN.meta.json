@@ -1,12 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "647a35dd42512a01a7b7b566636f3f47b07c2f05d42f3ccb83b88ec0a0eea299",
-  "is_clean": false,
-  "quality_issues": [
-    "off_calendar"
-  ],
+  "fingerprint": "b9a0f8e230ffbbb28e349d6299529bac5ceb2a7367ef4173e1f4910115b978c8",
+  "is_clean": true,
+  "quality_issues": [],
   "rows": 2023,
   "source": "eod2_data",
   "symbol": "ADANIGREEN",
-  "validated_at": "2026-08-25T23:21:20.950309+00:00"
+  "validated_at": "2026-08-31T14:29:15.715391+00:00"
 }

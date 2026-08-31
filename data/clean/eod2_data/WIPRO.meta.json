@@ -1,13 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "299a9d80e2602fe441dc3140e921585fb1b664981a90077368235062a6b7aa46",
-  "is_clean": false,
-  "quality_issues": [
-    "long_gap",
-    "off_calendar"
-  ],
-  "rows": 7576,
+  "fingerprint": "dc5ceb726830c992249c203e9e2f8f64297fd298b1abed88dde61aa258c15904",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 496,
   "source": "eod2_data",
   "symbol": "WIPRO",
-  "validated_at": "2026-08-25T23:23:47.520497+00:00"
+  "validated_at": "2026-08-31T14:34:23.952524+00:00"
 }

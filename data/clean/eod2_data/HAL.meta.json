@@ -1,12 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "7270fe5a38c9a432dd7dab4f28590e5c1dd2f548360bd76075ec793ce743db71",
-  "is_clean": false,
-  "quality_issues": [
-    "off_calendar"
-  ],
-  "rows": 2078,
+  "fingerprint": "a817f29ea009d5911ba4cbac066f2e9d71c89c1d46e2eee4d43392db2ee2cb18",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 496,
   "source": "eod2_data",
   "symbol": "HAL",
-  "validated_at": "2026-08-25T23:22:01.669932+00:00"
+  "validated_at": "2026-08-31T14:30:52.580565+00:00"
 }

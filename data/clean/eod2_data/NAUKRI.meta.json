@@ -1,6 +1,6 @@
 {
   "exchange": "NSE",
-  "fingerprint": "82d6525406f3395531f3770d9875bc33f1412faaa12b473410fb8f91be2a5031",
+  "fingerprint": "40b6fd97f60bfde001bbf3edbdeefc72d9471f40a3976cffb5f45c8932c8dc04",
   "is_clean": false,
   "quality_issues": [
     "off_calendar"
@@ -8,5 +8,5 @@
   "rows": 4888,
   "source": "eod2_data",
   "symbol": "NAUKRI",
-  "validated_at": "2026-08-25T23:22:43.100321+00:00"
+  "validated_at": "2026-08-31T14:32:37.751332+00:00"
 }

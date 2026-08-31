@@ -1,12 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "f07b09086c0bb026dd1ac0452fea43e88d2478b6e7cd302371387aade088b197",
-  "is_clean": false,
-  "quality_issues": [
-    "off_calendar"
-  ],
-  "rows": 4622,
+  "fingerprint": "2be421cc648ee4a7edc257fbcfa18215c1a3e3721dae3a6c28c6d05c71391ba1",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 496,
   "source": "eod2_data",
   "symbol": "COLPAL",
-  "validated_at": "2026-08-25T23:21:49.496854+00:00"
+  "validated_at": "2026-08-31T14:30:21.641329+00:00"
 }

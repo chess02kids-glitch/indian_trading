@@ -1,12 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "2157b8e42877fb1e60ea9623515447df18160c20960b6706978502618ecc183c",
-  "is_clean": false,
-  "quality_issues": [
-    "off_calendar"
-  ],
-  "rows": 6312,
+  "fingerprint": "98a98c8546a2bae2d4072c849874397515fc2bb590980a291db519bbe052d3cd",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 496,
   "source": "eod2_data",
   "symbol": "HAVELLS",
-  "validated_at": "2026-08-25T23:22:02.729816+00:00"
+  "validated_at": "2026-08-31T14:30:53.491827+00:00"
 }

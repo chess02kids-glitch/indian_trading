@@ -1,12 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "34adbe888287d875a9bc979186560ebeb6a02c9a8c02ca2a95f822eaba708601",
-  "is_clean": false,
-  "quality_issues": [
-    "off_calendar"
-  ],
-  "rows": 7303,
+  "fingerprint": "e80245a7ba14e0b5c68c703bdf58db927db812a3382e387bbc8b640f08e8614a",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 496,
   "source": "eod2_data",
   "symbol": "GAIL",
-  "validated_at": "2026-08-25T23:21:58.337413+00:00"
+  "validated_at": "2026-08-31T14:30:44.350483+00:00"
 }

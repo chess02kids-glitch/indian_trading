@@ -1,12 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "60126af88c34959fe5fe9d6f28eca2c783a7677f30102e4f76ef536490d125fa",
-  "is_clean": false,
-  "quality_issues": [
-    "off_calendar"
-  ],
+  "fingerprint": "846bcdf6ccc8feb3b6d0ae19bc6c6a750470828509b9c05d0e243f82903e9195",
+  "is_clean": true,
+  "quality_issues": [],
   "rows": 2423,
   "source": "eod2_data",
   "symbol": "VBL",
-  "validated_at": "2026-08-25T23:23:43.965009+00:00"
+  "validated_at": "2026-08-31T14:34:22.060515+00:00"
 }

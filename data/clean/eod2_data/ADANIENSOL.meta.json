@@ -1,12 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "696bc8a58c687fc06a4b6c772bb73895c6ff23d27b7d3c0b6dd4538e7cdb2b55",
-  "is_clean": false,
-  "quality_issues": [
-    "off_calendar"
-  ],
+  "fingerprint": "c6dba994516ebc2c38eed6657fc6fa06718ab5f1aedce4bbcc873aa8e2a71ca6",
+  "is_clean": true,
+  "quality_issues": [],
   "rows": 2735,
   "source": "eod2_data",
   "symbol": "ADANIENSOL",
-  "validated_at": "2026-08-25T23:21:19.062758+00:00"
+  "validated_at": "2026-08-31T14:29:11.784633+00:00"
 }

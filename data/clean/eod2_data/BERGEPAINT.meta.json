@@ -1,13 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "cdaa4af062df9bfb9e86728b80ea6355f4a4f144df065e6ee45f01150be66a40",
-  "is_clean": false,
-  "quality_issues": [
-    "long_gap",
-    "off_calendar"
-  ],
-  "rows": 7644,
+  "fingerprint": "a5806e31f4485e872d531ebe9c55cf8f76f8ea124d6ae8715a7d520e5d5fe089",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 496,
   "source": "eod2_data",
   "symbol": "BERGEPAINT",
-  "validated_at": "2026-08-25T23:21:36.892382+00:00"
+  "validated_at": "2026-08-31T14:29:53.616306+00:00"
 }

@@ -3,7 +3,7 @@
   "index": "Nifty 100",
   "index_id": 219,
   "membership_fingerprint": "56915f7b37f4cdae7014c43f581546cfa515cd96524b0cd2f419ad8e4fbef5d8",
-  "retrieved_at": "2026-08-25T23:21:07.830077+00:00",
+  "retrieved_at": "2026-08-31T14:28:45.881050+00:00",
   "row_provenance": {
     "ABBOTINDIA|2020-06-26": {
       "notes": "closed by ind_prs23082021.pdf",
@@ -1059,13 +1059,13 @@
   "rows": 210,
   "source": {
     "attribution": "Point-in-time NSE index membership from github.com/aditya-jha/nse-historical-membership (data: CC BY 4.0); underlying source: NSE index press releases / NSE exchange circulars (publicly published)",
-    "commit": "0e9f58c4d457faf0e7ad3db4f4c1449e697e23e0",
+    "commit": "f9ad86fe455e8e86ce14ad4e7ba957154dfb5661",
     "coverage_note": "membership data through 2026-05-15 (upstream coverage); no NSE reconstitution occurred between 2026-05-15 and the next scheduled October 2026 review, so membership is stable through the as-of date (verified against upstream current_snapshot)",
     "data_license": "CC BY 4.0",
     "repo": "aditya-jha/nse-historical-membership",
     "source": "nse-historical-membership"
   },
-  "source_csv_sha256": "75ebfac3b5d1fb2285d7efadd264df239cf228f6de7dd7e2f84d853546e01152",
+  "source_csv_sha256": "f323aa60f74bf4efcd2533a792d81fb772b0e8d80a0061236336024fb0b15753",
   "symbols_ever": 175,
   "universe": "nifty100-pit"
 }

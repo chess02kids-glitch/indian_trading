@@ -1,12 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "b00a47ae046dd622a7916bedfbc3d3436457c6a2ccb560889eff53e81e3c563b",
-  "is_clean": false,
-  "quality_issues": [
-    "off_calendar"
-  ],
-  "rows": 3788,
+  "fingerprint": "3bd3eccb77ac08ac00f3e0cb4c40af5bee2543f3eb302b658355164348c98b5e",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 496,
   "source": "eod2_data",
   "symbol": "MUTHOOTFIN",
-  "validated_at": "2026-08-25T23:22:42.005043+00:00"
+  "validated_at": "2026-08-31T14:32:32.326285+00:00"
 }

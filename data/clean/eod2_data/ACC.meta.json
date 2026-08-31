@@ -1,6 +1,6 @@
 {
   "exchange": "NSE",
-  "fingerprint": "b6512dfacd590391fe4cb2e9fbf34cdf7fd47a4034e6edc614d6b43e8c59e559",
+  "fingerprint": "4647522080cf3bdd77821cd3686b728293d1b7b4847b4f134185745b3f7fb628",
   "is_clean": false,
   "quality_issues": [
     "long_gap",
@@ -9,5 +9,5 @@
   "rows": 7798,
   "source": "eod2_data",
   "symbol": "ACC",
-  "validated_at": "2026-08-25T23:21:18.199015+00:00"
+  "validated_at": "2026-08-31T14:29:07.971750+00:00"
 }

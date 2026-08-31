@@ -1,6 +1,6 @@
 {
   "exchange": "NSE",
-  "fingerprint": "8a7d503231fcce5e402e5e806e7e0fcc822556b9af60cb9962fced4c0400ae06",
+  "fingerprint": "0f8f5a8508172046c38f567c14f847ecffe9c832fdfc2cbefd06b200a10bfd09",
   "is_clean": false,
   "quality_issues": [
     "off_calendar"
@@ -8,5 +8,5 @@
   "rows": 5247,
   "source": "eod2_data",
   "symbol": "CUMMINSIND",
-  "validated_at": "2026-08-25T23:21:50.488722+00:00"
+  "validated_at": "2026-08-31T14:30:27.269044+00:00"
 }

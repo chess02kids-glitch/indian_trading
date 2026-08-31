@@ -1,12 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "e37250a7dd1b280e0ad9bdae0886635e4bf4fe422a5630971e69b9347dd9e5f5",
-  "is_clean": false,
-  "quality_issues": [
-    "off_calendar"
-  ],
+  "fingerprint": "f07e2e871b32e919b98b42f6a002e7e2ff94febb4d9b72e91beddee0370d8bb6",
+  "is_clean": true,
+  "quality_issues": [],
   "rows": 2667,
   "source": "eod2_data",
   "symbol": "INDIGO",
-  "validated_at": "2026-08-25T23:22:16.849036+00:00"
+  "validated_at": "2026-08-31T14:31:29.571884+00:00"
 }

@@ -1,6 +1,6 @@
 {
   "exchange": "NSE",
-  "fingerprint": "76009c1dd2a7576683774edeb172ee228038fb4f8cf904bb93607118ecef9161",
+  "fingerprint": "37da0eef9dcd265ca7300414775c1a7c38822d78097297652354e227c64a57cf",
   "is_clean": false,
   "quality_issues": [
     "off_calendar"
@@ -8,5 +8,5 @@
   "rows": 4561,
   "source": "eod2_data",
   "symbol": "BAJAJHLDNG",
-  "validated_at": "2026-08-25T23:21:32.026549+00:00"
+  "validated_at": "2026-08-31T14:29:46.970065+00:00"
 }

@@ -1,13 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "e59c517265da3f71096c0d9239b229096bf293b9f9d3681e676aca5bb69dec79",
-  "is_clean": false,
-  "quality_issues": [
-    "long_gap",
-    "off_calendar"
-  ],
-  "rows": 7765,
+  "fingerprint": "68d4afa96ee4d6a585ad8a4187378af5e382730627d907674e3646e4292da740",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 496,
   "source": "eod2_data",
   "symbol": "DABUR",
-  "validated_at": "2026-08-25T23:21:51.580898+00:00"
+  "validated_at": "2026-08-31T14:30:28.174856+00:00"
 }

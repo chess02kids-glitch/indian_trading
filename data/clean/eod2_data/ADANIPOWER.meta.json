@@ -1,6 +1,6 @@
 {
   "exchange": "NSE",
-  "fingerprint": "731b1ddcf2ff6a68f1f1be84570cf520a9f5078ac8aa0f552f89564f3dc36001",
+  "fingerprint": "b36087987a98ee6db4a80dadab6632fadf6483979e3110704ac94ec18f9c9c78",
   "is_clean": false,
   "quality_issues": [
     "off_calendar"
@@ -8,5 +8,5 @@
   "rows": 4213,
   "source": "eod2_data",
   "symbol": "ADANIPOWER",
-  "validated_at": "2026-08-25T23:21:23.016924+00:00"
+  "validated_at": "2026-08-31T14:29:22.120372+00:00"
 }

@@ -1,6 +1,6 @@
 {
   "exchange": "NSE",
-  "fingerprint": "416fdbe81ad363f5535637f60e30a663111696968f2bffb2c3f98b2931a8da84",
+  "fingerprint": "64a74f7df3179f6f0536fcf6d5dc7634ba7fab1055ddaf9bb5b5eed17c54b904",
   "is_clean": false,
   "quality_issues": [
     "off_calendar"
@@ -8,5 +8,5 @@
   "rows": 4890,
   "source": "eod2_data",
   "symbol": "HINDZINC",
-  "validated_at": "2026-08-25T23:22:11.014103+00:00"
+  "validated_at": "2026-08-31T14:31:07.859109+00:00"
 }

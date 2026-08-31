@@ -1,12 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "a9e5d141b9899e3edb69faf2c7963b3b515d78fbf639c3960a4eb493997ef95e",
-  "is_clean": false,
-  "quality_issues": [
-    "off_calendar"
-  ],
-  "rows": 5454,
+  "fingerprint": "c543fa9afb4212f58210b0ac72434b2c6dafe3bdaf48afefe870fd42ca44421d",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 496,
   "source": "eod2_data",
   "symbol": "ULTRACEMCO",
-  "validated_at": "2026-08-25T23:23:35.623871+00:00"
+  "validated_at": "2026-08-31T14:34:06.644711+00:00"
 }

@@ -1,12 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "15fd7c2cbe09e01b6e3e4136071e8dd2e7a1e194e02e0f0ae51a16050bf6329c",
-  "is_clean": false,
-  "quality_issues": [
-    "off_calendar"
-  ],
+  "fingerprint": "2f1afb3dc2ac14b7a091106879901ee54ba0a97a92c54bfce98841b3f011a942",
+  "is_clean": true,
+  "quality_issues": [],
   "rows": 4124,
   "source": "eod2_data",
   "symbol": "JSWENERGY",
-  "validated_at": "2026-08-25T23:22:27.156746+00:00"
+  "validated_at": "2026-08-31T14:31:59.893047+00:00"
 }

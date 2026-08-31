@@ -1,10 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "2de3265293c994c30c7f2e7b0c6cd88e764fc29e692775315fff879ea5bc8ac6",
+  "fingerprint": "6fa212d3b95359d4f38ea8bc2e5b48bc23fe22797d8b69c4c31f28374a9179b3",
   "is_clean": true,
   "quality_issues": [],
   "rows": 193,
   "source": "eod2_data",
   "symbol": "TMCV",
-  "validated_at": "2026-08-25T23:23:22.910799+00:00"
+  "validated_at": "2026-08-31T14:33:47.134761+00:00"
 }

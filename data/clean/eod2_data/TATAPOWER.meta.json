@@ -1,6 +1,6 @@
 {
   "exchange": "NSE",
-  "fingerprint": "ac8f6ab417feb193e7489d2d82ead3e79d50cb410a2fcb607a4aea84b9078704",
+  "fingerprint": "43445071f35527b233b855f85c682294b566b2473d8a36e71f3202b1ca0a310a",
   "is_clean": false,
   "quality_issues": [
     "long_gap",
@@ -9,5 +9,5 @@
   "rows": 7788,
   "source": "eod2_data",
   "symbol": "TATAPOWER",
-  "validated_at": "2026-08-25T23:23:12.733177+00:00"
+  "validated_at": "2026-08-31T14:33:43.139239+00:00"
 }

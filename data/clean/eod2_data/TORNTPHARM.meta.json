@@ -1,6 +1,6 @@
 {
   "exchange": "NSE",
-  "fingerprint": "c975b581f92f2507b54a819d639c03879d76638381ad98b9e0bc5d9a8b795f76",
+  "fingerprint": "c8bfc7ff50636c9137cb615b03ed743da825f2bc99cf36df470c5b28ba821bc5",
   "is_clean": false,
   "quality_issues": [
     "long_gap",
@@ -9,5 +9,5 @@
   "rows": 7766,
   "source": "eod2_data",
   "symbol": "TORNTPHARM",
-  "validated_at": "2026-08-25T23:23:28.725126+00:00"
+  "validated_at": "2026-08-31T14:33:57.886254+00:00"
 }

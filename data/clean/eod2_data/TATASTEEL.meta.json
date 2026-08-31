@@ -1,12 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "37a5476b2964f85a4b8d5b4709e5d0c039d4dbc202babeec89b74af1c373a03c",
-  "is_clean": false,
-  "quality_issues": [
-    "off_calendar"
-  ],
-  "rows": 5165,
+  "fingerprint": "aa6de4ec6c89d0bc2a487003cfa5cf891b8d6970ad1557368e0db0c81fc1f9da",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 496,
   "source": "eod2_data",
   "symbol": "TATASTEEL",
-  "validated_at": "2026-08-25T23:23:14.954310+00:00"
+  "validated_at": "2026-08-31T14:33:43.990886+00:00"
 }

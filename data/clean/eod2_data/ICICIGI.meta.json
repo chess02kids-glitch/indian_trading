@@ -1,12 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "e85bafe1c242bfc714e997143b8647d0a5fbce84584d509e30c4bf020c4ce71a",
-  "is_clean": false,
-  "quality_issues": [
-    "off_calendar"
-  ],
+  "fingerprint": "13089e13815ea95041c6c000ea410925e850033eb71cb9ae36d3deb5bff3ca55",
+  "is_clean": true,
+  "quality_issues": [],
   "rows": 2202,
   "source": "eod2_data",
   "symbol": "ICICIGI",
-  "validated_at": "2026-08-25T23:22:13.612494+00:00"
+  "validated_at": "2026-08-31T14:31:13.117227+00:00"
 }

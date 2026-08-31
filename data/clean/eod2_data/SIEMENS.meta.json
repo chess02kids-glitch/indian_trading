@@ -1,13 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "81c20b376ac437c12b7e7d48d7699811ffc24b84e4f0ef4fb2b533ec9827ce4e",
-  "is_clean": false,
-  "quality_issues": [
-    "long_gap",
-    "off_calendar"
-  ],
-  "rows": 7740,
+  "fingerprint": "ffc41db62297a29fce4e7370663a91dfa63b4459a735ce55cf821d21b600bab6",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 495,
   "source": "eod2_data",
   "symbol": "SIEMENS",
-  "validated_at": "2026-08-25T23:23:05.096373+00:00"
+  "validated_at": "2026-08-31T14:33:20.601590+00:00"
 }

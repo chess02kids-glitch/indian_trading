@@ -1,12 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "9d6a8c0a06a90b0713f36a99abca9a5bf6cdf8a569331db877945b4bf458c8e0",
-  "is_clean": false,
-  "quality_issues": [
-    "off_calendar"
-  ],
-  "rows": 3938,
+  "fingerprint": "a63af299d9a99c6e7e15b9999924996c93f787d6f6ed6672f035ba652d39f9e8",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 496,
   "source": "eod2_data",
   "symbol": "BAJFINANCE",
-  "validated_at": "2026-08-25T23:21:32.830786+00:00"
+  "validated_at": "2026-08-31T14:29:47.854855+00:00"
 }

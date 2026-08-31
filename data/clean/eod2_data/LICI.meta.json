@@ -1,12 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "12fd85fa09e5cc1e0d877035350d6e7ebe1ed5e4324b1b4e07bb81198252c165",
-  "is_clean": false,
-  "quality_issues": [
-    "off_calendar"
-  ],
-  "rows": 1060,
+  "fingerprint": "b30e468208795fcad0028b1d6e0e2919a7bcf9354a800094459e7631d546417f",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 496,
   "source": "eod2_data",
   "symbol": "LICI",
-  "validated_at": "2026-08-25T23:22:30.072766+00:00"
+  "validated_at": "2026-08-31T14:32:03.057469+00:00"
 }

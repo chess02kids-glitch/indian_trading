@@ -1,12 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "b2915ad7502219f09b93b93a8dea08014d54aff84d8480cfefa9c2036cdb0e31",
-  "is_clean": false,
-  "quality_issues": [
-    "off_calendar"
-  ],
+  "fingerprint": "c41209ca85451adfe747ac05854db9e06257796e974287912ac90a65cd199c34",
+  "is_clean": true,
+  "quality_issues": [],
   "rows": 2332,
   "source": "eod2_data",
   "symbol": "DMART",
-  "validated_at": "2026-08-25T23:21:54.203351+00:00"
+  "validated_at": "2026-08-31T14:30:37.766458+00:00"
 }

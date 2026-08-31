@@ -1,13 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "9bf41969ea172266ce977588fe2784e755814b911972f20c3f1119ef00dd2809",
-  "is_clean": false,
-  "quality_issues": [
-    "long_gap",
-    "off_calendar"
-  ],
-  "rows": 7774,
+  "fingerprint": "011306110f81cef2ac406a5cbeee4a5d656fb776eebdd8df1c1428a156297e6a",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 496,
   "source": "eod2_data",
   "symbol": "CIPLA",
-  "validated_at": "2026-08-25T23:21:47.410362+00:00"
+  "validated_at": "2026-08-31T14:30:19.707665+00:00"
 }

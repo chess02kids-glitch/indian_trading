@@ -1,12 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "92bccd56953ec06b99bf3a2e57cf8359e22f09d777bb699d9b189120bbbd216a",
-  "is_clean": false,
-  "quality_issues": [
-    "off_calendar"
-  ],
-  "rows": 4516,
+  "fingerprint": "958e4193c6b62fd062d33c62770c7d77322326ac5392bceea2e7d46e4a8e375b",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 496,
   "source": "eod2_data",
   "symbol": "BAJAJ-AUTO",
-  "validated_at": "2026-08-25T23:21:29.663401+00:00"
+  "validated_at": "2026-08-31T14:29:39.694474+00:00"
 }

@@ -1,12 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "31d0f0383f55891bb164fc875dbaf3336e43a875f88053a89f7dae048eebac0c",
-  "is_clean": false,
-  "quality_issues": [
-    "off_calendar"
-  ],
-  "rows": 4999,
+  "fingerprint": "ff9c00434d3898ca06b46ff3664eac8d6cc19509d4ec3df017abb032611e343e",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 496,
   "source": "eod2_data",
   "symbol": "BHARTIARTL",
-  "validated_at": "2026-08-25T23:21:37.898744+00:00"
+  "validated_at": "2026-08-31T14:29:56.309457+00:00"
 }

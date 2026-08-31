@@ -1,12 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "c1e2cb79bbe778e5a6c95ba025531eedd2f380a941cc4cfaa17e3734b42e4267",
-  "is_clean": false,
-  "quality_issues": [
-    "off_calendar"
-  ],
-  "rows": 4932,
+  "fingerprint": "9640b4ba30ccb5099e0d8661f24a1a944285803dc9ba488692bf936e1603ab5d",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 496,
   "source": "eod2_data",
   "symbol": "ADANIENT",
-  "validated_at": "2026-08-25T23:21:20.107077+00:00"
+  "validated_at": "2026-08-31T14:29:12.714088+00:00"
 }

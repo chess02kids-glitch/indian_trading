@@ -1,12 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "881d892b282e196066dac569eb0864a2c113bd477aaca43707e634a1315cab99",
-  "is_clean": false,
-  "quality_issues": [
-    "off_calendar"
-  ],
-  "rows": 4949,
+  "fingerprint": "fd1fc92ee7a805eeeee505ec7265cc4a918dde8ad4425e06b6b02cd5a1663ba3",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 496,
   "source": "eod2_data",
   "symbol": "TECHM",
-  "validated_at": "2026-08-25T23:23:19.338773+00:00"
+  "validated_at": "2026-08-31T14:33:45.814975+00:00"
 }

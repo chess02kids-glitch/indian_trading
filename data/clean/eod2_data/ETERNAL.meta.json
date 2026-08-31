@@ -1,12 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "ca8b11530345446a96ba32ff723782b43217f1a232244d0839affb8b1c720bb4",
-  "is_clean": false,
-  "quality_issues": [
-    "off_calendar"
-  ],
+  "fingerprint": "1256f5d6fd1329c436df3b7ef6747563dea4e995e475f0e4dc168d4243013569",
+  "is_clean": true,
+  "quality_issues": [],
   "rows": 1260,
   "source": "eod2_data",
   "symbol": "ETERNAL",
-  "validated_at": "2026-08-25T23:21:57.322282+00:00"
+  "validated_at": "2026-08-31T14:30:43.396624+00:00"
 }

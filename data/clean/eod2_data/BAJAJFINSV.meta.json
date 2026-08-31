@@ -1,12 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "cb63f4870d4138b17d6eac803238f1fa92c94ac3e64d657526b77e8b9433172f",
-  "is_clean": false,
-  "quality_issues": [
-    "off_calendar"
-  ],
-  "rows": 4515,
+  "fingerprint": "c072ae85ba5a01f36635c5cbc4312792f98b8a8ae2626e0bea5069bf598775e9",
+  "is_clean": true,
+  "quality_issues": [],
+  "rows": 496,
   "source": "eod2_data",
   "symbol": "BAJAJFINSV",
-  "validated_at": "2026-08-25T23:21:30.646006+00:00"
+  "validated_at": "2026-08-31T14:29:40.579619+00:00"
 }

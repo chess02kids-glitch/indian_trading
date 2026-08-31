@@ -1,12 +1,10 @@
 {
   "exchange": "NSE",
-  "fingerprint": "c7883c7cf174603c396dd06dbb98df459222e6c9d3a93823f0b1e40b1a028b15",
-  "is_clean": false,
-  "quality_issues": [
-    "off_calendar"
-  ],
+  "fingerprint": "d648248d5aaf57ad1b7ae05f6bb2953db507dea180b47f5e748fc5301cd054a4",
+  "is_clean": true,
+  "quality_issues": [],
   "rows": 3756,
   "source": "eod2_data",
   "symbol": "PIIND",
-  "validated_at": "2026-08-25T23:22:54.257124+00:00"
+  "validated_at": "2026-08-31T14:33:01.296300+00:00"
 }
