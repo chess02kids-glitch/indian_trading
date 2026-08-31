@@ -40,6 +40,11 @@ class PaperQuotePoller:
         while not self._stop.wait(self.interval_seconds):
             try:
                 if self.service.ledger.settings()["running"]:
-                    self.service.refresh_quotes()
+                    snapshot = self.service.refresh_quotes()
+                    # The automation hook remains local and paper-only. It is
+                    # separately gated by explicit approval, market hours,
+                    # interval, and the service's pre-trade risk controls.
+                    if snapshot.get("quote_status") == "LIVE":
+                        self.service.run_automation_once()
             except Exception:  # nosec B110 - worker must never take down dashboard
                 logger.exception("paper quote poll failed")

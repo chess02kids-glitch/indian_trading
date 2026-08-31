@@ -182,6 +182,16 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 )
         elif path == "/api/paper/status":
             self._send_json(HTTPStatus.OK, get_paper_service().status())
+        elif path == "/api/paper/audit":
+            self._send_json(HTTPStatus.OK, get_paper_service().audit())
+        elif path == "/api/paper/export":
+            dataset = str(query.get("dataset", "orders"))
+            try:
+                csv_body = get_paper_service().export_csv(dataset).encode("utf-8")
+            except ValueError as exc:
+                self._send_json(HTTPStatus.BAD_REQUEST, {"error": str(exc)})
+            else:
+                self._send_csv(dataset, csv_body)
         elif path == "/cockpit":
             self._send(HTTPStatus.OK, "text/html; charset=utf-8", _get_cockpit_page())
         elif path == "/operations":
@@ -276,6 +286,22 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 result = paper.pause()
             elif path == "/api/paper/refresh":
                 result = paper.refresh_quotes()
+            elif path == "/api/paper/watchlist":
+                symbols = payload.get("symbols")
+                if not isinstance(symbols, list):
+                    raise ValueError("symbols must be a JSON array")
+                result = paper.set_watchlist([str(symbol) for symbol in symbols])
+            elif path == "/api/paper/risk-policy":
+                values = payload.get("policy")
+                if not isinstance(values, dict):
+                    raise ValueError("policy must be a JSON object")
+                result = paper.set_risk_policy(values)
+            elif path == "/api/paper/automation":
+                result = paper.set_auto_paper(
+                    enabled=bool(payload.get("enabled", False)),
+                    strategy_id=str(payload.get("strategy_id", "")),
+                    confirmation=str(payload.get("confirmation", "")),
+                )
             elif path == "/api/paper/reset":
                 raw_capital = payload.get("capital")
                 result = paper.reset(
@@ -346,6 +372,23 @@ class DashboardHandler(BaseHTTPRequestHandler):
     def _send_json(self, code: HTTPStatus, data: Any) -> None:
         body = json.dumps(data, default=str, sort_keys=True).encode("utf-8")
         self._send(code, "application/json", body)
+
+    def _send_csv(self, dataset: str, body: bytes) -> None:
+        safe_name = "".join(
+            character
+            for character in dataset.lower()
+            if character.isalnum() or character == "_"
+        )
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", "text/csv; charset=utf-8")
+        self.send_header(
+            "Content-Disposition",
+            f'attachment; filename="paper_{safe_name or "export"}.csv"',
+        )
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(body)
 
     def _send(self, code: HTTPStatus, content_type: str, body: bytes) -> None:
         self.send_response(code)

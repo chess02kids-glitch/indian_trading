@@ -56,9 +56,64 @@ Open:
 - `http://localhost:8080/strategy` — existing strategy-signal dashboard
 
 Choose **₹10,00,000** (the default), another virtual amount, and the desired
-source on the Paper page. Changing virtual capital is allowed only when there
-are no open virtual positions; use the typed `RESET PAPER` confirmation to
+source on the Paper page. Changing virtual capital is allowed only before any
+virtual orders have been recorded; use the typed `RESET PAPER` confirmation to
 start a new virtual account. This cannot change real broker funds.
+
+## Efficiency, controls and auditability
+
+The Paper page stores the following local configuration in the SQLite ledger,
+so the monitor can resume with the same safeguards after a local restart:
+
+- **Editable watchlist:** use comma-separated symbols. `NIFTY_50` is retained
+  as the quote-only benchmark; all symbols are checked against the local,
+  verified Upstox instrument map before saving. Virtual holdings are also
+  refreshed even if removed from the display watchlist.
+- **Quote health:** displays the successful-poll age, a current source-quote
+  staleness check, and the latest error. A missing/expired token, partial quote
+  response, or old source timestamp is surfaced rather than replaced by a made
+  up price.
+- **Risk guardrails:** virtual rebalance previews check maximum single-position
+  weight (15%), gross exposure (100%), daily loss (3% of initial capital),
+  high-water-mark drawdown (15%), virtual cash, and a 30-order cap. The values
+  are editable on the page; invalid values are rejected. A breached guardrail
+  makes the preview non-executable and records no fill.
+- **Performance:** persists the equity curve, realised and unrealised P&L,
+  return, high-water mark, max drawdown, `NIFTY_50` return from the first
+  successful benchmark quote, and conservative strategy profitability labels.
+  Whole-account attribution is shown only when exactly one strategy has filled
+  orders; mixed-strategy P&L is deliberately labelled `UNATTRIBUTED`.
+- **Audit and exports:** **Run reconciliation audit** recomputes virtual cash
+  and quantities from the immutable filled-order ledger. It does not query a
+  broker account. Downloadable local CSV exports are available at
+  `/api/paper/export?dataset=orders`, `positions`, `equity`, `marks`, and
+  `events`; they never contain credentials.
+
+The local SQLite schema upgrades additively when opened. Closed virtual
+positions are retained with quantity zero so lifetime realised P&L stays
+reconcilable. `RESET PAPER` clears positions, orders, marks and equity history
+for a new virtual account (the event audit trail remains local).
+
+## Optional automatic virtual-paper monitoring
+
+Automatic mode is **off by default**. It is intentionally a narrow local
+scaffold, not live trading:
+
+1. Only a strategy explicitly marked `paper_approved: true` in
+   `config/paper_strategies.json` is selectable.
+2. The user must type `ENABLE AUTO PAPER` in the local dashboard to enable it.
+3. The quote poller invokes it only after a healthy quote refresh, during NSE
+   cash market hours (Monday–Friday, 09:15–15:30 IST), and no more often than
+   that strategy's `min_rebalance_seconds` (at least 60 seconds; daily by
+   default).
+4. It reuses the same target, fresh bid/ask, cash and risk checks as a manual
+   preview. It writes only local virtual fills with source
+   `auto_paper_read_only` and records an audit event for each attempt.
+5. Any approval removal, stale/unavailable data, market-hour restriction,
+   target failure, or risk breach stops the virtual attempt. There is still no
+   real-order, funds, holdings or GTT code path.
+
+Use **Disable** to turn it off; a paper reset also disables it.
 
 ## Forward-paper workflow
 

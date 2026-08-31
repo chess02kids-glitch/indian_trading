@@ -56,6 +56,16 @@ class PaperLedger:
                     active_strategy TEXT,
                     started_at TEXT,
                     paused_at TEXT,
+                    watchlist_json TEXT NOT NULL DEFAULT '["NIFTY_50","RELIANCE","HDFCBANK","ICICIBANK","TCS"]',
+                    risk_policy_json TEXT NOT NULL DEFAULT '{}',
+                    auto_paper_enabled INTEGER NOT NULL DEFAULT 0,
+                    auto_strategy TEXT,
+                    auto_interval_seconds INTEGER NOT NULL DEFAULT 86400,
+                    last_auto_rebalance_at TEXT,
+                    benchmark_symbol TEXT NOT NULL DEFAULT 'NIFTY_50',
+                    benchmark_start_price REAL,
+                    last_quote_success_at TEXT,
+                    last_quote_error TEXT,
                     updated_at TEXT NOT NULL
                 );
                 CREATE TABLE IF NOT EXISTS paper_positions (
@@ -114,6 +124,49 @@ class PaperLedger:
                 );
                 """
             )
+            # Existing local paper ledgers are upgraded in place.  These are
+            # additive fields only, so opening a dashboard never discards a
+            # virtual account or its audit history.
+            self._add_column_if_missing(
+                conn,
+                "paper_settings",
+                "watchlist_json",
+                'TEXT NOT NULL DEFAULT \'["NIFTY_50","RELIANCE","HDFCBANK","ICICIBANK","TCS"]\'',
+            )
+            self._add_column_if_missing(
+                conn, "paper_settings", "risk_policy_json", "TEXT NOT NULL DEFAULT '{}'"
+            )
+            self._add_column_if_missing(
+                conn,
+                "paper_settings",
+                "auto_paper_enabled",
+                "INTEGER NOT NULL DEFAULT 0",
+            )
+            self._add_column_if_missing(conn, "paper_settings", "auto_strategy", "TEXT")
+            self._add_column_if_missing(
+                conn,
+                "paper_settings",
+                "auto_interval_seconds",
+                "INTEGER NOT NULL DEFAULT 86400",
+            )
+            self._add_column_if_missing(
+                conn, "paper_settings", "last_auto_rebalance_at", "TEXT"
+            )
+            self._add_column_if_missing(
+                conn,
+                "paper_settings",
+                "benchmark_symbol",
+                "TEXT NOT NULL DEFAULT 'NIFTY_50'",
+            )
+            self._add_column_if_missing(
+                conn, "paper_settings", "benchmark_start_price", "REAL"
+            )
+            self._add_column_if_missing(
+                conn, "paper_settings", "last_quote_success_at", "TEXT"
+            )
+            self._add_column_if_missing(
+                conn, "paper_settings", "last_quote_error", "TEXT"
+            )
             row = conn.execute("SELECT id FROM paper_settings WHERE id = 1").fetchone()
             if row is None:
                 now = utc_now()
@@ -127,6 +180,16 @@ class PaperLedger:
                 )
 
     @staticmethod
+    def _add_column_if_missing(
+        conn: sqlite3.Connection, table: str, column: str, definition: str
+    ) -> None:
+        columns = {
+            str(row["name"]) for row in conn.execute(f"PRAGMA table_info({table})")
+        }
+        if column not in columns:
+            conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
+
+    @staticmethod
     def _row(row: sqlite3.Row | None) -> dict[str, Any] | None:
         return dict(row) if row is not None else None
 
@@ -137,6 +200,17 @@ class PaperLedger:
             )
         assert result is not None
         result["running"] = bool(result["running"])
+        result["auto_paper_enabled"] = bool(result["auto_paper_enabled"])
+        try:
+            result["watchlist"] = list(json.loads(result.pop("watchlist_json")))
+        except (TypeError, ValueError):
+            result.pop("watchlist_json", None)
+            result["watchlist"] = []
+        try:
+            result["risk_policy"] = dict(json.loads(result.pop("risk_policy_json")))
+        except (TypeError, ValueError):
+            result.pop("risk_policy_json", None)
+            result["risk_policy"] = {}
         return result
 
     def configure(self, capital: float, data_mode: str) -> dict[str, Any]:
@@ -149,7 +223,10 @@ class PaperLedger:
             positions = conn.execute(
                 "SELECT COUNT(*) AS n FROM paper_positions WHERE quantity > 0"
             ).fetchone()
-            if positions and int(positions["n"]) > 0:
+            orders = conn.execute("SELECT COUNT(*) AS n FROM paper_orders").fetchone()
+            if (positions and int(positions["n"]) > 0) or (
+                orders and int(orders["n"]) > 0
+            ):
                 raise ValueError(
                     "reset the paper account before changing virtual capital"
                 )
@@ -191,6 +268,104 @@ class PaperLedger:
             self._event(conn, "paper_paused", {})
         return self.settings()
 
+    def set_watchlist(self, symbols: Sequence[str]) -> dict[str, Any]:
+        cleaned = list(
+            dict.fromkeys(
+                str(symbol).strip().upper() for symbol in symbols if str(symbol).strip()
+            )
+        )
+        if not cleaned:
+            raise ValueError("watchlist must contain at least one symbol")
+        if len(cleaned) > 50:
+            raise ValueError("watchlist is limited to 50 instruments")
+        with self._connection() as conn:
+            conn.execute(
+                "UPDATE paper_settings SET watchlist_json = ?, updated_at = ? WHERE id = 1",
+                (json.dumps(cleaned), utc_now()),
+            )
+            self._event(conn, "watchlist_updated", {"symbols": cleaned})
+        return self.settings()
+
+    def set_risk_policy(self, policy: Mapping[str, Any]) -> dict[str, Any]:
+        with self._connection() as conn:
+            conn.execute(
+                "UPDATE paper_settings SET risk_policy_json = ?, updated_at = ? WHERE id = 1",
+                (json.dumps(dict(policy), sort_keys=True), utc_now()),
+            )
+            self._event(conn, "risk_policy_updated", dict(policy))
+        return self.settings()
+
+    def set_auto_paper(
+        self, *, enabled: bool, strategy_id: str | None, interval_seconds: int
+    ) -> dict[str, Any]:
+        if interval_seconds < 60:
+            raise ValueError("automatic paper interval must be at least 60 seconds")
+        with self._connection() as conn:
+            conn.execute(
+                """
+                UPDATE paper_settings
+                SET auto_paper_enabled = ?, auto_strategy = ?, auto_interval_seconds = ?,
+                    last_auto_rebalance_at = NULL, updated_at = ?
+                WHERE id = 1
+                """,
+                (
+                    int(enabled),
+                    strategy_id if enabled else None,
+                    interval_seconds,
+                    utc_now(),
+                ),
+            )
+            self._event(
+                conn,
+                "auto_paper_changed",
+                {
+                    "enabled": bool(enabled),
+                    "strategy_id": strategy_id if enabled else None,
+                },
+            )
+        return self.settings()
+
+    def mark_auto_rebalance(self) -> None:
+        with self._connection() as conn:
+            conn.execute(
+                "UPDATE paper_settings SET last_auto_rebalance_at = ?, updated_at = ? WHERE id = 1",
+                (utc_now(), utc_now()),
+            )
+
+    def record_quote_health(self, error: str | None) -> None:
+        with self._connection() as conn:
+            now = utc_now()
+            if error:
+                conn.execute(
+                    "UPDATE paper_settings SET last_quote_error = ?, updated_at = ? WHERE id = 1",
+                    (error, now),
+                )
+            else:
+                conn.execute(
+                    """
+                    UPDATE paper_settings
+                    SET last_quote_success_at = ?, last_quote_error = NULL, updated_at = ?
+                    WHERE id = 1
+                    """,
+                    (now, now),
+                )
+
+    def set_benchmark_start_price(self, price: float) -> None:
+        if price <= 0:
+            return
+        with self._connection() as conn:
+            existing = conn.execute(
+                "SELECT benchmark_start_price FROM paper_settings WHERE id = 1"
+            ).fetchone()
+            if existing and existing["benchmark_start_price"] is None:
+                conn.execute(
+                    "UPDATE paper_settings SET benchmark_start_price = ?, updated_at = ? WHERE id = 1",
+                    (price, utc_now()),
+                )
+                self._event(
+                    conn, "benchmark_started", {"symbol": "NIFTY_50", "price": price}
+                )
+
     def reset(self, capital: float | None = None) -> dict[str, Any]:
         with self._connection() as conn:
             current = conn.execute(
@@ -210,6 +385,9 @@ class PaperLedger:
                 """
                 UPDATE paper_settings
                 SET initial_capital = ?, cash = ?, running = 0, active_strategy = NULL,
+                    auto_paper_enabled = 0, auto_strategy = NULL,
+                    last_auto_rebalance_at = NULL, benchmark_start_price = NULL,
+                    last_quote_success_at = NULL, last_quote_error = NULL,
                     started_at = NULL, paused_at = ?, updated_at = ?
                 WHERE id = 1
                 """,
@@ -225,6 +403,20 @@ class PaperLedger:
             ).fetchall()
         return [dict(row) for row in rows]
 
+    def all_positions(self) -> list[dict[str, Any]]:
+        with self._connection() as conn:
+            rows = conn.execute(
+                "SELECT * FROM paper_positions ORDER BY symbol"
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    def realized_pnl_total(self) -> float:
+        with self._connection() as conn:
+            row = conn.execute(
+                "SELECT COALESCE(SUM(realized_pnl), 0) AS value FROM paper_positions"
+            ).fetchone()
+        return float(row["value"])
+
     def order_history(self, limit: int = 50) -> list[dict[str, Any]]:
         with self._connection() as conn:
             rows = conn.execute(
@@ -232,6 +424,23 @@ class PaperLedger:
                 (max(1, min(int(limit), 500)),),
             ).fetchall()
         return [dict(row) for row in rows]
+
+    def all_orders(self) -> list[dict[str, Any]]:
+        with self._connection() as conn:
+            rows = conn.execute("SELECT * FROM paper_orders ORDER BY id").fetchall()
+        return [dict(row) for row in rows]
+
+    def marks_history(self, limit: int = 1000) -> list[dict[str, Any]]:
+        with self._connection() as conn:
+            rows = conn.execute(
+                "SELECT * FROM paper_marks ORDER BY id DESC LIMIT ?",
+                (max(1, min(int(limit), 10_000)),),
+            ).fetchall()
+        return [dict(row) for row in reversed(rows)]
+
+    def record_event(self, event_type: str, detail: Mapping[str, Any]) -> None:
+        with self._connection() as conn:
+            self._event(conn, event_type, detail)
 
     def record_order(
         self,
@@ -382,8 +591,11 @@ class PaperLedger:
                         (remaining, realized, utc_now(), symbol),
                     )
                 else:
+                    # Retain the zero-quantity row so lifetime realised P&L
+                    # remains auditable after a position is closed.
                     conn.execute(
-                        "DELETE FROM paper_positions WHERE symbol = ?", (symbol,)
+                        "UPDATE paper_positions SET quantity=0, realized_pnl=?, updated_at=? WHERE symbol=?",
+                        (realized, utc_now(), symbol),
                     )
                 conn.execute(
                     "UPDATE paper_settings SET cash = cash + ?, updated_at = ? WHERE id = 1",
