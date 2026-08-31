@@ -15,7 +15,6 @@ API shape reference: ``.agents/skills/upstox/references/market-data.md``
 
 from __future__ import annotations
 
-import json
 import logging
 import os
 import threading
@@ -163,7 +162,9 @@ class UpstoxLiveSource:
                 "warmed": self.warmed,
                 "market_status": self.market_status,
                 "last_success_at": self.last_success_at,
-                "last_latency_ms": round(self.last_latency_ms, 1) if self.last_latency_ms else None,
+                "last_latency_ms": round(self.last_latency_ms, 1)
+                if self.last_latency_ms
+                else None,
                 "error": self.error,
                 "real_symbols": list(self.real_symbols),
                 "sim_fallback_symbols": list(self.sim_fallback_symbols),
@@ -190,9 +191,8 @@ class UpstoxLiveSource:
         failing the whole feed.  Safe to run from a background thread.
         """
         started = time.monotonic()
-        ok = False
         try:
-            ok = self._market_status()
+            self._market_status()
         except Exception as exc:  # noqa: BLE001 — status is informational
             self._note(False, f"market status: {exc}")
         got_any = False
@@ -239,7 +239,13 @@ class UpstoxLiveSource:
                 status = data.get("NSE")
             with self.lock:
                 self.market_status = str(status or "UNKNOWN").upper()
-            return self.market_status in {"OPEN", "CLOSED", "PRE_OPEN", "POST_CLOSE", "HOLIDAY"}
+            return self.market_status in {
+                "OPEN",
+                "CLOSED",
+                "PRE_OPEN",
+                "POST_CLOSE",
+                "HOLIDAY",
+            }
         except Exception:
             with self.lock:
                 self.market_status = "UNKNOWN"
@@ -256,19 +262,26 @@ class UpstoxLiveSource:
         for row in rows:
             try:
                 ts = _parse_candle_time(row[0])
-                o, h, l, c = (float(row[1]), float(row[2]), float(row[3]), float(row[4]))
+                o, h, lo, c = (
+                    float(row[1]),
+                    float(row[2]),
+                    float(row[3]),
+                    float(row[4]),
+                )
                 v = float(row[5]) if len(row) > 5 else 0.0
             except (IndexError, TypeError, ValueError):
                 continue
-            if ts is None or min(o, h, l, c) <= 0:
+            if ts is None or min(o, h, lo, c) <= 0:
                 continue
-            out.append([ts, o, h, l, c, v])
+            out.append([ts, o, h, lo, c, v])
         if not out:
             return None
         out.sort(key=lambda bar: bar[0])
         return out
 
-    def fetch_1m_history(self, symbol: str, days: int = HISTORY_MINUTES_DAYS) -> list[list[float]] | None:
+    def fetch_1m_history(
+        self, symbol: str, days: int = HISTORY_MINUTES_DAYS
+    ) -> list[list[float]] | None:
         key = self._instruments.get(symbol)
         if not key:
             return None
@@ -293,7 +306,9 @@ class UpstoxLiveSource:
         bars = self.fetch_1m_history(symbol)
         return bars
 
-    def fetch_daily_history(self, symbol: str, days: int = DAILY_HISTORY_DAYS) -> list[list[float]] | None:
+    def fetch_daily_history(
+        self, symbol: str, days: int = DAILY_HISTORY_DAYS
+    ) -> list[list[float]] | None:
         key = self._instruments.get(symbol)
         if not key:
             return None
@@ -313,7 +328,9 @@ class UpstoxLiveSource:
     def _fetch_daily(self, symbol: str) -> list[list[float]] | None:
         return self.fetch_daily_history(symbol)
 
-    def refresh_intraday(self, symbol: str, min_gap_seconds: float = 90.0) -> list[list[float]] | None:
+    def refresh_intraday(
+        self, symbol: str, min_gap_seconds: float = 90.0
+    ) -> list[list[float]] | None:
         """Authoritative 1-minute bars for today.  Rate-limited per symbol."""
         now = time.monotonic()
         if now - self._last_intraday_refresh.get(symbol, 0.0) < min_gap_seconds:
@@ -355,7 +372,11 @@ class UpstoxLiveSource:
                 api_version="2.0",
             )
             raw = _val(response, "data")
-            if isinstance(raw, Mapping) and "data" in raw and isinstance(raw["data"], Mapping):
+            if (
+                isinstance(raw, Mapping)
+                and "data" in raw
+                and isinstance(raw["data"], Mapping)
+            ):
                 raw = raw["data"]
             if not isinstance(raw, Mapping):
                 raise ValueError("quote response has no quote map")
@@ -441,13 +462,9 @@ def build_upstox_source(root: Any, symbols: dict[str, Any]) -> UpstoxLiveSource 
     }
     if "NIFTY_50" in symbols and "NIFTY_50" in mapping:
         instruments["NIFTY_50"] = mapping["NIFTY_50"]
-    unmapped = [
-        symbol for symbol in symbols if symbol not in instruments
-    ]
+    unmapped = [symbol for symbol in symbols if symbol not in instruments]
     try:
-        return UpstoxLiveSource(
-            token, instruments, sandbox=sandbox, unmapped=unmapped
-        )
+        return UpstoxLiveSource(token, instruments, sandbox=sandbox, unmapped=unmapped)
     except RealFeedUnavailable as exc:
         logger.info("upstox_live_source_unavailable: %s", exc)
         return None

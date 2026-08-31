@@ -224,7 +224,9 @@ class DashboardHandler(BaseHTTPRequestHandler):
             except ValueError:
                 limit = 600
             try:
-                self._send_json(HTTPStatus.OK, get_live_feed().candles(symbol, interval, limit))
+                self._send_json(
+                    HTTPStatus.OK, get_live_feed().candles(symbol, interval, limit)
+                )
             except KeyError as exc:
                 self._send_json(HTTPStatus.NOT_FOUND, {"error": str(exc).strip("'")})
             except ValueError as exc:
@@ -424,9 +426,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
         self.end_headers()
         client_queue = feed.hub.add()
         try:
-            handshake = (
-                f"event: hello\ndata: {{\"mode\": \"{feed.mode}\", \"t\": {int(time.time() * 1000)}}}\n\n"
-            )
+            handshake = f'event: hello\ndata: {{"mode": "{feed.mode}", "t": {int(time.time() * 1000)}}}\n\n'
             self.wfile.write(handshake.encode("utf-8"))
             self.wfile.flush()
             while True:

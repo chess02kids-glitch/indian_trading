@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import csv
 import json
+import logging
 import math
 import os
 import queue
@@ -23,14 +24,15 @@ import random
 import statistics
 import threading
 import time
-from collections import deque
-from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
 
 from paper_trading.ledger import PaperLedger
+
+logger = logging.getLogger(__name__)
 
 IST = ZoneInfo("Asia/Kolkata")
 
@@ -104,7 +106,9 @@ class SymbolFeed:
     """One instrument: real EOD history + deterministic reconstructed
     intraday days + the live simulated session."""
 
-    def __init__(self, symbol: str, filename: str, name: str, is_index: bool, eod_dir: Path) -> None:
+    def __init__(
+        self, symbol: str, filename: str, name: str, is_index: bool, eod_dir: Path
+    ) -> None:
         self.symbol = symbol
         self.name = name
         self.is_index = is_index
@@ -117,7 +121,7 @@ class SymbolFeed:
         if path.is_file():
             self._load_daily(path)
         # simulation state
-        self.rng = random.Random(f"{symbol}|live|{int(time.time())}")
+        self.rng = random.Random(f"{symbol}|live|{int(time.time())}")  # nosec B311 - simulation, not security
         self.bars: list[dict[str, Any]] = []  # 1-minute bars {t,o,h,l,c,v,d,m}
         self.last_price: float = 0.0
         self.session_open: float = 0.0
@@ -203,7 +207,9 @@ class SymbolFeed:
             self.sigma_daily = min(0.06, max(0.004, statistics.pstdev(returns)))
         volumes = [r["volume"] for r in self.daily[-30:] if r["volume"] > 0]
         if volumes:
-            self.base_min_volume = max(1.0, statistics.median(volumes) / SESSION_MINUTES)
+            self.base_min_volume = max(
+                1.0, statistics.median(volumes) / SESSION_MINUTES
+            )
 
     @property
     def ready(self) -> bool:
@@ -220,8 +226,8 @@ class SymbolFeed:
     # -- deterministic reconstructed intraday day ----------------------------
 
     def _reconstruct_day(self, day: dict[str, Any]) -> list[dict[str, Any]]:
-        rng = random.Random(f"{self.symbol}|{day['date']}")
-        o, h, l, c = day["open"], day["high"], day["low"], day["close"]
+        rng = random.Random(f"{self.symbol}|{day['date']}")  # nosec B311 - deterministic simulation, not security
+        o, h, low, c = day["open"], day["high"], day["low"], day["close"]
         v = max(1.0, float(day["volume"]))
         n = SESSION_MINUTES
         f_h, f_l = rng.random(), rng.random()
@@ -229,10 +235,10 @@ class SymbolFeed:
             f_l = (f_h + 0.3) % 1.0
         if f_h < f_l:
             anchors_t = [0.0, f_h, f_l, 1.0]
-            anchors_v = [o, h, l, c]
+            anchors_v = [o, h, low, c]
         else:
             anchors_t = [0.0, f_l, f_h, 1.0]
-            anchors_v = [o, l, h, c]
+            anchors_v = [o, low, h, c]
         path: list[float] = []
         seg = 0
         for i in range(n):
@@ -243,27 +249,29 @@ class SymbolFeed:
             v0, v1 = anchors_v[seg], anchors_v[seg + 1]
             frac = (t - t0) / (t1 - t0) if t1 > t0 else 0.0
             path.append(v0 + (v1 - v0) * frac)
-        rng_scale = (h - l) * 0.10
+        rng_scale = (h - low) * 0.10
         path = [
             p + math.sin(math.pi * i / (n - 1)) * rng.gauss(0, rng_scale)
             for i, p in enumerate(path)
         ]
         pmax, pmin = max(path), min(path)
-        if pmax > h or pmin < l:
+        if pmax > h or pmin < low:
             span = max(1e-9, pmax - pmin)
             for i in range(1, n - 1):
-                path[i] = l + (path[i] - pmin) * (h - l) / span
+                path[i] = low + (path[i] - pmin) * (h - low) / span
         start_ms = self._session_start_ms(day["date"])
         bars: list[dict[str, Any]] = []
         prev = o
         base_vol = v / n
         for i in range(n):
             close_i = path[i]
-            up = abs(rng.gauss(0, (h - l) * 0.012))
-            dn = abs(rng.gauss(0, (h - l) * 0.012))
+            up = abs(rng.gauss(0, (h - low) * 0.012))
+            dn = abs(rng.gauss(0, (h - low) * 0.012))
             hi = max(prev, close_i) + up
             lo = min(prev, close_i) - dn
-            vol_i = max(1.0, base_vol * _u_shape_volume_weight(i) * rng.lognormvariate(0, 0.5))
+            vol_i = max(
+                1.0, base_vol * _u_shape_volume_weight(i) * rng.lognormvariate(0, 0.5)
+            )
             bars.append(
                 {
                     "t": start_ms + i * 60_000,
@@ -293,7 +301,9 @@ class SymbolFeed:
         )
         self._cum_tp_vol = 0.0
         self._cum_vol = 0.0
-        self._drift = self.rng.gauss(0, self.sigma_daily / math.sqrt(SESSION_MINUTES) * 2.4)
+        self._drift = self.rng.gauss(
+            0, self.sigma_daily / math.sqrt(SESSION_MINUTES) * 2.4
+        )
         self._drift_until = time.monotonic() + 45 + self.rng.random() * 60
         self._day_idx = DEMO_HISTORY_DAYS
         self._minute = 0
@@ -321,7 +331,9 @@ class SymbolFeed:
     def tick(self, now_ms: int, now_mono: float) -> None:
         sig = self._sigma_tick()
         if now_mono > self._drift_until:
-            self._drift = self.rng.gauss(0, self.sigma_daily / math.sqrt(SESSION_MINUTES) * 2.4)
+            self._drift = self.rng.gauss(
+                0, self.sigma_daily / math.sqrt(SESSION_MINUTES) * 2.4
+            )
             self._drift_until = now_mono + 45 + self.rng.random() * 60
         vwap = self.vwap if self.vwap > 0 else self.last_price
         mean_rev = -0.10 * (self.last_price - vwap) / max(vwap, 1e-9)
@@ -330,7 +342,8 @@ class SymbolFeed:
 
         minute_t = (now_ms // 60_000) * 60_000
         bar = self._cur_bar
-        assert bar is not None
+        if bar is None:
+            return
         if bar["t"] != minute_t:
             self._cur_bar = {
                 "t": minute_t,
@@ -402,7 +415,12 @@ class SymbolFeed:
         if self._prev_close_bar is not None:
             # A true TR needs the previous bar's high/low; approximate with the
             # current bar range plus close-to-close and high/low-to-close moves.
-            tr = max(bar_h - bar_l, abs(c - self._prev_close_bar), abs(bar_h - c), abs(bar_l - c))
+            tr = max(
+                bar_h - bar_l,
+                abs(c - self._prev_close_bar),
+                abs(bar_h - c),
+                abs(bar_l - c),
+            )
             # ATR14 (Wilder) — own warm-up counter
             if self._atr_count < 14:
                 self._atr_sum += tr
@@ -456,9 +474,7 @@ class SymbolFeed:
         updated, so charts, indicators and the bot behave identically in both
         modes.
         """
-        day_key = datetime.fromtimestamp(now_ms / 1000.0, tz=IST).strftime(
-            "%Y-%m-%d"
-        )
+        day_key = datetime.fromtimestamp(now_ms / 1000.0, tz=IST).strftime("%Y-%m-%d")
         new_day = day_key != self._session_day
         self._session_day = day_key
         if q.prev_close:
@@ -607,9 +623,7 @@ class SymbolFeed:
         # or after it is replaced.  After the range, only bars already driven
         # by real quotes are kept — simulated pre-open bars are dropped so a
         # closed market shows the last real session, not fake trades.
-        before: list[dict[str, Any]] = [
-            bar for bar in self.bars if bar["t"] < first_t
-        ]
+        before: list[dict[str, Any]] = [bar for bar in self.bars if bar["t"] < first_t]
         after: list[dict[str, Any]] = [
             bar for bar in self.bars if bar["t"] > last_t and bar.get("real")
         ]
@@ -792,15 +806,17 @@ class AIDemoBot:
 
     def _charges(self, side: str, value: float) -> float:
         from config.costs import (
-            CostScenario,
             SCENARIO_MARKET_CONDITIONS,
+            CostScenario,
             load_charge_table,
         )
 
         table = load_charge_table()
         conditions = SCENARIO_MARKET_CONDITIONS[CostScenario.BASE]
         side_bps = table.buy_bps if side == "BUY" else table.sell_bps
-        return round(value * (side_bps + float(conditions["slippage_bps"])) / 10_000.0, 2)
+        return round(
+            value * (side_bps + float(conditions["slippage_bps"])) / 10_000.0, 2
+        )
 
     def _enter(self, symbol: str, reason: str) -> bool:
         if not self.enabled or symbol in self.positions:
@@ -843,7 +859,9 @@ class AIDemoBot:
             quote_timestamp=_iso_ms(_now_ms()),
         )
         if result.get("status") != "FILLED":
-            self.last_signal = f"AI BUY {quantity} {symbol} rejected: {result.get('reason')}"
+            self.last_signal = (
+                f"AI BUY {quantity} {symbol} rejected: {result.get('reason')}"
+            )
             feed.ledger.record_event(
                 "ai_demo_rejected",
                 {"symbol": symbol, "reason": str(result.get("reason", ""))},
@@ -888,7 +906,9 @@ class AIDemoBot:
             quote_timestamp=_iso_ms(_now_ms()),
         )
         if result.get("status") != "FILLED":
-            self.last_signal = f"AI SELL {quantity} {symbol} rejected: {result.get('reason')}"
+            self.last_signal = (
+                f"AI SELL {quantity} {symbol} rejected: {result.get('reason')}"
+            )
             self.feed.ledger.record_event(
                 "ai_demo_rejected",
                 {"symbol": symbol, "reason": str(result.get("reason", ""))},
@@ -902,8 +922,12 @@ class AIDemoBot:
             self.losses += 1
         del self.positions[symbol]
         self.cooldown[symbol] = time.monotonic()
-        self.last_signal = f"SELL {quantity} {symbol} @ {price:,.2f} ({reason}) · {realized:+,.0f}"
-        self.feed.push_fill("SELL", symbol, quantity, price, reason, realized=round(realized, 2))
+        self.last_signal = (
+            f"SELL {quantity} {symbol} @ {price:,.2f} ({reason}) · {realized:+,.0f}"
+        )
+        self.feed.push_fill(
+            "SELL", symbol, quantity, price, reason, realized=round(realized, 2)
+        )
         self.save_state()
 
     # -- strategy ------------------------------------------------------------
@@ -998,7 +1022,9 @@ class _Hub:
                 self._clients.remove(q)
 
     def push(self, event: str, payload: dict[str, Any]) -> None:
-        message = f"event: {event}\ndata: {json.dumps(payload, separators=(',', ':'))}\n\n"
+        message = (
+            f"event: {event}\ndata: {json.dumps(payload, separators=(',', ':'))}\n\n"
+        )
         with self._lock:
             clients = list(self._clients)
         for q in clients:
@@ -1032,7 +1058,9 @@ class LiveFeed:
         self._stop = threading.Event()
         self.started_at_ms = _now_ms()
         self.day_start_equity: float | None = None
-        self.upstox_configured = bool(os.getenv("UPSTOX_ACCESS_TOKEN") or os.getenv("UPSTOX_SANDBOX_ACCESS_TOKEN"))
+        self.upstox_configured = bool(
+            os.getenv("UPSTOX_ACCESS_TOKEN") or os.getenv("UPSTOX_SANDBOX_ACCESS_TOKEN")
+        )
         self.real: Any | None = None
         self._last_quote_poll = 0.0
         self._consecutive_quote_failures = 0
@@ -1113,7 +1141,9 @@ class LiveFeed:
             threading.Thread(
                 target=self._warm_real, name="live-feed-warmup", daemon=True
             ).start()
-        self._thread = threading.Thread(target=self._loop, name="live-feed", daemon=True)
+        self._thread = threading.Thread(
+            target=self._loop, name="live-feed", daemon=True
+        )
         self._thread.start()
 
     def _warm_real(self) -> None:
@@ -1211,7 +1241,8 @@ class LiveFeed:
 
     def _live_cycle(self, now_mono: float, now_ms: int) -> None:
         """Quote-driven updates in LIVE mode (no simulated ticks)."""
-        assert self.real is not None
+        if self.real is None:
+            return
         if now_mono - self._last_quote_poll < self.real.QUOTE_POLL_SECONDS:
             return
         self._last_quote_poll = now_mono
@@ -1268,7 +1299,9 @@ class LiveFeed:
                     "last": round(last, 2) if last else None,
                     "value": round(value, 2) if value is not None else None,
                     "pnl": round(pnl, 2) if pnl is not None else None,
-                    "pnl_pct": round((last / avg - 1.0) * 100.0, 3) if last and avg else None,
+                    "pnl_pct": round((last / avg - 1.0) * 100.0, 3)
+                    if last and avg
+                    else None,
                     "strategy": BOT_STRATEGY_ID if bot_pos else "paper",
                     "stop": bot_pos.stop if bot_pos else None,
                     "target": bot_pos.target if bot_pos else None,
@@ -1300,7 +1333,9 @@ class LiveFeed:
                 "open": len(self.bot.positions),
                 "wins": wins,
                 "losses": losses,
-                "win_rate": round(wins / (wins + losses), 3) if (wins + losses) else None,
+                "win_rate": round(wins / (wins + losses), 3)
+                if (wins + losses)
+                else None,
                 "session_realized": round(self.bot.session_realized, 2),
                 "last_signal": self.bot.last_signal,
                 "status": self.bot.status_text(),
@@ -1408,7 +1443,11 @@ class LiveFeed:
             "symbol": symbol,
             "name": src.name,
             "interval": interval,
-            "feed": {"mode": self.mode, "vol_boost": VOL_BOOST, "upstox_configured": self.upstox_configured},
+            "feed": {
+                "mode": self.mode,
+                "vol_boost": VOL_BOOST,
+                "upstox_configured": self.upstox_configured,
+            },
             "session": {
                 "open": round(src.session_open, 2),
                 "prev_close": round(src.prev_close, 2),
@@ -1439,7 +1478,9 @@ class LiveFeed:
             "candles": candles,
         }
 
-    def _aggregate_1m(self, src: SymbolFeed, bucket: int, limit: int) -> list[list[float]]:
+    def _aggregate_1m(
+        self, src: SymbolFeed, bucket: int, limit: int
+    ) -> list[list[float]]:
         out: list[list[float]] = []
         cur: list[float] | None = None
         cur_key: int | None = None
@@ -1450,8 +1491,7 @@ class LiveFeed:
                     out.append(cur)
                 cur_key = key
                 cur = [bar["t"], bar["o"], bar["h"], bar["l"], bar["c"], bar["v"]]
-            else:
-                assert cur is not None
+            elif cur is not None:
                 if bar["h"] > cur[2]:
                     cur[2] = bar["h"]
                 if bar["l"] < cur[3]:
@@ -1462,16 +1502,22 @@ class LiveFeed:
             out.append(cur)
         return out[-limit:]
 
-    def _daily_candles(self, src: SymbolFeed, interval: str, limit: int) -> list[list[float]]:
+    def _daily_candles(
+        self, src: SymbolFeed, interval: str, limit: int
+    ) -> list[list[float]]:
         now = datetime.now(IST)
         running_t = int(
             now.replace(hour=15, minute=30, second=0, microsecond=0).timestamp() * 1000
         )
-        real_daily = self.real.daily_history(src.symbol) if self.real is not None else None
+        real_daily = (
+            self.real.daily_history(src.symbol) if self.real is not None else None
+        )
         if real_daily:
             rows = [
                 {
-                    "date": datetime.fromtimestamp(bar[0] / 1000.0, tz=IST).strftime("%Y-%m-%d"),
+                    "date": datetime.fromtimestamp(bar[0] / 1000.0, tz=IST).strftime(
+                        "%Y-%m-%d"
+                    ),
                     "open": bar[1],
                     "high": bar[2],
                     "low": bar[3],
@@ -1493,7 +1539,14 @@ class LiveFeed:
                 week = day.isocalendar()[:2]
                 key = f"{week[0]}-{week[1]}"
                 if key not in weekly:
-                    weekly[key] = [int(datetime(day.year, day.month, day.day).timestamp() * 1000), row["open"], row["high"], row["low"], row["close"], row["volume"]]
+                    weekly[key] = [
+                        int(datetime(day.year, day.month, day.day).timestamp() * 1000),
+                        row["open"],
+                        row["high"],
+                        row["low"],
+                        row["close"],
+                        row["volume"],
+                    ]
                     order.append(key)
                 else:
                     bar = weekly[key]
@@ -1505,7 +1558,12 @@ class LiveFeed:
         else:
             out = [
                 [
-                    int(datetime.fromisoformat(r["date"]).replace(tzinfo=IST).timestamp() * 1000),
+                    int(
+                        datetime.fromisoformat(r["date"])
+                        .replace(tzinfo=IST)
+                        .timestamp()
+                        * 1000
+                    ),
                     r["open"],
                     r["high"],
                     r["low"],
@@ -1561,9 +1619,8 @@ class LiveFeed:
                     | set(getattr(self.real, "sim_fallback_symbols", []))
                 )
                 if extra:
-                    note += (
-                        f" {len(extra)} symbol(s) on SIM fallback: "
-                        + ", ".join(extra)
+                    note += f" {len(extra)} symbol(s) on SIM fallback: " + ", ".join(
+                        extra
                     )
         elif self._sim_fallback_reason:
             note = "SIM fallback (real feed dropped): " + self._sim_fallback_reason
@@ -1579,7 +1636,10 @@ class LiveFeed:
                 "upstox": (
                     self.real.status()
                     if self.real is not None
-                    else {"configured": False, "detail": "no Upstox access token configured"}
+                    else {
+                        "configured": False,
+                        "detail": "no Upstox access token configured",
+                    }
                 ),
             },
             "clock": {
