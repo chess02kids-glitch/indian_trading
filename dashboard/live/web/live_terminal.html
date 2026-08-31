@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quant India — Live Terminal</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0e14'/%3E%3Cpath d='M7 20l5-6 4 4 6-9 3 4' stroke='%2338bdf8' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/live/static/live_terminal.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark">◆</span>
+    <span class="brand-name">QUANT&nbsp;INDIA</span>
+    <span class="brand-sub">LIVE TERMINAL</span>
+  </div>
+
+  <div class="feed-badge" id="feed-badge" title="Intraday prices are simulated from verified EOD history (data/eod2). No broker connection.">
+    <span class="pulse-dot"></span><span id="feed-label">SIM FEED</span>
+  </div>
+
+  <div class="clock-box">
+    <div class="clock" id="clock">--:--:--</div>
+    <div class="mkt-state" id="mkt-state">NSE · demo session</div>
+  </div>
+
+  <div class="search-box" id="search-box">
+    <span class="search-ico">⌕</span>
+    <input id="sym-input" type="text" placeholder="Search symbol…  ( / )" autocomplete="off" spellcheck="false">
+    <div class="search-drop" id="sym-drop" hidden></div>
+  </div>
+
+  <div class="equity-strip">
+    <div class="stat"><label>Equity</label><b id="st-equity">—</b></div>
+    <div class="stat"><label>Today</label><b id="st-today">—</b></div>
+    <div class="stat"><label>Total</label><b id="st-total">—</b></div>
+    <div class="stat"><label>Cash</label><b id="st-cash" class="dim">—</b></div>
+  </div>
+
+  <div class="top-actions">
+    <button class="icon-btn" id="btn-theme" title="Toggle theme">☾</button>
+    <button class="icon-btn" id="btn-side" title="Toggle right panel">⮜</button>
+    <button class="icon-btn" id="btn-bottom" title="Toggle bottom panel">⮋</button>
+  </div>
+</header>
+
+<div class="toolbar">
+  <div class="seg-group" id="tf-group" role="tablist">
+    <button data-tf="1m">1m</button><button data-tf="3m">3m</button>
+    <button data-tf="5m" class="on">5m</button><button data-tf="15m">15m</button>
+    <button data-tf="30m">30m</button><button data-tf="1h">1h</button>
+    <button data-tf="1d">1D</button><button data-tf="1w">1W</button>
+  </div>
+
+  <div class="seg-group" id="type-group" title="Chart type">
+    <button data-type="candles" class="on" title="Candles">🕯</button>
+    <button data-type="bars" title="OHLC bars">𝄃</button>
+    <button data-type="area" title="Area">◮</button>
+    <button data-type="line" title="Line">∿</button>
+  </div>
+
+  <div class="chip-group" id="ind-group" title="Indicators">
+    <button data-ind="ema20">EMA 20</button>
+    <button data-ind="ema50">EMA 50</button>
+    <button data-ind="sma200">SMA 200</button>
+    <button data-ind="vwap" class="on">VWAP</button>
+    <button data-ind="bb">BB 20·2</button>
+    <span class="chip-sep"></span>
+    <button data-pane="rsi">RSI</button>
+    <button data-pane="macd">MACD</button>
+  </div>
+
+  <div class="toolbar-right">
+    <span class="hint" id="tf-hint">scroll to zoom · drag to pan · double-click to fit</span>
+  </div>
+</div>
+
+<main class="layout">
+  <section class="chart-wrap">
+    <canvas id="chart"></canvas>
+    <div class="legend" id="legend"></div>
+    <div class="pos-chip" id="pos-chip" hidden></div>
+    <div class="chart-loading" id="chart-loading">
+      <div class="spinner"></div>
+      <div>loading market…</div>
+    </div>
+  </section>
+
+  <aside class="sidebar" id="sidebar">
+    <section class="panel">
+      <div class="panel-head">
+        <h3>Watchlist</h3>
+        <span class="panel-sub" id="wl-count"></span>
+      </div>
+      <div class="wl-list" id="wl-list"></div>
+    </section>
+
+    <section class="panel grow">
+      <div class="panel-head"><h3>Positions · live P&amp;L</h3><span class="panel-sub" id="pos-count"></span></div>
+      <div class="table-wrap">
+        <table class="tbl">
+          <thead><tr>
+            <th>Sym</th><th class="num">Qty</th><th class="num">Entry</th>
+            <th class="num">Last</th><th class="num">P&amp;L ₹</th><th class="num">%</th>
+            <th class="num">Stop</th><th class="num">Tgt</th>
+          </tr></thead>
+          <tbody id="pos-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel grow">
+      <div class="panel-head"><h3>AI order tape</h3><span class="panel-sub" id="tape-count"></span></div>
+      <div class="tape" id="tape"></div>
+    </section>
+  </aside>
+</main>
+
+<footer class="bottom" id="bottom">
+  <section class="panel equity-panel">
+    <div class="panel-head">
+      <h3>Equity curve <span class="panel-sub" id="eq-period"></span></h3>
+      <div class="eq-stats">
+        <span class="pill" id="eq-dd">DD —</span>
+        <span class="pill" id="eq-ret">RET —</span>
+      </div>
+    </div>
+    <div class="eq-canvas-wrap"><canvas id="eq-canvas"></canvas>
+      <div class="eq-tip" id="eq-tip" hidden></div>
+    </div>
+  </section>
+
+  <section class="panel bot-panel">
+    <div class="panel-head">
+      <h3>AI paper trader</h3>
+      <button class="switch" id="bot-toggle" role="switch" aria-checked="false" title="Enable / disable the AI demo trader">
+        <span class="knob"></span>
+      </button>
+    </div>
+    <div class="bot-row">
+      <label>Risk / trade
+        <select id="bot-risk">
+          <option value="0.05">5%</option>
+          <option value="0.10" selected>10%</option>
+          <option value="0.15">15%</option>
+        </select>
+      </label>
+      <span class="bot-status" id="bot-status">loading…</span>
+    </div>
+    <div class="bot-stats" id="bot-stats">
+      <div class="bstat"><label>Open</label><b id="bs-open">0/3</b></div>
+      <div class="bstat"><label>Wins</label><b id="bs-wins">0</b></div>
+      <div class="bstat"><label>Losses</label><b id="bs-losses">0</b></div>
+      <div class="bstat"><label>Win rate</label><b id="bs-wr">—</b></div>
+      <div class="bstat wide"><label>Session realized</label><b id="bs-real">—</b></div>
+    </div>
+    <div class="bot-last" id="bot-last">No signal yet.</div>
+    <p class="bot-note">Demo strategy (EMA 9/21 momentum cross + VWAP filter, ATR stop/target). Writes only to the local virtual ledger — <code>var/paper_trading.sqlite</code>. No broker access. Feed is simulated; prices are not real quotes.</p>
+  </section>
+
+  <section class="panel log-panel">
+    <div class="panel-head"><h3>Event log</h3></div>
+    <div class="log" id="log"></div>
+  </section>
+</footer>
+
+<div class="toasts" id="toasts"></div>
+
+<script src="/live/static/live_terminal.js"></script>
+</body>
+</html>

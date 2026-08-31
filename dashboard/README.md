@@ -395,10 +395,14 @@ anything working, and what do I do today":
 | Route | Content |
 |---|---|
 | `/` / `/paper` | Local virtual paper account: read-only Upstox quotes, virtual orders and P&L |
+| `/live` | **Live terminal**: interactive multi-timeframe chart, live P&L, AI demo paper trader |
 | `/strategy` | Existing strategy-signal dashboard |
 | `/cockpit` | Research cockpit (strategy experiments) |
 | `/operations` | Read-only operational status |
 | `/api/strategy/signal?capital=100000` | JSON signal payload |
+| `/api/live/state` | Full live-terminal snapshot (feed, quotes, portfolio, bot, orders) |
+| `/api/live/candles?symbol=RELIANCE&interval=5m&limit=600` | OHLCV candles for 1m/3m/5m/15m/30m/1h/1d/1w |
+| `/api/live/stream` | Server-Sent Events: ticks (250ms), portfolio (1s), fills |
 | `/healthz` | Health check |
 
 ```bash
@@ -414,6 +418,88 @@ Note: `dashboard/__init__.py` imports Streamlit lazily so the HTTP server
 works in a minimal environment. The Streamlit main dashboard
 (`main_dashboard.py`, all 6 screens) still runs via
 `streamlit run dashboard/main_dashboard.py`.
+
+## Live Terminal (`/live`)
+
+A full-screen, interactive trading terminal for watching the AI's paper
+money work in real time. Served by the same HTTP server — no extra process,
+no external CDN, no browser dependencies (the charting engine is a
+self-contained canvas renderer in `dashboard/live/web/`).
+
+**What you see**
+
+- **Live candlestick chart** — 8 timeframes (1m 3m 5m 15m 30m 1h 1D 1W),
+  candle/bar/area/line types, scroll-zoom, drag-pan, crosshair with OHLCV
+  tooltip, live "follow" pinning with a jump-back-to-LIVE pill.
+- **Indicators** — EMA 20/50, SMA 200, session VWAP, Bollinger 20·2,
+  plus RSI 14 and MACD 12·26·9 sub-panes (toggleable chips).
+- **AI positions painted on the chart** — entry, ATR stop-loss and
+  take-profit lines with price-axis tags, buy/sell markers, and a floating
+  P&L chip that ticks with every quote.
+- **Watchlist** — 23 liquid NSE symbols + NIFTY 50 with live sparklines,
+  price flashes and % change; click to switch the chart.
+- **Live P&L everywhere** — equity/today/total in the header, positions
+  table with per-trade P&L ₹ and %, AI order tape, event log, and a live
+  equity curve with drawdown/return readout and hover inspection.
+- **AI paper trader panel** — toggle, risk-per-trade (5/10/15%), open
+  positions, wins/losses/win-rate/session realized, last signal.
+- **Feeds & themes** — dark/light themes, keyboard shortcuts (`/` search,
+  `1`–`8` timeframes), collapsible panels, toast notifications on fills.
+
+**Data honesty (important)**
+
+The terminal runs in one of two clearly-labelled modes, visible on the
+header badge and stamped on every API response as `feed.mode`:
+
+- **`SIM` (default — no token / SDK missing / real feed dropped).**
+  The live intraday path is a volatility-calibrated random walk seeded from
+  each symbol's *verified* EOD history in `data/eod2/daily` (daily/weekly
+  charts show the real EOD candles; 12 prior sessions are deterministically
+  reconstructed to reproduce each real day's OHLC). Badge: amber
+  `SIM FEED`. If a live feed drops mid-session the badge note says
+  `SIM fallback (real feed dropped): <reason>` — the feed never silently
+  pretends to be real.
+- **`LIVE` (real Upstox market data, read-only).** When
+  `UPSTOX_ACCESS_TOKEN` (or `UPSTOX_SANDBOX_ACCESS_TOKEN`) is set and
+  `upstox-python-sdk` is installed, `dashboard/live/upstox_source.py`
+  takes over the feed: full v2 market quotes polled every 10 s drive
+  prices/bars, v3 1-minute history (5 sessions) and daily history (400
+  days) are fetched on warm-up and spliced over the simulated tail, and
+  authoritative 1-minute bars for the current session are re-fetched on a
+  rotating 90 s per-symbol cadence. Daily/weekly charts come from Upstox
+  v3 daily candles. The NSE market status is shown next to the badge.
+  Badge: green `LIVE · UPSTOX`.
+  - *Read-only by construction*: `upstox_source.py` contains only
+    quote/history/timings calls — no order, funds or GTT endpoints exist
+    anywhere in the file, so the terminal cannot place real orders.
+  - *Graceful degradation*: a symbol whose history cannot be fetched falls
+    back to SIM history for that symbol only (listed in
+    `upstox.sim_fallback_symbols`); three consecutive failed quote polls
+    drop the whole feed back to labelled SIM.
+  - Instrument keys come from the verified point-in-time universe
+    (`data/universe/nifty500-pit/nifty500.csv` → `NSE_EQ|<ISIN>`); the
+    NIFTY 50 benchmark uses `NSE_INDEX|Nifty 50`.
+
+See `docs/live_terminal_handoff_prompt.md` for the exact steps to go live
+with a real token.
+
+**The AI demo trader** (`AIDemoBot` in `dashboard/live/feed.py`) is a
+transparent long-only strategy — EMA 9/21 cross + session-VWAP filter +
+RSI guard, ATR14 stop/target management, position sizing = risk% of equity
+(capped at 15%). It writes virtual fills to the **same local ledger** as the
+paper dashboard (`var/paper_trading.sqlite`, `strategy_id=ai_demo`,
+`source=live_terminal_sim_feed`), so its orders, P&L and equity snapshots
+are visible in `/paper`, the audit endpoint and CSV exports. It has no
+broker access, cannot be pointed at real money, and is disabled until the
+toggle is flipped in the UI. Bot state (enabled flag, risk%, positions,
+session stats) persists across server restarts via ledger events.
+
+```bash
+python dashboard/server.py      # → open http://localhost:8080/live
+```
+
+Tests: `tests/test_live_feed.py` (hermetic — uses a temp ledger and a
+read-only symlink to the EOD history).
 
 ## License
 

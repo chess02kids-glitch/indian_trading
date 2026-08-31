@@ -229,10 +229,10 @@ def ingest_membership(
     ]
 
     combined_audit = {}
-    
+
     # ensure parent root exists
     universe_root.mkdir(parents=True, exist_ok=True)
-    
+
     for idx_id, idx_name, slug in indices:
         rows = extract_index_rows(frame, index_id=idx_id, index_name=idx_name)
         pit_frame = build_pit_universe_frame(rows, index_name=slug, isin_map=isin_map)
@@ -255,7 +255,7 @@ def ingest_membership(
         )
         dataset = UniverseDataset.from_dir(u_dir)
         members_as_of = dataset.members_at(slug, as_of)
-        
+
         combined_audit[slug] = {
             "universe_dir": str(u_dir),
             "rows": int(pit_frame.attrs.get("kept_row_count", len(pit_frame))),
@@ -284,9 +284,11 @@ def requested_constituents(
         u_dir = universe_root / f"{slug}-pit"
         if u_dir.is_dir():
             dataset = UniverseDataset.from_dir(u_dir)
-            members = realdata.requested_constituents(dataset, window_start=window_start, as_of=as_of)
+            members = realdata.requested_constituents(
+                dataset, window_start=window_start, as_of=as_of
+            )
             symbols.update(members)
-    
+
     if not symbols:
         raise SystemExit(f"No symbols found in {universe_root}")
     return sorted(symbols)
@@ -605,12 +607,15 @@ def fetch_fundamentals(
                 eod2_closes[symbol] = series
 
     import requests
+
     session = requests.Session()
-    session.headers.update({
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.9'
-    })
+    session.headers.update(
+        {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+        }
+    )
 
     for number, symbol in enumerate(sorted(panel_symbols), start=1):
         ticker = symbol + ".NS"
