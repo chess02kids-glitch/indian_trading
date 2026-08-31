@@ -56,9 +56,15 @@ dev = [
 tracking = [
     "mlflow>=2.15,<4.0"
 ]
+# Optional market-data connector for the local virtual paper dashboard. The
+# package uses it only for read-only quotes; it is deliberately not a base
+# dependency and carries no broker-order integration.
+paper = [
+    "upstox-python-sdk>=2.0"
+]
 
 [tool.setuptools]
-packages = ["config", "ingestion", "research", "models", "backtest", "portfolio", "agents", "risk_kill", "execution", "reconciliation", "orchestration", "observability", "dashboard", "reports", "auth", "store", "broker"]
+packages = ["config", "ingestion", "research", "models", "backtest", "portfolio", "agents", "risk_kill", "execution", "reconciliation", "orchestration", "observability", "dashboard", "reports", "auth", "store", "broker", "paper_trading"]
 py-modules = ["main"]
 
 [tool.ruff]

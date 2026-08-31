@@ -1,12 +1,8 @@
-"""Production HTTP server for the Quant India research cockpit.
+"""Local dashboard server for virtual paper trading and research.
 
-Serves the research cockpit (strategy selection, experiment execution,
-results, and history) as the primary interface. Also exposes the
-read-only operational dashboard at /operations.
-
-All research execution is delegated to the existing research engine
-via ``dashboard.research_api``.  This server never re-implements
-pipeline logic.
+The paper page is the primary interface: it reads Upstox quotes and maintains a
+separate local virtual account. Research execution remains delegated to the
+existing research engine, and operational state remains read-only.
 """
 
 from __future__ import annotations
@@ -31,6 +27,37 @@ if __package__ in (None, ""):
 from dashboard.operational import REQUIRED_FIELDS, collect_status
 
 logger = logging.getLogger(__name__)
+
+_paper_service: Any | None = None
+_paper_service_lock = threading.Lock()
+
+
+def get_paper_service() -> Any:
+    """Create the one local virtual-paper service owned by this server.
+
+    Construction performs no network request and reads no credentials into any
+    HTTP response.  The service is deliberately separate from broker adapters:
+    it can only obtain read-only market quotes.
+    """
+    global _paper_service
+    if _paper_service is not None:
+        return _paper_service
+    with _paper_service_lock:
+        if _paper_service is None:
+            from paper_trading import PaperLedger, PaperTradingService
+
+            root = Path(__file__).resolve().parents[1]
+            db_path = Path(
+                os.getenv("QUANT_PAPER_DB", str(root / "var" / "paper_trading.sqlite"))
+            )
+            _paper_service = PaperTradingService(
+                root=root,
+                ledger=PaperLedger(db_path),
+                quote_stale_seconds=int(
+                    os.getenv("QUANT_PAPER_QUOTE_REFRESH_SECONDS", "30")
+                ),
+            )
+    return _paper_service
 
 
 # ---------------------------------------------------------------------------
@@ -125,23 +152,46 @@ class DashboardHandler(BaseHTTPRequestHandler):
             )
         elif path == "/api/status":
             self._send_json(HTTPStatus.OK, collect_status())
-        elif path == "/":
-            from dashboard.strategy_dashboard import render_strategy_page
+        elif path in ("/", "/paper"):
+            from dashboard.paper_trading import render_paper_trading_page
 
+            self._send(
+                HTTPStatus.OK, "text/html; charset=utf-8", render_paper_trading_page()
+            )
+        elif path == "/strategy":
             capital = float(query.get("capital", 100_000))
             try:
+                from dashboard.strategy_dashboard import render_strategy_page
+
                 self._send(
                     HTTPStatus.OK,
                     "text/html; charset=utf-8",
                     render_strategy_page(capital),
                 )
-            except Exception:  # noqa: BLE001 — never let the landing page 500
-                logger.exception("strategy_dashboard_render_failed")
-                self._send(
-                    HTTPStatus.INTERNAL_SERVER_ERROR,
-                    "text/plain; charset=utf-8",
-                    b"Strategy dashboard failed to render; see server log.\n",
+            except Exception as exc:  # noqa: BLE001 — preserve a working local control page
+                logger.warning(
+                    "strategy dashboard unavailable; serving paper dashboard: %s",
+                    type(exc).__name__,
                 )
+                from dashboard.paper_trading import render_paper_trading_page
+
+                self._send(
+                    HTTPStatus.OK,
+                    "text/html; charset=utf-8",
+                    render_paper_trading_page(),
+                )
+        elif path == "/api/paper/status":
+            self._send_json(HTTPStatus.OK, get_paper_service().status())
+        elif path == "/api/paper/audit":
+            self._send_json(HTTPStatus.OK, get_paper_service().audit())
+        elif path == "/api/paper/export":
+            dataset = str(query.get("dataset", "orders"))
+            try:
+                csv_body = get_paper_service().export_csv(dataset).encode("utf-8")
+            except ValueError as exc:
+                self._send_json(HTTPStatus.BAD_REQUEST, {"error": str(exc)})
+            else:
+                self._send_csv(dataset, csv_body)
         elif path == "/cockpit":
             self._send(HTTPStatus.OK, "text/html; charset=utf-8", _get_cockpit_page())
         elif path == "/operations":
@@ -195,9 +245,86 @@ class DashboardHandler(BaseHTTPRequestHandler):
 
         if path == "/api/research/run":
             self._handle_research_run()
+        elif path.startswith("/api/paper/"):
+            self._handle_paper_action(path)
         else:
             self._send(
                 HTTPStatus.NOT_FOUND, "text/plain; charset=utf-8", b"Not found\n"
+            )
+
+    def _read_json_body(self) -> dict[str, Any]:
+        """Decode a small JSON action payload; paper endpoints never accept code."""
+        try:
+            content_length = int(self.headers.get("Content-Length", 0))
+            if content_length < 0 or content_length > 32_768:
+                raise ValueError("request body is too large")
+            payload = json.loads(self.rfile.read(content_length) or b"{}")
+            if not isinstance(payload, dict):
+                raise ValueError("JSON body must be an object")
+            return payload
+        except (ValueError, json.JSONDecodeError) as exc:
+            raise ValueError(f"invalid JSON: {exc}") from exc
+
+    def _handle_paper_action(self, path: str) -> None:
+        """Serve explicit local virtual-paper actions only.
+
+        None of the branches below calls an Upstox order endpoint.  Market data
+        refreshes are read-only, while the other actions mutate only the local
+        virtual SQLite ledger.
+        """
+        try:
+            payload = self._read_json_body()
+            paper = get_paper_service()
+            if path == "/api/paper/configure":
+                result = paper.configure(
+                    float(payload.get("capital")),
+                    str(payload.get("data_mode", "UPSTOX_DATA")),
+                )
+            elif path == "/api/paper/start":
+                result = paper.start_monitor()
+            elif path == "/api/paper/pause":
+                result = paper.pause()
+            elif path == "/api/paper/refresh":
+                result = paper.refresh_quotes()
+            elif path == "/api/paper/watchlist":
+                symbols = payload.get("symbols")
+                if not isinstance(symbols, list):
+                    raise ValueError("symbols must be a JSON array")
+                result = paper.set_watchlist([str(symbol) for symbol in symbols])
+            elif path == "/api/paper/risk-policy":
+                values = payload.get("policy")
+                if not isinstance(values, dict):
+                    raise ValueError("policy must be a JSON object")
+                result = paper.set_risk_policy(values)
+            elif path == "/api/paper/automation":
+                result = paper.set_auto_paper(
+                    enabled=bool(payload.get("enabled", False)),
+                    strategy_id=str(payload.get("strategy_id", "")),
+                    confirmation=str(payload.get("confirmation", "")),
+                )
+            elif path == "/api/paper/reset":
+                raw_capital = payload.get("capital")
+                result = paper.reset(
+                    str(payload.get("confirmation", "")),
+                    float(raw_capital) if raw_capital is not None else None,
+                )
+            elif path == "/api/paper/preview":
+                result = paper.preview_rebalance(str(payload.get("strategy_id", "")))
+            elif path == "/api/paper/rebalance":
+                result = paper.execute_rebalance(
+                    str(payload.get("strategy_id", "")),
+                    str(payload.get("confirmation", "")),
+                )
+            else:
+                self._send_json(HTTPStatus.NOT_FOUND, {"error": "not found"})
+                return
+            self._send_json(HTTPStatus.OK, result)
+        except (TypeError, ValueError) as exc:
+            self._send_json(HTTPStatus.BAD_REQUEST, {"error": str(exc)})
+        except Exception:  # noqa: BLE001 - no internal error details in an action response
+            logger.exception("paper_action_failed")
+            self._send_json(
+                HTTPStatus.SERVICE_UNAVAILABLE, {"error": "paper service unavailable"}
             )
 
     def _handle_research_run(self) -> None:
@@ -246,6 +373,23 @@ class DashboardHandler(BaseHTTPRequestHandler):
         body = json.dumps(data, default=str, sort_keys=True).encode("utf-8")
         self._send(code, "application/json", body)
 
+    def _send_csv(self, dataset: str, body: bytes) -> None:
+        safe_name = "".join(
+            character
+            for character in dataset.lower()
+            if character.isalnum() or character == "_"
+        )
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", "text/csv; charset=utf-8")
+        self.send_header(
+            "Content-Disposition",
+            f'attachment; filename="paper_{safe_name or "export"}.csv"',
+        )
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(body)
+
     def _send(self, code: HTTPStatus, content_type: str, body: bytes) -> None:
         self.send_response(code)
         self.send_header("Content-Type", content_type)
@@ -256,11 +400,21 @@ class DashboardHandler(BaseHTTPRequestHandler):
 
 
 def run_server(port: int | None = None) -> None:
-    """Run the dashboard on all interfaces for a container or VPS reverse proxy."""
+    """Run the dashboard and local 30-second quote poller on all interfaces."""
+    from paper_trading.poller import PaperQuotePoller
+
     actual_port = port if port is not None else int(os.getenv("PORT", "8080"))
+    paper = get_paper_service()
+    poller = PaperQuotePoller(paper, interval_seconds=paper.quote_stale_seconds)
+    poller.start()
     server = ThreadingHTTPServer(("0.0.0.0", actual_port), DashboardHandler)  # nosec B104
-    print(f"Quant India Research Cockpit: http://0.0.0.0:{actual_port}/")
-    server.serve_forever()
+    print(f"Quant India Dashboard: http://0.0.0.0:{actual_port}/")
+    print(f"Local paper trading: http://0.0.0.0:{actual_port}/paper")
+    try:
+        server.serve_forever()
+    finally:
+        poller.stop()
+        server.server_close()
 
 
 if __name__ == "__main__":
