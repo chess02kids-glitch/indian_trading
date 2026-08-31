@@ -11,8 +11,10 @@ import html
 import json
 import logging
 import os
+import queue
 import sys
 import threading
+import time
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -30,6 +32,37 @@ logger = logging.getLogger(__name__)
 
 _paper_service: Any | None = None
 _paper_service_lock = threading.Lock()
+
+_live_feed: Any | None = None
+_live_feed_lock = threading.Lock()
+
+WEB_DIR = Path(__file__).resolve().parent / "live" / "web"
+_STATIC_TYPES = {
+    ".html": "text/html; charset=utf-8",
+    ".css": "text/css; charset=utf-8",
+    ".js": "text/javascript; charset=utf-8",
+    ".svg": "image/svg+xml",
+}
+
+
+def get_live_feed() -> Any:
+    """Create the one live-terminal feed owned by this server.
+
+    The feed is a clearly-labelled SIMULATED intraday market built from the
+    verified EOD history plus a demo AI trader that writes only to the local
+    virtual ledger.  It has no broker access.
+    """
+    global _live_feed
+    if _live_feed is not None:
+        return _live_feed
+    with _live_feed_lock:
+        if _live_feed is None:
+            from dashboard.live.feed import LiveFeed
+
+            root = Path(__file__).resolve().parents[1]
+            _live_feed = LiveFeed(root)
+            _live_feed.start()
+    return _live_feed
 
 
 def get_paper_service() -> Any:
@@ -152,6 +185,57 @@ class DashboardHandler(BaseHTTPRequestHandler):
             )
         elif path == "/api/status":
             self._send_json(HTTPStatus.OK, collect_status())
+        elif path == "/live":
+            try:
+                body = (WEB_DIR / "live_terminal.html").read_bytes()
+                self._send(HTTPStatus.OK, "text/html; charset=utf-8", body)
+            except OSError:
+                self._send(
+                    HTTPStatus.NOT_FOUND,
+                    "text/plain; charset=utf-8",
+                    b"live terminal assets missing\n",
+                )
+        elif path.startswith("/live/static/"):
+            name = Path(path[len("/live/static/") :]).name
+            static_file = WEB_DIR / name
+            suffix = static_file.suffix
+            try:
+                body = static_file.read_bytes()
+            except OSError:
+                self._send(
+                    HTTPStatus.NOT_FOUND, "text/plain; charset=utf-8", b"not found\n"
+                )
+            else:
+                content_type = _STATIC_TYPES.get(suffix, "application/octet-stream")
+                self._send(HTTPStatus.OK, content_type, body)
+        elif path == "/api/live/state":
+            try:
+                self._send_json(HTTPStatus.OK, get_live_feed().snapshot())
+            except Exception:  # noqa: BLE001
+                logger.exception("live_state_failed")
+                self._send_json(
+                    HTTPStatus.SERVICE_UNAVAILABLE, {"error": "live feed unavailable"}
+                )
+        elif path == "/api/live/candles":
+            symbol = str(query.get("symbol", "RELIANCE")).upper()
+            interval = str(query.get("interval", "1m"))
+            try:
+                limit = int(query.get("limit", "600"))
+            except ValueError:
+                limit = 600
+            try:
+                self._send_json(HTTPStatus.OK, get_live_feed().candles(symbol, interval, limit))
+            except KeyError as exc:
+                self._send_json(HTTPStatus.NOT_FOUND, {"error": str(exc).strip("'")})
+            except ValueError as exc:
+                self._send_json(HTTPStatus.BAD_REQUEST, {"error": str(exc)})
+            except Exception:  # noqa: BLE001
+                logger.exception("live_candles_failed")
+                self._send_json(
+                    HTTPStatus.SERVICE_UNAVAILABLE, {"error": "live feed unavailable"}
+                )
+        elif path == "/api/live/stream":
+            self._serve_live_stream()
         elif path in ("/", "/paper"):
             from dashboard.paper_trading import render_paper_trading_page
 
@@ -245,6 +329,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
 
         if path == "/api/research/run":
             self._handle_research_run()
+        elif path == "/api/live/bot":
+            self._handle_live_bot()
         elif path.startswith("/api/paper/"):
             self._handle_paper_action(path)
         else:
@@ -325,6 +411,53 @@ class DashboardHandler(BaseHTTPRequestHandler):
             logger.exception("paper_action_failed")
             self._send_json(
                 HTTPStatus.SERVICE_UNAVAILABLE, {"error": "paper service unavailable"}
+            )
+
+    def _serve_live_stream(self) -> None:
+        """Server-Sent Events stream for the live terminal (SIM or LIVE feed)."""
+        feed = get_live_feed()
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", "text/event-stream; charset=utf-8")
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Connection", "keep-alive")
+        self.send_header("X-Accel-Buffering", "no")
+        self.end_headers()
+        client_queue = feed.hub.add()
+        try:
+            handshake = (
+                f"event: hello\ndata: {{\"mode\": \"{feed.mode}\", \"t\": {int(time.time() * 1000)}}}\n\n"
+            )
+            self.wfile.write(handshake.encode("utf-8"))
+            self.wfile.flush()
+            while True:
+                try:
+                    message = client_queue.get(timeout=20)
+                except queue.Empty:
+                    self.wfile.write(b": keepalive\n\n")
+                    self.wfile.flush()
+                    continue
+                self.wfile.write(message.encode("utf-8"))
+                self.wfile.flush()
+        except (BrokenPipeError, ConnectionResetError, OSError, ValueError):
+            pass
+        finally:
+            feed.hub.remove(client_queue)
+
+    def _handle_live_bot(self) -> None:
+        try:
+            payload = self._read_json_body()
+            risk = payload.get("risk_pct")
+            result = get_live_feed().set_bot(
+                bool(payload.get("enabled", False)),
+                float(risk) if risk is not None else None,
+            )
+            self._send_json(HTTPStatus.OK, result)
+        except (TypeError, ValueError) as exc:
+            self._send_json(HTTPStatus.BAD_REQUEST, {"error": str(exc)})
+        except Exception:  # noqa: BLE001
+            logger.exception("live_bot_failed")
+            self._send_json(
+                HTTPStatus.SERVICE_UNAVAILABLE, {"error": "live feed unavailable"}
             )
 
     def _handle_research_run(self) -> None:
@@ -410,6 +543,7 @@ def run_server(port: int | None = None) -> None:
     server = ThreadingHTTPServer(("0.0.0.0", actual_port), DashboardHandler)  # nosec B104
     print(f"Quant India Dashboard: http://0.0.0.0:{actual_port}/")
     print(f"Local paper trading: http://0.0.0.0:{actual_port}/paper")
+    print(f"Live terminal (SIM feed + AI demo): http://0.0.0.0:{actual_port}/live")
     try:
         server.serve_forever()
     finally:
