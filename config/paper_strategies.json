@@ -1,14 +1,246 @@
 {
   "schema_version": 1,
-  "description": "Only strategies that pass research review and are explicitly marked paper_approved may create virtual paper orders.",
+  "description": "Paper-trading approved strategies. Only strategies marked paper_approved may create virtual paper orders.",
   "strategies": {
-    "momrem": {
-      "label": "MomReM momentum + regime filter",
-      "status": "RESEARCH_ONLY",
+    "s01_alphatrend": {
+      "label": "S01_AlphaTrend - RSI-Based Trend",
+      "status": "PENDING_REVIEW",
       "paper_approved": false,
       "mode": "DAILY",
       "min_rebalance_seconds": 86400,
-      "reason": "The existing report is a research candidate. It must be independently re-run on the selected universe and cost assumptions before paper allocation."
+      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+    },
+    "s02_supertrend_714": {
+      "label": "S02_SuperTrend_7_3 - Standard Settings",
+      "status": "PENDING_REVIEW",
+      "paper_approved": false,
+      "mode": "DAILY",
+      "min_rebalance_seconds": 86400,
+      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+    },
+    "s03_supertrend_510": {
+      "label": "S03_SuperTrend_5_2 - Fast Settings",
+      "status": "PENDING_REVIEW",
+      "paper_approved": false,
+      "mode": "DAILY",
+      "min_rebalance_seconds": 86400,
+      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+    },
+    "s04_ema_20_50": {
+      "label": "S04_EMA_Cross_20_50 - Classic EMA Crossover",
+      "status": "PENDING_REVIEW",
+      "paper_approved": false,
+      "mode": "DAILY",
+      "min_rebalance_seconds": 86400,
+      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+    },
+    "s05_ema_9_21": {
+      "label": "S05_EMA_Cross_9_21 - Fast EMA Crossover",
+      "status": "PENDING_REVIEW",
+      "paper_approved": false,
+      "mode": "DAILY",
+      "min_rebalance_seconds": 86400,
+      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+    },
+    "s06_tripleema": {
+      "label": "S06_Triple_EMA_5_13_21 - Triple EMA Alignment",
+      "status": "PENDING_REVIEW",
+      "paper_approved": false,
+      "mode": "DAILY",
+      "min_rebalance_seconds": 86400,
+      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+    },
+    "s07_goldencross": {
+      "label": "S07_SMA_50_200_GoldenCross - Long-term Trend",
+      "status": "PENDING_REVIEW",
+      "paper_approved": false,
+      "mode": "DAILY",
+      "min_rebalance_seconds": 86400,
+      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+    },
+    "s08_hullma": {
+      "label": "S08_HullMA_14_28 - Hull Moving Average",
+      "status": "PENDING_REVIEW",
+      "paper_approved": false,
+      "mode": "DAILY",
+      "min_rebalance_seconds": 86400,
+      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+    },
+    "s09_psar": {
+      "label": "S09_Parabolic_SAR - Wilder's Trend Reversal",
+      "status": "PENDING_REVIEW",
+      "paper_approved": false,
+      "mode": "DAILY",
+      "min_rebalance_seconds": 86400,
+      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+    },
+    "s10_donchian": {
+      "label": "S10_Donchian_Breakout_20 - Turtle Trading",
+      "status": "PENDING_REVIEW",
+      "paper_approved": false,
+      "mode": "DAILY",
+      "min_rebalance_seconds": 86400,
+      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+    },
+    "s11_hilegamilega": {
+      "label": "S11_Hilega_Milega - RSI+EMA+WMA on RSI",
+      "status": "PENDING_REVIEW",
+      "paper_approved": false,
+      "mode": "DAILY",
+      "min_rebalance_seconds": 86400,
+      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+    },
+    "s12_macd_signal": {
+      "label": "S12_MACD_Signal_Cross - MACD Signal Line",
+      "status": "PENDING_REVIEW",
+      "paper_approved": false,
+      "mode": "DAILY",
+      "min_rebalance_seconds": 86400,
+      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+    },
+    "s13_macd_zero": {
+      "label": "S13_MACD_Zero_Cross - MACD Zero Line",
+      "status": "PENDING_REVIEW",
+      "paper_approved": false,
+      "mode": "DAILY",
+      "min_rebalance_seconds": 86400,
+      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+    },
+    "s14_rsi_50": {
+      "label": "S14_RSI_50_Cross - RSI 50 Level",
+      "status": "PENDING_REVIEW",
+      "paper_approved": false,
+      "mode": "DAILY",
+      "min_rebalance_seconds": 86400,
+      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+    },
+    "s15_stochastic": {
+      "label": "S15_Stochastic_Oversold_Overbought - Stochastic Osc",
+      "status": "PENDING_REVIEW",
+      "paper_approved": false,
+      "mode": "DAILY",
+      "min_rebalance_seconds": 86400,
+      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+    },
+    "s16_cci": {
+      "label": "S16_CCI_100_Cross - Commodity Channel Index",
+      "status": "PENDING_REVIEW",
+      "paper_approved": false,
+      "mode": "DAILY",
+      "min_rebalance_seconds": 86400,
+      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+    },
+    "s17_williamsr": {
+      "label": "S17_Williams_R - Williams %R",
+      "status": "PENDING_REVIEW",
+      "paper_approved": false,
+      "mode": "DAILY",
+      "min_rebalance_seconds": 86400,
+      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+    },
+    "s18_aroon": {
+      "label": "S18_Aroon_Cross_25 - Aroon Indicator",
+      "status": "PENDING_REVIEW",
+      "paper_approved": false,
+      "mode": "DAILY",
+      "min_rebalance_seconds": 86400,
+      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+    },
+    "s19_chande": {
+      "label": "S19_Chande_Momentum_Zero - CMO Zero Line",
+      "status": "PENDING_REVIEW",
+      "paper_approved": false,
+      "mode": "DAILY",
+      "min_rebalance_seconds": 86400,
+      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+    },
+    "s20_adx_di": {
+      "label": "S20_ADX_DI_Cross_25filter - ADX + DI Filter",
+      "status": "PENDING_REVIEW",
+      "paper_approved": false,
+      "mode": "DAILY",
+      "min_rebalance_seconds": 86400,
+      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+    },
+    "s21_rsi_bb": {
+      "label": "S21_RSI_BollingerBands_Combo - RSI + BB Double Conf",
+      "status": "PENDING_REVIEW",
+      "paper_approved": false,
+      "mode": "DAILY",
+      "min_rebalance_seconds": 86400,
+      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+    },
+    "s22_zscore": {
+      "label": "S22_ZScore_Mean_Reversion - Z-Score Reversion",
+      "status": "PENDING_REVIEW",
+      "paper_approved": false,
+      "mode": "DAILY",
+      "min_rebalance_seconds": 86400,
+      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+    },
+    "s23_bb_squeeze": {
+      "label": "S23_BollingerBand_Squeeze - Volatility Contraction",
+      "status": "PENDING_REVIEW",
+      "paper_approved": false,
+      "mode": "DAILY",
+      "min_rebalance_seconds": 86400,
+      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+    },
+    "s24_keltner": {
+      "label": "S24_Keltner_Channel_Bounce - Keltner Channel",
+      "status": "PENDING_REVIEW",
+      "paper_approved": false,
+      "mode": "DAILY",
+      "min_rebalance_seconds": 86400,
+      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+    },
+    "s25_rsi_3070": {
+      "label": "S25_RSI_30_70_Classic - Wilder's RSI Levels",
+      "status": "PENDING_REVIEW",
+      "paper_approved": false,
+      "mode": "DAILY",
+      "min_rebalance_seconds": 86400,
+      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+    },
+    "s26_vwap": {
+      "label": "S26_VWAP_Cross - VWAP Crossover",
+      "status": "PENDING_REVIEW",
+      "paper_approved": false,
+      "mode": "DAILY",
+      "min_rebalance_seconds": 86400,
+      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+    },
+    "s27_vol_rsi": {
+      "label": "S27_Volume_Confirmed_RSI - Volume Confirmed RSI",
+      "status": "PENDING_REVIEW",
+      "paper_approved": false,
+      "mode": "DAILY",
+      "min_rebalance_seconds": 86400,
+      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+    },
+    "s28_obv": {
+      "label": "S28_OBV_EMA_Cross - OBV EMA Cross",
+      "status": "PENDING_REVIEW",
+      "paper_approved": false,
+      "mode": "DAILY",
+      "min_rebalance_seconds": 86400,
+      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+    },
+    "s29_triple_conf": {
+      "label": "S29_Triple_Confirmation_RSI_EMA_MACD - Triple Confirmed",
+      "status": "PENDING_REVIEW",
+      "paper_approved": false,
+      "mode": "DAILY",
+      "min_rebalance_seconds": 86400,
+      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+    },
+    "s30_adx_super": {
+      "label": "S30_ADX_SuperTrend_Combo - ADX + SuperTrend Filter",
+      "status": "PENDING_REVIEW",
+      "paper_approved": false,
+      "mode": "DAILY",
+      "min_rebalance_seconds": 86400,
+      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
     }
   }
 }

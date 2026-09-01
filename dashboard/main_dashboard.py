@@ -944,6 +944,7 @@ def main() -> None:
             "🪜 Capital Ladder (Screen 4)",
             "🔄 Reconciliation & Broker Health (Screen 5)",
             "🚨 Alerts & Incident Log (Screen 6)",
+            "📊 Strategy Performance (Screen 7)",
         ],
         key="screen_selector",
     )
