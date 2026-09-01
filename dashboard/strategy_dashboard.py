@@ -25,7 +25,6 @@ no JavaScript), so it works from any browser and behind any proxy.
 
 from __future__ import annotations
 
-import glob
 import html
 import json
 import time

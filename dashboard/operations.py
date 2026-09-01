@@ -101,9 +101,11 @@ def broker_health(market_data: Any | None = None) -> dict[str, Any]:
     out["last_quote_success"] = quote.get("at")
     out["last_quote_age_seconds"] = quote.get("age_seconds")
     out["last_quote_detail"] = quote.get("detail")
-    out["last_quote_error"] = (quote.get("detail") or {}).get("error") if isinstance(
-        quote.get("detail"), dict
-    ) else None
+    out["last_quote_error"] = (
+        (quote.get("detail") or {}).get("error")
+        if isinstance(quote.get("detail"), dict)
+        else None
+    )
 
     if not out["configured"]:
         out["state"] = "NOT_CONFIGURED"
@@ -166,8 +168,12 @@ def reconciliation(paper: Any | None, signal: dict[str, Any] | None) -> dict[str
 
     if signal is None:
         out["state"] = "NO_SIGNAL"
-        out["detail"] = out["detail"] if out["detail"] != "no paper service available" else (
-            "strategy signal unavailable — cannot compare expected vs actual holdings"
+        out["detail"] = (
+            out["detail"]
+            if out["detail"] != "no paper service available"
+            else (
+                "strategy signal unavailable — cannot compare expected vs actual holdings"
+            )
         )
         return out
 
@@ -312,11 +318,17 @@ def build_report(
         report["system_health"]["overall"],
     ]
     if switch["armed"]:
-        report["headline"] = ("HALTED", "Kill switch is armed — all trading is blocked.")
+        report["headline"] = (
+            "HALTED",
+            "Kill switch is armed — all trading is blocked.",
+        )
     elif states[1] in ("TOKEN_EXPIRED",):
         report["headline"] = ("ACTION", "Upstox token has expired — re-authenticate.")
     elif states[3] == "DEGRADED":
-        report["headline"] = ("DEGRADED", "Price data is unavailable — fix ingestion first.")
+        report["headline"] = (
+            "DEGRADED",
+            "Price data is unavailable — fix ingestion first.",
+        )
     elif states[2] in ("DIVERGED", "LEDGER_MISMATCH"):
         report["headline"] = (
             "DIVERGED",

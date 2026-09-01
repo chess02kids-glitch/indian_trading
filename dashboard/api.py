@@ -106,10 +106,16 @@ def signal_payload(capital: float = 100_000.0) -> dict[str, Any]:
     def _build() -> dict[str, Any]:
         signal = _signal(capital)
         if signal is None:
-            return {"error": "SIGNAL_UNAVAILABLE", "detail": "compute_momrem_signal failed"}
+            return {
+                "error": "SIGNAL_UNAVAILABLE",
+                "detail": "compute_momrem_signal failed",
+            }
         close, meta = _frame()
         sizing = position_sizing(
-            capital=capital, basket=signal["basket"], close=close, max_position_weight=0.15
+            capital=capital,
+            basket=signal["basket"],
+            close=close,
+            max_position_weight=0.15,
         )
         return {
             "signal": signal,
@@ -286,9 +292,7 @@ def overview_payload(capital: float = 100_000.0) -> dict[str, Any]:
             paper=paper, signal=signal, market_data=paper.market_data, feed=feed
         )
         history = paper.ledger.equity_history(limit=2000)
-        divergence = divergence_report(
-            _equity_points(history), initial_capital=initial
-        )
+        divergence = divergence_report(_equity_points(history), initial_capital=initial)
         return {
             "operations": ops,
             "signal": signal,
@@ -311,8 +315,12 @@ def research_check_payload() -> dict[str, Any]:
         import pandas as pd
 
         from dashboard.strategy_dashboard import MOMREM_CARD
-        from datahub.analytics import cost_sensitivity, performance, simulate_weights
-        from datahub.analytics import momrem_targets
+        from datahub.analytics import (
+            cost_sensitivity,
+            momrem_targets,
+            performance,
+            simulate_weights,
+        )
 
         close, meta = _frame()
         targets = momrem_targets(close)

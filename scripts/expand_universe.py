@@ -54,7 +54,9 @@ def main(argv: list[str] | None = None) -> int:
         help="minimum median daily traded value in INR (default 1 crore)",
     )
     parser.add_argument(
-        "--start", default="2010-01-01", help="evaluation window start (default 2010-01-01)"
+        "--start",
+        default="2010-01-01",
+        help="evaluation window start (default 2010-01-01)",
     )
     parser.add_argument("--limit", type=int, default=None, help="stop after N symbols")
     parser.add_argument(
@@ -75,7 +77,9 @@ def main(argv: list[str] | None = None) -> int:
         candidates = universe.scan_candidates()
         print(f"{len(candidates)} raw symbols are not yet in the clean bundle")
         for row in candidates[:25]:
-            print(f"  {row['symbol']:<18} ~{row['est_bars']:>6} bars  {row['bytes']/1024:.0f} KB")
+            print(
+                f"  {row['symbol']:<18} ~{row['est_bars']:>6} bars  {row['bytes'] / 1024:.0f} KB"
+            )
         if len(candidates) > 25:
             print(f"  ... and {len(candidates) - 25} more")
         return 0

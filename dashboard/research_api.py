@@ -413,7 +413,9 @@ def get_data_status(
                     "format": "long",
                     "dates": int(pf["date"].nunique()),
                     "symbols": int(pf["symbol"].nunique()),
-                    "date_range": str(pf["date"].min()) + " to " + str(pf["date"].max()),
+                    "date_range": str(pf["date"].min())
+                    + " to "
+                    + str(pf["date"].max()),
                 }
             else:
                 if "date" in pf.columns:

@@ -365,9 +365,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
                     b"guide not found\n",
                 )
             else:
-                self._send(
-                    HTTPStatus.OK, "text/markdown; charset=utf-8", body
-                )
+                self._send(HTTPStatus.OK, "text/markdown; charset=utf-8", body)
         elif path == "/paper":
             from dashboard.paper_trading import render_paper_trading_page
 
@@ -667,9 +665,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self._send_json(HTTPStatus.BAD_REQUEST, {"error": str(exc)})
         except Exception as exc:  # noqa: BLE001
             logger.exception("signal_recompute_failed")
-            self._send_json(
-                HTTPStatus.SERVICE_UNAVAILABLE, {"error": str(exc)}
-            )
+            self._send_json(HTTPStatus.SERVICE_UNAVAILABLE, {"error": str(exc)})
 
     def _handle_rebuild_prices(self) -> None:
         """Rewrite data/clean/prices.parquet from the shared panel."""
