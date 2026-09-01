@@ -37,6 +37,8 @@ _live_feed: Any | None = None
 _live_feed_lock = threading.Lock()
 
 WEB_DIR = Path(__file__).resolve().parent / "live" / "web"
+APP_DIR = Path(__file__).resolve().parent / "app"
+GUIDE_FILE = Path(__file__).resolve().parents[1] / "docs" / "BEGINNER_GUIDE.md"
 _STATIC_TYPES = {
     ".html": "text/html; charset=utf-8",
     ".css": "text/css; charset=utf-8",
@@ -161,6 +163,95 @@ def _get_cockpit_page() -> bytes:
 
 
 # ---------------------------------------------------------------------------
+# Unified API dispatch
+# ---------------------------------------------------------------------------
+
+INF = float("inf")
+NEG_INF = float("-inf")
+
+
+def _json_safe(value: Any, _depth: int = 0) -> Any:
+    """Recursively convert a payload into something ``json.dumps`` can emit.
+
+    Non-finite floats become ``None`` (JSON has no NaN/Infinity).  NumPy scalars
+    become native Python numbers so they serialise as numbers rather than being
+    stringified by ``default=str``.  Sets and tuples become lists.
+    """
+    if _depth > 30:  # a self-referencing payload must not hang the server
+        return str(value)
+    if value is None or isinstance(value, (str, bool)):
+        return value
+    if isinstance(value, float):
+        return value if value == value and value not in (INF, NEG_INF) else None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, dict):
+        return {str(k): _json_safe(v, _depth + 1) for k, v in value.items()}
+    if isinstance(value, (list, tuple, set, frozenset)):
+        return [_json_safe(v, _depth + 1) for v in value]
+    # numpy scalars and anything else numeric-ish
+    to_float = getattr(value, "item", None)
+    if callable(to_float):
+        try:
+            return _json_safe(to_float(), _depth + 1)
+        except (TypeError, ValueError):
+            pass
+    try:
+        number = float(value)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return str(value)
+    return number if number == number and number not in (INF, NEG_INF) else None
+
+
+_API_ROUTES = frozenset(
+    {
+        "/api/overview",
+        "/api/divergence",
+        "/api/cost-sensitivity",
+        "/api/correlation",
+        "/api/sizing",
+        "/api/regime",
+        "/api/operations",
+        "/api/universe",
+        "/api/research/check",
+    }
+)
+
+
+def _dispatch_api(path: str, query: dict[str, str]) -> dict[str, Any]:
+    """Build one unified-dashboard payload. See :mod:`dashboard.api`."""
+    from dashboard import api as unified
+
+    def _capital() -> float:
+        try:
+            return float(query.get("capital", 100_000))
+        except (TypeError, ValueError):
+            return 100_000.0
+
+    if path == "/api/overview":
+        return unified.overview_payload(_capital())
+    if path == "/api/divergence":
+        return unified.divergence_payload(_capital())
+    if path == "/api/cost-sensitivity":
+        return unified.cost_sensitivity_payload()
+    if path == "/api/correlation":
+        return unified.correlation_payload()
+    if path == "/api/sizing":
+        return unified.sizing_payload(_capital())
+    if path == "/api/regime":
+        return unified.regime_payload()
+    if path == "/api/operations":
+        return unified.operations_payload()
+    if path == "/api/universe":
+        from datahub.universe import status as universe_status
+
+        return universe_status()
+    if path == "/api/research/check":
+        return unified.research_check_payload()
+    return {"error": "unknown endpoint"}
+
+
+# ---------------------------------------------------------------------------
 # HTTP handler
 # ---------------------------------------------------------------------------
 
@@ -238,12 +329,53 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 )
         elif path == "/api/live/stream":
             self._serve_live_stream()
-        elif path in ("/", "/paper"):
+        elif path == "/":
+            # The unified shell. One tab, one process, one data layer.
+            try:
+                body = (APP_DIR / "index.html").read_bytes()
+            except OSError:
+                self._send(
+                    HTTPStatus.NOT_FOUND,
+                    "text/plain; charset=utf-8",
+                    b"unified app assets missing\n",
+                )
+            else:
+                self._send(HTTPStatus.OK, "text/html; charset=utf-8", body)
+        elif path.startswith("/static/"):
+            name = Path(path[len("/static/") :]).name
+            static_file = APP_DIR / name
+            try:
+                body = static_file.read_bytes()
+            except OSError:
+                self._send(
+                    HTTPStatus.NOT_FOUND, "text/plain; charset=utf-8", b"not found\n"
+                )
+            else:
+                content_type = _STATIC_TYPES.get(
+                    static_file.suffix, "application/octet-stream"
+                )
+                self._send(HTTPStatus.OK, content_type, body)
+        elif path == "/guide.md":
+            try:
+                body = GUIDE_FILE.read_bytes()
+            except OSError:
+                self._send(
+                    HTTPStatus.NOT_FOUND,
+                    "text/plain; charset=utf-8",
+                    b"guide not found\n",
+                )
+            else:
+                self._send(
+                    HTTPStatus.OK, "text/markdown; charset=utf-8", body
+                )
+        elif path == "/paper":
             from dashboard.paper_trading import render_paper_trading_page
 
             self._send(
                 HTTPStatus.OK, "text/html; charset=utf-8", render_paper_trading_page()
             )
+        elif path in _API_ROUTES:
+            self._serve_api(path, query)
         elif path == "/strategy":
             capital = float(query.get("capital", 100_000))
             try:
@@ -254,17 +386,34 @@ class DashboardHandler(BaseHTTPRequestHandler):
                     "text/html; charset=utf-8",
                     render_strategy_page(capital),
                 )
-            except Exception as exc:  # noqa: BLE001 — preserve a working local control page
-                logger.warning(
-                    "strategy dashboard unavailable; serving paper dashboard: %s",
-                    type(exc).__name__,
+            except Exception as exc:  # noqa: BLE001 - report it, never disguise it
+                # This used to quietly serve the *paper* page instead, so a
+                # strategy-dashboard crash looked like a working page showing
+                # unrelated content.  Fail loudly and say what failed.
+                logger.exception("strategy_dashboard_unavailable")
+                detail = (
+                    f"{type(exc).__name__}: {exc}".replace("&", "&amp;")
+                    .replace("<", "&lt;")
+                    .replace(">", "&gt;")
                 )
-                from dashboard.paper_trading import render_paper_trading_page
-
                 self._send(
-                    HTTPStatus.OK,
+                    HTTPStatus.SERVICE_UNAVAILABLE,
                     "text/html; charset=utf-8",
-                    render_paper_trading_page(),
+                    (
+                        "<!doctype html><meta charset='utf-8'>"
+                        "<title>Strategy dashboard unavailable</title>"
+                        "<body style='font-family:system-ui;background:#0d1117;"
+                        "color:#e6edf3;padding:2rem;max-width:46rem'>"
+                        "<h1>Strategy dashboard unavailable</h1>"
+                        "<p>The signal could not be computed, so no strategy page "
+                        "is being shown. Showing a different page here would hide "
+                        "the failure.</p>"
+                        f"<pre style='color:#f85149'>{detail}</pre>"
+                        "<p>Check <a href='/operations'>Operations</a> for the "
+                        "data and signal heartbeats, then try "
+                        "<a href='/'>the unified dashboard</a>.</p>"
+                        "</body>"
+                    ).encode("utf-8"),
                 )
         elif path == "/api/paper/status":
             self._send_json(HTTPStatus.OK, get_paper_service().status())
@@ -333,6 +482,14 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self._handle_research_run()
         elif path == "/api/live/bot":
             self._handle_live_bot()
+        elif path == "/api/kill-switch":
+            self._handle_kill_switch()
+        elif path == "/api/signal/recompute":
+            self._handle_signal_recompute()
+        elif path == "/api/data/rebuild-prices":
+            self._handle_rebuild_prices()
+        elif path == "/api/universe/expand":
+            self._handle_universe_expand()
         elif path.startswith("/api/paper/"):
             self._handle_paper_action(path)
         else:
@@ -415,6 +572,15 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 HTTPStatus.SERVICE_UNAVAILABLE, {"error": "paper service unavailable"}
             )
 
+    def _serve_api(self, path: str, query: dict[str, str]) -> None:
+        """Serve a unified-dashboard payload as JSON (never a raw traceback)."""
+        try:
+            payload = _dispatch_api(path, query)
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("api_dispatch_failed %s", path)
+            payload = {"error": type(exc).__name__, "detail": str(exc)}
+        self._send_json(HTTPStatus.OK, payload)
+
     def _serve_live_stream(self) -> None:
         """Server-Sent Events stream for the live terminal (SIM or LIVE feed)."""
         feed = get_live_feed()
@@ -442,6 +608,109 @@ class DashboardHandler(BaseHTTPRequestHandler):
             pass
         finally:
             feed.hub.remove(client_queue)
+
+    def _handle_kill_switch(self) -> None:
+        """Arm or disarm the operator kill switch (persisted, process-wide)."""
+        from datahub import state as sysstate
+
+        try:
+            payload = self._read_json_body()
+            armed = bool(payload.get("armed", False))
+            switch = sysstate.set_kill_switch(
+                armed,
+                reason=str(payload.get("reason", ""))[:200],
+                armed_by=str(payload.get("by", "dashboard"))[:60],
+            )
+            if armed:
+                # arming the switch also stops the demo trader immediately
+                try:
+                    get_live_feed().set_bot(False)
+                except Exception:  # noqa: BLE001
+                    logger.warning("kill_switch_bot_stop_failed")
+            self._send_json(HTTPStatus.OK, switch)
+        except ValueError as exc:
+            self._send_json(HTTPStatus.BAD_REQUEST, {"error": str(exc)})
+        except Exception:  # noqa: BLE001
+            logger.exception("kill_switch_failed")
+            self._send_json(
+                HTTPStatus.SERVICE_UNAVAILABLE, {"error": "kill switch unavailable"}
+            )
+
+    def _handle_signal_recompute(self) -> None:
+        """Drop the caches and recompute the strategy signal from fresh data."""
+        try:
+            from datahub import state as sysstate
+            from datahub.panel import clear_cache, materialize_prices
+
+            payload = self._read_json_body()
+            capital = float(payload.get("capital", 100_000))
+            clear_cache()
+            prices = materialize_prices(force=True)
+            from dashboard.strategy_dashboard import compute_momrem_signal
+
+            signal = compute_momrem_signal(capital)
+            sysstate.beat(
+                "data_bundle_refreshed",
+                {"prices_parquet": prices.get("size_mb"), "rows": prices.get("rows")},
+            )
+            self._send_json(
+                HTTPStatus.OK,
+                {
+                    "as_of": signal["as_of"],
+                    "regime": signal["regime"]["state"],
+                    "basket": len(signal["basket"]),
+                    "universe": signal["universe"]["size"],
+                    "prices_parquet": prices,
+                },
+            )
+        except (TypeError, ValueError) as exc:
+            self._send_json(HTTPStatus.BAD_REQUEST, {"error": str(exc)})
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("signal_recompute_failed")
+            self._send_json(
+                HTTPStatus.SERVICE_UNAVAILABLE, {"error": str(exc)}
+            )
+
+    def _handle_rebuild_prices(self) -> None:
+        """Rewrite data/clean/prices.parquet from the shared panel."""
+        from datahub.panel import clear_cache, materialize_prices
+
+        try:
+            self._read_json_body()
+        except ValueError:
+            pass
+        try:
+            clear_cache()
+            self._send_json(HTTPStatus.OK, materialize_prices(force=True))
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("rebuild_prices_failed")
+            self._send_json(HTTPStatus.SERVICE_UNAVAILABLE, {"error": str(exc)})
+
+    def _handle_universe_expand(self) -> None:
+        """Promote more raw NSE symbols into the broad universe cache."""
+        from datahub.universe import build_broad
+
+        try:
+            payload = self._read_json_body()
+            kwargs: dict[str, Any] = {}
+            if payload.get("min_years") is not None:
+                kwargs["min_years"] = float(payload["min_years"])
+            if payload.get("min_avg_value") is not None:
+                kwargs["min_avg_value"] = float(payload["min_avg_value"])
+            if payload.get("limit"):
+                kwargs["limit"] = int(payload["limit"])
+            if payload.get("symbols"):
+                symbols = payload["symbols"]
+                if not isinstance(symbols, list):
+                    raise ValueError("symbols must be a JSON array")
+                kwargs["symbols"] = [str(x).upper() for x in symbols]
+            result = build_broad(**kwargs)
+            self._send_json(HTTPStatus.OK, {"result": result})
+        except (TypeError, ValueError) as exc:
+            self._send_json(HTTPStatus.BAD_REQUEST, {"error": str(exc)})
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("universe_expand_failed")
+            self._send_json(HTTPStatus.SERVICE_UNAVAILABLE, {"error": str(exc)})
 
     def _handle_live_bot(self) -> None:
         try:
@@ -503,7 +772,19 @@ class DashboardHandler(BaseHTTPRequestHandler):
         logger.info("%s - %s", self.client_address[0], format % args)
 
     def _send_json(self, code: HTTPStatus, data: Any) -> None:
-        body = json.dumps(data, default=str, sort_keys=True).encode("utf-8")
+        # json.dumps() happily emits bare NaN/Infinity, which is not valid JSON
+        # and breaks strict parsers on the other end.  Analytics produce NaN for
+        # warm-up windows (a 100-day MA has no value for its first 100 bars), so
+        # this would otherwise leak into almost every payload.
+        try:
+            body = json.dumps(
+                _json_safe(data), allow_nan=False, sort_keys=True, default=str
+            ).encode("utf-8")
+        except ValueError:
+            logger.exception("json_serialisation_failed")
+            body = json.dumps(
+                {"error": "payload contained non-finite values"}, sort_keys=True
+            ).encode("utf-8")
         self._send(code, "application/json", body)
 
     def _send_csv(self, dataset: str, body: bytes) -> None:
@@ -541,9 +822,12 @@ def run_server(port: int | None = None) -> None:
     poller = PaperQuotePoller(paper, interval_seconds=paper.quote_stale_seconds)
     poller.start()
     server = ThreadingHTTPServer(("0.0.0.0", actual_port), DashboardHandler)  # nosec B104
-    print(f"Quant India Dashboard: http://0.0.0.0:{actual_port}/")
-    print(f"Local paper trading: http://0.0.0.0:{actual_port}/paper")
-    print(f"Live terminal (SIM feed + AI demo): http://0.0.0.0:{actual_port}/live")
+    print(f"Quant India unified dashboard: http://0.0.0.0:{actual_port}/")
+    print(f"  ├─ strategy    http://0.0.0.0:{actual_port}/strategy")
+    print(f"  ├─ live        http://0.0.0.0:{actual_port}/live")
+    print(f"  ├─ paper       http://0.0.0.0:{actual_port}/paper")
+    print(f"  ├─ research    http://0.0.0.0:{actual_port}/cockpit")
+    print(f"  └─ operations  http://0.0.0.0:{actual_port}/operations")
     try:
         server.serve_forever()
     finally:

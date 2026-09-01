@@ -21,6 +21,9 @@ from zoneinfo import ZoneInfo
 
 from config.costs import SCENARIO_MARKET_CONDITIONS, CostScenario, load_charge_table
 
+from datahub import state as sysstate
+from datahub.quotes import QuoteChain, build_quote_chain
+
 from .ledger import PaperLedger
 from .market_data import (
     MarketDataUnavailable,
@@ -77,6 +80,27 @@ class PaperTradingService:
         # more than 500 unique symbols, while one Upstox request is chunked at
         # the adapter's 500-instrument limit.
         self._instruments = load_nifty_instruments(self.root, index_name="nifty500")
+        # Quote chain: UPSTOX -> SIM -> EOD.  Before this, a missing access token
+        # made every refresh fail hard, so the tape showed ERROR/UNAVAILABLE on
+        # every load while the Live Terminal next door rendered a full simulated
+        # tape from the same repository data.  Degradation is now explicit and
+        # every quote carries its source.
+        self.quote_chain: QuoteChain = build_quote_chain(
+            self.market_data, self._instruments
+        )
+        # Which client the chain was built against.  Reassigning
+        # ``market_data`` must rebuild it, otherwise the tape keeps pricing
+        # through the stale client (tests do this; re-authenticating does too).
+        self._chain_market_data: Any = self.market_data
+
+    def _quote_chain(self) -> QuoteChain:
+        """Return the quote chain, rebuilding it if ``market_data`` changed."""
+        if self._chain_market_data is not self.market_data:
+            self.quote_chain = build_quote_chain(
+                self.market_data, self._instruments
+            )
+            self._chain_market_data = self.market_data
+        return self.quote_chain
 
     # -- strategy gate -----------------------------------------------------
 
@@ -124,6 +148,8 @@ class PaperTradingService:
         self.market_data = UpstoxMarketData.from_environment(
             sandbox=settings["data_mode"] == "SANDBOX"
         )
+        self.quote_chain = build_quote_chain(self.market_data, self._instruments)
+        self._chain_market_data = self.market_data
         return self.status()
 
     def set_watchlist(self, symbols: list[str]) -> dict[str, Any]:
@@ -238,19 +264,48 @@ class PaperTradingService:
             dict.fromkeys((symbols if symbols is not None else watchlist) + held)
         )
         try:
-            quotes = self.market_data.fetch_quotes(self._instrument_map(names))
+            self._instrument_map(names)  # surface unmapped symbols as a warning
         except MarketDataUnavailable as exc:
-            self.ledger.record_quote_health(str(exc))
-            self.ledger.record_event("quote_refresh_failed", {"error": str(exc)})
-            return self._mark_to_market({}, error=str(exc))
-        self.ledger.record_marks([quote.to_dict() for quote in quotes.values()])
+            self.ledger.record_event("quote_instrument_map_incomplete", {"error": str(exc)})
+        chain = self._quote_chain()
+        quotes = chain.fetch(names)
+        summary = chain.summarise(quotes)
         missing = sorted(set(names) - set(quotes))
-        error = f"missing quote(s): {', '.join(missing)}" if missing else None
+        # An error is only recorded when NOTHING could be priced.  Running on the
+        # labelled simulator is a deliberate, healthy degraded state, not a fault.
+        error = None
+        if not quotes:
+            error = (
+                self.quote_chain.last_error
+                or f"no quote source could price: {', '.join(missing)}"
+            )
+        elif missing:
+            self.ledger.record_event(
+                "quote_refresh_partial",
+                {"missing": missing, "source": summary["source"]},
+            )
         self.ledger.record_quote_health(error)
+        self.ledger.record_marks(
+            [quote.as_market_quote_dict() for quote in quotes.values()]
+        )
+        sysstate.beat(
+            "quote_refreshed",
+            {
+                "source": summary["source"],
+                "quoted": summary["quoted"],
+                "requested": len(names),
+                "missing": missing,
+                "error": error,
+            },
+        )
         benchmark = quotes.get(str(settings.get("benchmark_symbol", "NIFTY_50")))
         if benchmark:
             self.ledger.set_benchmark_start_price(benchmark.last_price)
-        return self._mark_to_market(quotes, error=error)
+        result = self._mark_to_market(quotes, error=error)
+        result["quote_source"] = summary["source"]
+        result["quote_source_counts"] = summary["counts"]
+        result["quote_source_note"] = summary["note"]
+        return result
 
     def _mark_to_market(
         self,
@@ -282,11 +337,19 @@ class PaperTradingService:
             unrealized += quantity * (
                 last - float(position["average_entry_cost"] or 0.0)
             )
-        quote_status = (
-            "LIVE"
-            if not error and not missing
-            else ("PARTIAL" if not error else "UNAVAILABLE")
-        )
+        sources = {q.source for q in quotes.values()}
+        if error and not quotes:
+            quote_status = "UNAVAILABLE"
+        elif "UPSTOX" in sources and not missing:
+            quote_status = "LIVE"
+        elif "UPSTOX" in sources:
+            quote_status = "PARTIAL"
+        elif "SIM" in sources:
+            quote_status = "SIM"
+        elif "EOD" in sources:
+            quote_status = "EOD"
+        else:
+            quote_status = "UNAVAILABLE" if missing else "NO_POSITIONS"
         snapshot = {
             "equity": cash + market_value,
             "cash": cash,
@@ -591,6 +654,13 @@ class PaperTradingService:
         return {"preview": preview, "results": results, "mark": mark}
 
     def execute_rebalance(self, strategy_id: str, confirmation: str) -> dict[str, Any]:
+        if sysstate.is_killed():
+            switch = sysstate.kill_switch()
+            raise ValueError(
+                "kill switch is armed"
+                + (f" ({switch.get('reason')})" if switch.get("reason") else "")
+                + " — disarm it on the Operations page before rebalancing"
+            )
         if confirmation != "PAPER REBALANCE":
             raise ValueError(
                 "paper rebalance confirmation must be exactly PAPER REBALANCE"
@@ -611,6 +681,8 @@ class PaperTradingService:
         reads data, applies the normal strategy/risk checks, and writes virtual
         fills to SQLite.  It has no path to a broker order API.
         """
+        if sysstate.is_killed():
+            return {"ran": False, "reason": "kill switch is armed"}
         settings = self.ledger.settings()
         if not settings["running"] or not settings["auto_paper_enabled"]:
             return {"ran": False, "reason": "automatic paper mode is disabled"}
@@ -649,6 +721,10 @@ class PaperTradingService:
             )
             self.ledger.record_event(
                 "auto_paper_rebalanced",
+                {"strategy_id": strategy_id, "fills": len(result["results"])},
+            )
+            sysstate.beat(
+                "paper_rebalance",
                 {"strategy_id": strategy_id, "fills": len(result["results"])},
             )
             return {"ran": True, "fills": len(result["results"])}
@@ -701,12 +777,19 @@ class PaperTradingService:
             )
         if status == "HEALTHY" and stale_symbols:
             status = "STALE"
+        # A healthy-but-simulated feed is not an error: report the source so the
+        # UI can say "SIM — not real prices" instead of a red ERROR badge.
+        source = self.quote_chain.primary_source
+        if status == "HEALTHY" and source != "UPSTOX":
+            status = "HEALTHY_SIM" if source == "SIM" else "HEALTHY_EOD"
         return {
             "status": status,
+            "source": source,
             "last_success_at": last_success,
             "age_seconds": round(age_seconds, 1) if age_seconds is not None else None,
             "stale_symbols": stale_symbols,
             "error": settings.get("last_quote_error"),
+            "chain": self.quote_chain.status(),
         }
 
     @staticmethod
@@ -831,6 +914,8 @@ class PaperTradingService:
             )
         return {
             "paper_only": True,
+            "kill_switch": sysstate.kill_switch(),
+            "quote_chain": self.quote_chain.status(),
             "settings": settings,
             "market_data": self.market_data.connection_status(),
             "quote_refresh_seconds": self.quote_stale_seconds,

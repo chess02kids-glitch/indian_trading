@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quant India — Unified Trading System</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0e14'/%3E%3Cpath d='M7 20l5-6 4 4 6-9 3 4' stroke='%2338bdf8' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+
+<div class="shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <span class="brand-mark">◆</span>
+      <div>
+        <div class="brand-name">QUANT INDIA</div>
+        <div class="brand-sub">unified system</div>
+      </div>
+    </div>
+
+    <nav class="nav" id="nav">
+      <div class="nav-group">Monitor</div>
+      <a href="#overview" data-route="overview"><span class="ico">▣</span>Overview</a>
+      <a href="#strategy" data-route="strategy"><span class="ico">◈</span>Strategy</a>
+      <a href="#divergence" data-route="divergence"><span class="ico">∿</span>Divergence</a>
+      <a href="#risk" data-route="risk"><span class="ico">⚖</span>Risk &amp; sizing</a>
+      <a href="#correlation" data-route="correlation"><span class="ico">▦</span>Correlation</a>
+
+      <div class="nav-group">Trade</div>
+      <a href="#live" data-route="live"><span class="ico">⚡</span>Live terminal</a>
+      <a href="#paper" data-route="paper"><span class="ico">₹</span>Paper account</a>
+
+      <div class="nav-group">Build</div>
+      <a href="#research" data-route="research"><span class="ico">⚗</span>Research cockpit</a>
+      <a href="#data" data-route="data"><span class="ico">▤</span>Data &amp; universe</a>
+
+      <div class="nav-group">Run it</div>
+      <a href="#operations" data-route="operations"><span class="ico">⚙</span>Operations</a>
+      <a href="#guide" data-route="guide"><span class="ico">?</span>Beginner guide</a>
+    </nav>
+
+    <div class="sidebar-foot">
+      <div class="killbox" id="killbox">
+        <div class="killstate" id="killstate">KILL SWITCH · OFF</div>
+        <button class="killbtn" id="killbtn">ARM</button>
+      </div>
+      <div class="sb-meta" id="sb-meta">loading…</div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <button class="icon-btn" id="btn-nav" title="Toggle navigation">☰</button>
+      <h1 id="page-title">Overview</h1>
+      <div class="statusbar" id="statusbar">
+        <span class="chip" id="chip-data" title="Price data freshness">data …</span>
+        <span class="chip" id="chip-feed" title="Live feed source">feed …</span>
+        <span class="chip" id="chip-quote" title="Paper quote source">quotes …</span>
+        <span class="chip" id="chip-regime" title="Market regime">regime …</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn ghost" id="btn-refresh" title="Reload every panel">⟳ Refresh</button>
+      </div>
+    </header>
+
+    <div class="banner" id="banner" hidden></div>
+
+    <main class="content" id="content">
+      <div class="loading">Loading…</div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal">
+  <div class="dialog">
+    <h2 id="modal-title">Confirm</h2>
+    <p id="modal-copy"></p>
+    <pre id="modal-pre" hidden></pre>
+    <div class="modal-actions">
+      <button class="btn ghost" id="modal-cancel">Cancel</button>
+      <button class="btn danger" id="modal-ok">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toasts"></div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

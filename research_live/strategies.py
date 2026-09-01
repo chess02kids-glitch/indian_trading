@@ -134,6 +134,10 @@ def strat_momentum_cs(close, high, low, open_, lookback=250, top_frac=0.2, hold=
             continue
         top = m.nlargest(top_n).index
         w = 1.0 / top_n
+        # Clear the row before assigning: `rebal` is all-NaN and ffill() carries
+        # values forward forever, so without this the book accumulates the union
+        # of every name ever selected instead of the current top-N.
+        rebal.loc[d, :] = 0.0
         for s in top:
             rebal.loc[d, s] = w
     return rebal.ffill().fillna(0.0)
@@ -178,6 +182,10 @@ def strat_momentum_cs_ls(close, high, low, open_, lookback=250, hold=20, frac=0.
         top = m.nlargest(k).index
         bot = m.nsmallest(k).index
         w = 1.0 / (2 * k)
+        # Clear the row before assigning: `rebal` is all-NaN and ffill() carries
+        # values forward forever, so without this the book accumulates the union
+        # of every name ever selected instead of the current top-N.
+        rebal.loc[dt, :] = 0.0
         for s in top:
             rebal.loc[dt, s] = w
         for s in bot:
@@ -203,6 +211,10 @@ def strat_reversal_cs_ls(close, high, low, open_, lookback=20, hold=10, frac=0.2
         top = m.nlargest(k).index
         bot = m.nsmallest(k).index
         w = 1.0 / (2 * k)
+        # Clear the row before assigning: `rebal` is all-NaN and ffill() carries
+        # values forward forever, so without this the book accumulates the union
+        # of every name ever selected instead of the current top-N.
+        rebal.loc[dt, :] = 0.0
         for s in top:
             rebal.loc[dt, s] = -w  # short winners
         for s in bot:
@@ -235,6 +247,10 @@ def strat_momentum_cs_ls_vol(close, high, low, open_, lookback=250, hold=20,
         w = w / w.sum()  # long+short sum to zero via equal gross
         gross = w.abs().sum()
         w = w / gross * 2.0 * 0.5  # each side gross 0.5
+        # Clear the row before assigning: `rebal` is all-NaN and ffill() carries
+        # values forward forever, so without this the book accumulates the union
+        # of every name ever selected instead of the current top-N.
+        rebal.loc[dt, :] = 0.0
         for s in top:
             rebal.loc[dt, s] = w[s]
         for s in bot:

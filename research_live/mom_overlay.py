@@ -42,6 +42,12 @@ def mom_tgt(close, lookback=20, hold=20, top_n=20, risk_kind=None, risk_p=None):
         m = mom.loc[dt].dropna()
         if len(m) < top_n + 5:
             continue
+        # Clear the row first. `rebal` starts as all-NaN and ffill() carries
+        # every value forward, so without this the book silently accumulates the
+        # UNION of every name ever selected (~272 names held on average instead
+        # of 20) and the backtest measures a near-equal-weight broad portfolio
+        # rather than the top-N momentum book the strategy card describes.
+        rebal.loc[dt, :] = 0.0
         for s in m.nlargest(top_n).index:
             rebal.loc[dt, s] = 1.0 / top_n
     tgt = rebal.ffill().fillna(0.0)

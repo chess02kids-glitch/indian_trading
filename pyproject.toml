@@ -64,7 +64,10 @@ paper = [
 ]
 
 [tool.setuptools]
-packages = ["config", "ingestion", "research", "models", "backtest", "portfolio", "agents", "risk_kill", "execution", "reconciliation", "orchestration", "observability", "dashboard", "reports", "auth", "store", "broker", "paper_trading"]
+# datahub is the shared data layer every dashboard page reads through, and
+# diagnostics holds the factor diagnostics bundle; both were missing, so an
+# editable install silently omitted them.
+packages = ["config", "ingestion", "research", "models", "backtest", "portfolio", "agents", "risk_kill", "execution", "reconciliation", "orchestration", "observability", "dashboard", "reports", "auth", "store", "broker", "paper_trading", "datahub", "diagnostics"]
 py-modules = ["main"]
 
 [tool.ruff]
