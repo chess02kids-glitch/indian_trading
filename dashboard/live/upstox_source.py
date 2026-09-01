@@ -289,7 +289,7 @@ class UpstoxLiveSource:
         from_date = (date.today() - timedelta(days=days)).isoformat()
         started = time.monotonic()
         try:
-            response = self._hist_api.get_historical_candle_data(
+            response = self._hist_api.get_historical_candle_data1(
                 key, "minutes", "1", to_date, from_date
             )
             bars = self._candles_to_bars(_val(response, "data"))
@@ -315,7 +315,7 @@ class UpstoxLiveSource:
         to_date = date.today().isoformat()
         from_date = (date.today() - timedelta(days=days)).isoformat()
         try:
-            response = self._hist_api.get_historical_candle_data(
+            response = self._hist_api.get_historical_candle_data1(
                 key, "days", "1", to_date, from_date
             )
             bars = self._candles_to_bars(_val(response, "data"))
@@ -383,7 +383,8 @@ class UpstoxLiveSource:
             reverse = {v: k for k, v in self._instruments.items()}
             result: dict[str, RealQuote] = {}
             for instrument_key, quote in raw.items():
-                symbol = reverse.get(str(instrument_key))
+                instrument_token = str(_val(quote, "instrument_token") or instrument_key)
+                symbol = reverse.get(instrument_token)
                 if symbol is None:
                     continue
                 last = _num(_val(quote, "last_price", "ltp"))

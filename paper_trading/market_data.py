@@ -170,7 +170,8 @@ class UpstoxMarketData:
                         "Upstox quote response has no quote map"
                     )
                 for instrument_key, quote in raw.items():
-                    symbol = reverse.get(str(instrument_key))
+                    instrument_token = str(_value(quote, "instrument_token") or instrument_key)
+                    symbol = reverse.get(instrument_token)
                     if symbol is None:
                         continue
                     last = _positive_or_none(_value(quote, "last_price", "ltp"))
