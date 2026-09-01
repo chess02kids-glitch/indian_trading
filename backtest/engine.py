@@ -138,7 +138,7 @@ class VectorBTResearchEngine:
             target_weights.columns
         ):
             raise ResearchInputError("prices and target_weights must align exactly")
-        numeric_prices = prices.apply(pd.to_numeric, errors="coerce")
+        numeric_prices = prices.apply(pd.to_numeric, errors="coerce").ffill().bfill()
         numeric_weights = target_weights.apply(pd.to_numeric, errors="coerce").fillna(
             0.0
         )

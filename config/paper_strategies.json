@@ -8,7 +8,7 @@
       "paper_approved": false,
       "mode": "DAILY",
       "min_rebalance_seconds": 86400,
-      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+      "reason": "Waiting for backtest validation on Nifty 50 hourly data"
     },
     "s02_supertrend_714": {
       "label": "S02_SuperTrend_7_3 - Standard Settings",
@@ -16,7 +16,7 @@
       "paper_approved": false,
       "mode": "DAILY",
       "min_rebalance_seconds": 86400,
-      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+      "reason": "Waiting for backtest validation on Nifty 50 hourly data"
     },
     "s03_supertrend_510": {
       "label": "S03_SuperTrend_5_2 - Fast Settings",
@@ -24,7 +24,7 @@
       "paper_approved": false,
       "mode": "DAILY",
       "min_rebalance_seconds": 86400,
-      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+      "reason": "Waiting for backtest validation on Nifty 50 hourly data"
     },
     "s04_ema_20_50": {
       "label": "S04_EMA_Cross_20_50 - Classic EMA Crossover",
@@ -32,7 +32,7 @@
       "paper_approved": false,
       "mode": "DAILY",
       "min_rebalance_seconds": 86400,
-      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+      "reason": "Waiting for backtest validation on Nifty 50 hourly data"
     },
     "s05_ema_9_21": {
       "label": "S05_EMA_Cross_9_21 - Fast EMA Crossover",
@@ -40,7 +40,7 @@
       "paper_approved": false,
       "mode": "DAILY",
       "min_rebalance_seconds": 86400,
-      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+      "reason": "Waiting for backtest validation on Nifty 50 hourly data"
     },
     "s06_tripleema": {
       "label": "S06_Triple_EMA_5_13_21 - Triple EMA Alignment",
@@ -48,7 +48,7 @@
       "paper_approved": false,
       "mode": "DAILY",
       "min_rebalance_seconds": 86400,
-      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+      "reason": "Waiting for backtest validation on Nifty 50 hourly data"
     },
     "s07_goldencross": {
       "label": "S07_SMA_50_200_GoldenCross - Long-term Trend",
@@ -56,7 +56,7 @@
       "paper_approved": false,
       "mode": "DAILY",
       "min_rebalance_seconds": 86400,
-      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+      "reason": "Waiting for backtest validation on Nifty 50 hourly data"
     },
     "s08_hullma": {
       "label": "S08_HullMA_14_28 - Hull Moving Average",
@@ -64,7 +64,7 @@
       "paper_approved": false,
       "mode": "DAILY",
       "min_rebalance_seconds": 86400,
-      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+      "reason": "Waiting for backtest validation on Nifty 50 hourly data"
     },
     "s09_psar": {
       "label": "S09_Parabolic_SAR - Wilder's Trend Reversal",
@@ -72,7 +72,7 @@
       "paper_approved": false,
       "mode": "DAILY",
       "min_rebalance_seconds": 86400,
-      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+      "reason": "Waiting for backtest validation on Nifty 50 hourly data"
     },
     "s10_donchian": {
       "label": "S10_Donchian_Breakout_20 - Turtle Trading",
@@ -80,7 +80,7 @@
       "paper_approved": false,
       "mode": "DAILY",
       "min_rebalance_seconds": 86400,
-      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+      "reason": "Waiting for backtest validation on Nifty 50 hourly data"
     },
     "s11_hilegamilega": {
       "label": "S11_Hilega_Milega - RSI+EMA+WMA on RSI",
@@ -88,7 +88,7 @@
       "paper_approved": false,
       "mode": "DAILY",
       "min_rebalance_seconds": 86400,
-      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+      "reason": "Waiting for backtest validation on Nifty 50 hourly data"
     },
     "s12_macd_signal": {
       "label": "S12_MACD_Signal_Cross - MACD Signal Line",
@@ -96,7 +96,7 @@
       "paper_approved": false,
       "mode": "DAILY",
       "min_rebalance_seconds": 86400,
-      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+      "reason": "Waiting for backtest validation on Nifty 50 hourly data"
     },
     "s13_macd_zero": {
       "label": "S13_MACD_Zero_Cross - MACD Zero Line",
@@ -104,7 +104,7 @@
       "paper_approved": false,
       "mode": "DAILY",
       "min_rebalance_seconds": 86400,
-      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+      "reason": "Waiting for backtest validation on Nifty 50 hourly data"
     },
     "s14_rsi_50": {
       "label": "S14_RSI_50_Cross - RSI 50 Level",
@@ -112,7 +112,7 @@
       "paper_approved": false,
       "mode": "DAILY",
       "min_rebalance_seconds": 86400,
-      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+      "reason": "Waiting for backtest validation on Nifty 50 hourly data"
     },
     "s15_stochastic": {
       "label": "S15_Stochastic_Oversold_Overbought - Stochastic Osc",
@@ -120,7 +120,7 @@
       "paper_approved": false,
       "mode": "DAILY",
       "min_rebalance_seconds": 86400,
-      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+      "reason": "Waiting for backtest validation on Nifty 50 hourly data"
     },
     "s16_cci": {
       "label": "S16_CCI_100_Cross - Commodity Channel Index",
@@ -128,7 +128,7 @@
       "paper_approved": false,
       "mode": "DAILY",
       "min_rebalance_seconds": 86400,
-      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+      "reason": "Waiting for backtest validation on Nifty 50 hourly data"
     },
     "s17_williamsr": {
       "label": "S17_Williams_R - Williams %R",
@@ -136,7 +136,7 @@
       "paper_approved": false,
       "mode": "DAILY",
       "min_rebalance_seconds": 86400,
-      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+      "reason": "Waiting for backtest validation on Nifty 50 hourly data"
     },
     "s18_aroon": {
       "label": "S18_Aroon_Cross_25 - Aroon Indicator",
@@ -144,7 +144,7 @@
       "paper_approved": false,
       "mode": "DAILY",
       "min_rebalance_seconds": 86400,
-      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+      "reason": "Waiting for backtest validation on Nifty 50 hourly data"
     },
     "s19_chande": {
       "label": "S19_Chande_Momentum_Zero - CMO Zero Line",
@@ -152,7 +152,7 @@
       "paper_approved": false,
       "mode": "DAILY",
       "min_rebalance_seconds": 86400,
-      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+      "reason": "Waiting for backtest validation on Nifty 50 hourly data"
     },
     "s20_adx_di": {
       "label": "S20_ADX_DI_Cross_25filter - ADX + DI Filter",
@@ -160,7 +160,7 @@
       "paper_approved": false,
       "mode": "DAILY",
       "min_rebalance_seconds": 86400,
-      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+      "reason": "Waiting for backtest validation on Nifty 50 hourly data"
     },
     "s21_rsi_bb": {
       "label": "S21_RSI_BollingerBands_Combo - RSI + BB Double Conf",
@@ -168,7 +168,7 @@
       "paper_approved": false,
       "mode": "DAILY",
       "min_rebalance_seconds": 86400,
-      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+      "reason": "Waiting for backtest validation on Nifty 50 hourly data"
     },
     "s22_zscore": {
       "label": "S22_ZScore_Mean_Reversion - Z-Score Reversion",
@@ -176,7 +176,7 @@
       "paper_approved": false,
       "mode": "DAILY",
       "min_rebalance_seconds": 86400,
-      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+      "reason": "Waiting for backtest validation on Nifty 50 hourly data"
     },
     "s23_bb_squeeze": {
       "label": "S23_BollingerBand_Squeeze - Volatility Contraction",
@@ -184,7 +184,7 @@
       "paper_approved": false,
       "mode": "DAILY",
       "min_rebalance_seconds": 86400,
-      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+      "reason": "Waiting for backtest validation on Nifty 50 hourly data"
     },
     "s24_keltner": {
       "label": "S24_Keltner_Channel_Bounce - Keltner Channel",
@@ -192,7 +192,7 @@
       "paper_approved": false,
       "mode": "DAILY",
       "min_rebalance_seconds": 86400,
-      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+      "reason": "Waiting for backtest validation on Nifty 50 hourly data"
     },
     "s25_rsi_3070": {
       "label": "S25_RSI_30_70_Classic - Wilder's RSI Levels",
@@ -200,7 +200,7 @@
       "paper_approved": false,
       "mode": "DAILY",
       "min_rebalance_seconds": 86400,
-      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+      "reason": "Waiting for backtest validation on Nifty 50 hourly data"
     },
     "s26_vwap": {
       "label": "S26_VWAP_Cross - VWAP Crossover",
@@ -208,7 +208,7 @@
       "paper_approved": false,
       "mode": "DAILY",
       "min_rebalance_seconds": 86400,
-      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+      "reason": "Waiting for backtest validation on Nifty 50 hourly data"
     },
     "s27_vol_rsi": {
       "label": "S27_Volume_Confirmed_RSI - Volume Confirmed RSI",
@@ -216,7 +216,7 @@
       "paper_approved": false,
       "mode": "DAILY",
       "min_rebalance_seconds": 86400,
-      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+      "reason": "Waiting for backtest validation on Nifty 50 hourly data"
     },
     "s28_obv": {
       "label": "S28_OBV_EMA_Cross - OBV EMA Cross",
@@ -224,7 +224,7 @@
       "paper_approved": false,
       "mode": "DAILY",
       "min_rebalance_seconds": 86400,
-      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+      "reason": "Waiting for backtest validation on Nifty 50 hourly data"
     },
     "s29_triple_conf": {
       "label": "S29_Triple_Confirmation_RSI_EMA_MACD - Triple Confirmed",
@@ -232,7 +232,7 @@
       "paper_approved": false,
       "mode": "DAILY",
       "min_rebalance_seconds": 86400,
-      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+      "reason": "Waiting for backtest validation on Nifty 50 hourly data"
     },
     "s30_adx_super": {
       "label": "S30_ADX_SuperTrend_Combo - ADX + SuperTrend Filter",
@@ -240,7 +240,7 @@
       "paper_approved": false,
       "mode": "DAILY",
       "min_rebalance_seconds": 86400,
-      "reason": "Waitng for backtest validation on Nifty 50 hourly data"
+      "reason": "Waiting for backtest validation on Nifty 50 hourly data"
     }
   }
 }

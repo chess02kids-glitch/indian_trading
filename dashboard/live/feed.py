@@ -913,6 +913,9 @@ class AIDemoBot:
                 "ai_demo_rejected",
                 {"symbol": symbol, "reason": str(result.get("reason", ""))},
             )
+            if "insufficient virtual holdings" in str(result.get("reason", "")):
+                del self.positions[symbol]
+                self.save_state()
             return
         realized = (price - pos.entry) * quantity
         self.session_realized += realized

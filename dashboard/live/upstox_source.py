@@ -299,7 +299,7 @@ class UpstoxLiveSource:
                     self.last_latency_ms = (time.monotonic() - started) * 1000.0
             return bars
         except Exception as exc:  # noqa: BLE001
-            self._note(False, f"1-minute history for {symbol}: {exc}")
+            logger.warning("1-minute history for %s: %s", symbol, exc)
             return None
 
     def _fetch_one_m(self, symbol: str) -> list[list[float]] | None:
@@ -322,7 +322,7 @@ class UpstoxLiveSource:
             self._note(bars is not None, None if bars else "empty daily history")
             return bars
         except Exception as exc:  # noqa: BLE001
-            self._note(False, f"daily history for {symbol}: {exc}")
+            logger.warning("daily history for %s: %s", symbol, exc)
             return None
 
     def _fetch_daily(self, symbol: str) -> list[list[float]] | None:
@@ -350,12 +350,12 @@ class UpstoxLiveSource:
                     "PRE_OPEN",
                 }
                 if open_now:
-                    self._note(False, "empty intraday candles while market open")
+                    logger.warning("empty intraday candles while market open for %s", symbol)
             else:
                 self._note(True)
             return bars
         except Exception as exc:  # noqa: BLE001
-            self._note(False, f"intraday candles for {symbol}: {exc}")
+            logger.warning("intraday candles for %s: %s", symbol, exc)
             return None
 
     # -- quotes ----------------------------------------------------------------
