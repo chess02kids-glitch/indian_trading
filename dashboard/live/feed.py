@@ -1602,6 +1602,8 @@ class LiveFeed:
                     "last": round(last, 2),
                     "open": round(src.session_open, 2),
                     "prev_close": round(prev, 2),
+                    "session_high": round(getattr(src, "session_high", last), 2),
+                    "session_low": round(getattr(src, "session_low", last), 2),
                     "chg_pct": round((last / prev - 1.0) * 100.0, 2) if prev else 0.0,
                     "vwap": round(src.vwap, 2) if src.vwap else None,
                     "volume": int(src.day_volume),

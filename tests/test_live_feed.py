@@ -27,7 +27,7 @@ def feed_root(tmp_path: Path) -> Path:
     return tmp_path
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def feed(feed_root: Path):
     from dashboard.live.feed import LiveFeed
 
@@ -485,6 +485,9 @@ def _install_fake_sdk(monkeypatch, quote_map, candles):
             self.client = client
 
         def get_historical_candle_data(self, key, unit, interval, to, frm=None):
+            return SimpleNamespace(data=SimpleNamespace(candles=candles))
+
+        def get_historical_candle_data1(self, key, unit, interval, to, frm=None):
             return SimpleNamespace(data=SimpleNamespace(candles=candles))
 
         def get_intra_day_candle_data(self, key, unit, interval):
