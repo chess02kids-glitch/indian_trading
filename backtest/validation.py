@@ -35,7 +35,11 @@ from research.contracts import (
     Strategy,
 )
 
-from .engine import BacktestResult, VectorBTResearchEngine
+from .engine import (
+    MEMBERSHIP_FROM_PRICES,
+    BacktestResult,
+    VectorBTResearchEngine,
+)
 from .metrics import PerformanceMetrics, compute_performance_metrics
 
 __all__ = [
@@ -720,6 +724,8 @@ def _evaluate_windows(
     engine: VectorBTResearchEngine,
     windows: tuple[ValidationWindow, ...],
     method: str,
+    *,
+    universe_history: Any = MEMBERSHIP_FROM_PRICES,
 ) -> tuple[tuple[BacktestResult, ...], PerformanceMetrics]:
     """Backtest each validation window on its test slice only.
 
@@ -737,7 +743,7 @@ def _evaluate_windows(
             data.close.loc[window.test_index],
             weights.loc[window.test_index],
             strategy_name=f"{strategy.name}_{method}_fold_{window.fold}",
-            universe_history=[],
+            universe_history=universe_history,
         )
         for window in windows
     )
@@ -774,6 +780,7 @@ def run_walk_forward(
     expanding: bool = False,
     purge: int = 0,
     embargo: int = 0,
+    universe_history: Any = MEMBERSHIP_FROM_PRICES,
 ) -> WalkForwardResult:
     """Evaluate deterministic strategy signals on non-overlapping test windows.
 
@@ -791,7 +798,13 @@ def run_walk_forward(
         embargo=embargo,
     )
     fold_results, metrics = _evaluate_windows(
-        strategy, data, constructor, engine, windows, "walk_forward"
+        strategy,
+        data,
+        constructor,
+        engine,
+        windows,
+        "walk_forward",
+        universe_history=universe_history,
     )
     return WalkForwardResult(windows, fold_results, metrics)
 
@@ -806,6 +819,7 @@ def run_combinatorial_purged_cv(
     *,
     purge: int = 0,
     embargo: int = 0,
+    universe_history: Any = MEMBERSHIP_FROM_PRICES,
 ) -> CrossValidationResult:
     """Evaluate all CPCV path combinations, reusing the trailing point-in-time
     signals without any look-ahead."""
@@ -817,7 +831,13 @@ def run_combinatorial_purged_cv(
         embargo=embargo,
     )
     fold_results, metrics = _evaluate_windows(
-        strategy, data, constructor, engine, windows, "cpcv"
+        strategy,
+        data,
+        constructor,
+        engine,
+        windows,
+        "cpcv",
+        universe_history=universe_history,
     )
     return CrossValidationResult(windows, fold_results, metrics)
 
@@ -1023,7 +1043,7 @@ def run_holdout_protocol(
     embargo: int = 0,
     cpcv_n_groups: int | None = None,
     cpcv_n_test_groups: int | None = None,
-    universe_history: Sequence[Any] | None = None,
+    universe_history: Any = MEMBERSHIP_FROM_PRICES,
     holdout_strategy_name: str | None = None,
 ) -> HoldoutProtocolResult:
     """Run the chronological TRAIN -> VALIDATION -> LOCKED HOLDOUT protocol.
@@ -1055,6 +1075,7 @@ def run_holdout_protocol(
         expanding=expanding,
         purge=purge,
         embargo=embargo,
+        universe_history=universe_history,
     )
     cpcv: CrossValidationResult | None = None
     if cpcv_n_groups is not None and cpcv_n_test_groups is not None:
@@ -1067,6 +1088,7 @@ def run_holdout_protocol(
             n_test_groups=cpcv_n_test_groups,
             purge=purge,
             embargo=embargo,
+            universe_history=universe_history,
         )
 
     _assert_windows_disjoint_from_holdout(walk_forward.windows, split)
@@ -1083,7 +1105,11 @@ def run_holdout_protocol(
         data.close.loc[split.holdout_index],
         weights.loc[split.holdout_index],
         strategy_name=holdout_strategy_name or f"{strategy.name}_holdout",
-        universe_history=list(universe_history or ()),
+        universe_history=(
+            universe_history
+            if universe_history is not None
+            else MEMBERSHIP_FROM_PRICES
+        ),
     )
     if not holdout_result.returns.index.equals(split.holdout_index):
         raise ResearchInputError("holdout evaluation must cover the holdout exactly")

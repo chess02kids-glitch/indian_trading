@@ -19,13 +19,17 @@ isolate cross-sectional reversal from market beta.
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-from .io import load_eod_panels, load_pit_universe, panel_universe_mask, resolve_research_universe
+from .io import (
+    load_eod_panels,
+    load_pit_universe,
+    panel_universe_mask,
+    resolve_research_universe,
+)
 from .sim import DiscoveryConfig, simulate
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -56,14 +60,8 @@ def long_only_z(
     close, window, gate, k
 ):
     z = _z(close, window)
-    ranked = _rank(z)
-    # eligible: names below gate, ranked by most-negative first (rank ascending)
-    eligible = z < gate
-    # within eligible, rank so lower z gets lower rank; then pick K lowest
-    # because `rank(pct=True)` gives higher for more negative? Use explicit.
     weight = pd.DataFrame(0.0, index=close.index, columns=close.columns)
     # For each date, pick the K eligible names with the smallest z.
-    order = z.where(eligible).stack()
     # not row-vectorized: build per rebalance. But we generate daily weights for
     # discovery engine which samples at month-end. We'll build each date.
     for ts in close.index:

@@ -163,6 +163,20 @@ class PaperBroker:
     def get_cash(self) -> float:
         return self._cash
 
+    def ping(self) -> bool:
+        """Liveness probe, so ``RiskGuard.check_broker_connectivity`` is real.
+
+        AUDIT-030: the risk context used to hard-code ``broker_connected=True``,
+        which made the connectivity check dead code. Every broker used by the
+        pipeline must be able to answer "are you reachable?".
+
+        For :class:`PaperBroker` the answer is trivially ``True``: it is an
+        in-process simulator with no network hop, so there is no connectivity
+        to lose. A real adapter must perform a real probe and return ``False``
+        (or raise) when it cannot reach the exchange.
+        """
+        return True
+
     def get_state(self) -> dict[str, Any]:
         """Machine-readable snapshot for dashboards and reconciliation."""
         return {

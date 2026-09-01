@@ -151,6 +151,24 @@ def _assert_frozen_config(
         raise SystemExit(f"frozen v0.6 configuration drifted: {drifted}")
 
 
+def _resolve_universe_dir(universe_dir: Path) -> Path:
+    """Accept either the universe root or a single ``<slug>-pit`` directory.
+
+    AUDIT-004e: ``scripts/ingest_real_data.py`` writes
+    ``<universe_root>/nifty100-pit/nifty100.csv`` and its ``--universe-dir``
+    alias means the *root*, while this script's ``--universe-dir`` means the
+    *per-index* directory. Identical flag name, opposite meaning: feeding the
+    same path to both silently failed here with
+    ``SystemExit: point-in-time universe missing``. Resolve either spelling.
+    """
+    if (universe_dir / "nifty100.csv").is_file():
+        return universe_dir
+    nested = universe_dir / "nifty100-pit"
+    if (nested / "nifty100.csv").is_file():
+        return nested
+    return universe_dir  # let the explicit error below fire
+
+
 def _load_real_data(
     *,
     as_of: str,
@@ -160,6 +178,7 @@ def _load_real_data(
 ) -> dict:
     """Load panel + PIT universe + active-membership mask + fundamentals."""
     catalog = CleanDataCatalog()
+    universe_dir = _resolve_universe_dir(Path(universe_dir))
     if not (universe_dir / "nifty100.csv").is_file():
         raise SystemExit(
             "point-in-time universe missing; run: "
@@ -175,6 +194,9 @@ def _load_real_data(
         source="eod2_data",
         window_start=window_start,
         window_end=as_of,
+        # AUDIT-014: explicit, so the change in the defaults is visible here.
+        exclude_incomplete=True,
+        fill_missing_prices=False,
     )
     active_members = build_active_membership_panel(
         dataset,

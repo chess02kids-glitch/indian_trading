@@ -5,11 +5,28 @@ from pathlib import Path
 
 @dataclass
 class StorageConfig:
-    """Storage configuration for paths and databases."""
+    """Storage configuration for paths and databases.
 
-    data_dir: Path = field(
-        default_factory=lambda: Path(os.getenv("QUANT_DATA_DIR", "data"))
-    )
+    AUDIT-027: ``data_dir`` used to be a dataclass field whose default was
+    evaluated **once, when the module was imported**. Because ``settings``
+    is a module-level singleton, ``QUANT_DATA_DIR`` was frozen before any
+    test fixture (or a ``os.environ`` change at runtime) could redirect it,
+    so a test run wrote straight into the committed ``data/quant.duckdb``
+    and ``data/snapshots/`` and left the working tree dirty. It is a
+    property now, resolved on every access.
+    """
+
+    _data_dir_override: Path | None = field(default=None, repr=False)
+
+    @property
+    def data_dir(self) -> Path:
+        # An explicit assignment wins over the environment, so deployments
+        # and tests can still pin a directory.
+        return self._data_dir_override or Path(os.getenv("QUANT_DATA_DIR", "data"))
+
+    @data_dir.setter
+    def data_dir(self, value: Path | str | None) -> None:
+        self._data_dir_override = Path(value) if value is not None else None
 
     @property
     def raw_dir(self) -> Path:

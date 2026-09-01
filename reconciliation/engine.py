@@ -23,9 +23,22 @@ from models.domain import (
 from risk_kill import RiskContext, RiskDecision, RiskGuard
 from store.protocols import ReconciliationRepository
 
-__all__ = ["ReconciliationEngine", "ReconciliationInput"]
+__all__ = [
+    "ReconciliationEngine",
+    "ReconciliationError",
+    "ReconciliationInput",
+]
 
 _OPEN_STATUSES = (OrderStatus.PENDING, OrderStatus.PARTIALLY_FILLED)
+
+
+class ReconciliationError(RuntimeError):
+    """Raised when reconciliation cannot be performed safely.
+
+    A reconciliation that cannot see the broker's own view of an order has
+    not reconciled anything. It must fail closed (lock the account) rather
+    than return "matched" — see AUDIT-022.
+    """
 
 
 @dataclass

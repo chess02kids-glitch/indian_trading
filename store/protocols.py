@@ -16,6 +16,8 @@ Design rules:
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import Any, Mapping, Protocol, runtime_checkable
 
 from models.domain import (
@@ -27,6 +29,8 @@ from models.domain import (
 )
 
 __all__ = [
+    "EquityRepository",
+    "EquitySnapshot",
     "OrderRepository",
     "PositionRepository",
     "ReconciliationRepository",
@@ -34,6 +38,45 @@ __all__ = [
     "RunRepository",
     "IdempotencyRepository",
 ]
+
+
+@dataclass(frozen=True)
+class EquitySnapshot:
+    """One mark-to-market observation of account equity.
+
+    AUDIT-030.  ``risk_kill``'s daily-loss and drawdown checks need an equity
+    *history*; without one the pipeline passed ``equity_day_start == equity_now``
+    (so the daily-loss check could never fire) and seeded ``equity_peak`` from
+    the first value the current process happened to see (so a restart reset the
+    drawdown high-water mark).  This record is what makes both checks real and
+    makes them survive a restart.
+    """
+
+    date: str
+    equity: float
+    cash: float = 0.0
+    market_value: float = 0.0
+    recorded_at: datetime | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "date": self.date,
+            "equity": float(self.equity),
+            "cash": float(self.cash),
+            "market_value": float(self.market_value),
+            "recorded_at": (self.recorded_at or datetime.now(UTC)).isoformat(),
+        }
+
+
+@runtime_checkable
+class EquityRepository(Protocol):
+    """Persistence for mark-to-market equity history."""
+
+    def save_snapshot(self, snapshot: EquitySnapshot) -> EquitySnapshot: ...
+
+    def snapshot_for_date(self, day: str) -> EquitySnapshot | None: ...
+
+    def history(self, limit: int = 0) -> list[EquitySnapshot]: ...
 
 
 @runtime_checkable

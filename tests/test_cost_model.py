@@ -6,7 +6,11 @@ import pandas as pd
 import pytest
 
 from backtest.costs import IndiaCostModel
-from backtest.engine import BacktestConfig, VectorBTResearchEngine
+from backtest.engine import (
+    MEMBERSHIP_FROM_PRICES,
+    BacktestConfig,
+    VectorBTResearchEngine,
+)
 from config.costs import (
     IndiaChargeTable,
     load_charge_table,
@@ -111,7 +115,7 @@ class TestEngineIntegration:
                 cost_model=IndiaCostModel(scenario="pessimistic"),
             )
         )
-        result = engine.run(prices, weights, strategy_name="costs", universe_history=[])
+        result = engine.run(prices, weights, strategy_name="costs", universe_history=MEMBERSHIP_FROM_PRICES)
         # Pessimistic market cost must be visible in metadata.
         assert result.metadata["cost_model"]["scenario"] == "pessimistic"
         assert result.metrics.cost_drag >= 0
@@ -132,7 +136,7 @@ class TestEngineIntegration:
                 )
             )
             results[scenario] = engine.run(
-                prices, weights, strategy_name=scenario, universe_history=[]
+                prices, weights, strategy_name=scenario, universe_history=MEMBERSHIP_FROM_PRICES
             )
         assert (
             results["pessimistic"].metrics.cost_drag
@@ -150,7 +154,7 @@ class TestEngineIntegration:
             BacktestConfig(use_vectorbt=False, cost_model=CostModel(5, 2))
         )
         result = engine.run(
-            prices, weights, strategy_name="legacy", universe_history=[]
+            prices, weights, strategy_name="legacy", universe_history=MEMBERSHIP_FROM_PRICES
         )
         assert result.metrics.cost_drag >= 0
 
@@ -160,6 +164,6 @@ class TestEngineIntegration:
         engine = VectorBTResearchEngine(
             BacktestConfig(use_vectorbt=False, cost_model=IndiaCostModel())
         )
-        result = engine.run(prices, weights, strategy_name="meta", universe_history=[])
+        result = engine.run(prices, weights, strategy_name="meta", universe_history=MEMBERSHIP_FROM_PRICES)
         payload = result.to_dict()
         assert payload["metadata"]["cost_model"]["model"] == "india_cost_model"

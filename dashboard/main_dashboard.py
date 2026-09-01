@@ -26,7 +26,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-import streamlit as st
+try:
+    import streamlit as st
+except ModuleNotFoundError:  # pragma: no cover - environment dependent
+    # AUDIT-033: bind a placeholder so importing this module (for its plain
+    # data helpers) still works, and the first rendering call reports the
+    # exact install command instead of a bare ModuleNotFoundError.
+    from dashboard.streamlit_guard import MISSING_STREAMLIT as st
 
 # ---------------------------------------------------------------------------
 # Configuration

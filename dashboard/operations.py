@@ -168,12 +168,13 @@ def reconciliation(paper: Any | None, signal: dict[str, Any] | None) -> dict[str
 
     if signal is None:
         out["state"] = "NO_SIGNAL"
+        # AUDIT-034: this compared against the string "no paper service
+        # available" while the key above is initialised to "no paper service
+        # is attached to this report", so the comparison never matched and the
+        # report claimed there was no paper service even when one was. Report
+        # the real reason instead.
         out["detail"] = (
-            out["detail"]
-            if out["detail"] != "no paper service available"
-            else (
-                "strategy signal unavailable — cannot compare expected vs actual holdings"
-            )
+            "strategy signal unavailable — cannot compare expected vs actual holdings"
         )
         return out
 

@@ -8,7 +8,11 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from backtest.engine import BacktestConfig, VectorBTResearchEngine
+from backtest.engine import (
+    MEMBERSHIP_FROM_PRICES,
+    BacktestConfig,
+    VectorBTResearchEngine,
+)
 from research.cli import build_parser, cli_main
 from research.contracts import CostModel, Experiment
 from research.experiments import ExperimentManager
@@ -28,7 +32,7 @@ def _result(periods: int = 80):
     weights = pd.DataFrame(0.5, index=index, columns=prices.columns)
     return VectorBTResearchEngine(
         BacktestConfig(use_vectorbt=False, cost_model=CostModel(1, 1))
-    ).run(prices, weights, strategy_name="momentum", universe_history=[])
+    ).run(prices, weights, strategy_name="momentum", universe_history=MEMBERSHIP_FROM_PRICES)
 
 
 class _RunContext:

@@ -14,6 +14,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field
 from datetime import date, datetime
+from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping
 
 import pandas as pd
@@ -21,16 +22,83 @@ import pandas as pd
 from models.domain import MarketBar
 
 __all__ = [
+    "ADVISORY_ISSUE_KINDS",
+    "BLOCKING_ISSUE_KINDS",
     "DataQualityReport",
     "QualityIssue",
     "TradingCalendar",
+    "NSE_CALENDAR_FILE",
     "check_ohlcv_long_frame",
+    "classify_issues",
     "detect_data_staleness",
     "detect_off_calendar_candles",
     "load_market_bars",
+    "nse_calendar_coverage",
+    "nse_trading_calendar",
     "nse_weekday_calendar",
     "validate_market_bars",
 ]
+
+
+# ---------------------------------------------------------------------------
+# Issue severity (AUDIT-010)
+# ---------------------------------------------------------------------------
+# ``run_day`` used to halt on *any* issue. Measured on 20 clean symbols over
+# 2024-01-01..2026-08-25 that produced 137 issues (75 ``missing_candle``, 61
+# ``off_calendar``, 1 ``staleness``) while **rejecting zero rows** — so the
+# pipeline halted every single day on data it had already accepted.
+#
+# The two advisory kinds below describe the *shape* of a legitimate daily
+# series, not corrupt data:
+#
+# * ``missing_candle`` — a symbol did not trade (or is not listed) on a date
+#   another symbol did. Real NSE data is full of these.
+# * ``off_calendar`` — a candle on a weekend/holiday. Worth reporting, not
+#   worth stopping the day for (see AUDIT-011: real Budget sessions are
+#   flagged here today).
+#
+# Everything else means a row is wrong or unusable, and stays blocking.
+#
+# An **unrecognised kind is blocking**. The classification must never silently
+# downgrade a problem it does not understand.
+BLOCKING_ISSUE_KINDS = frozenset(
+    {
+        "invalid_timestamp",
+        "invalid_symbol",
+        "duplicate_row",
+        "future_date",
+        "invalid_open",
+        "invalid_high",
+        "invalid_low",
+        "invalid_close",
+        "invalid_volume",
+        "non_positive_price",
+        "ohlc_inconsistency",
+        "strict_validation_failed",
+        "staleness",
+        "empty_after_validation",
+    }
+)
+
+ADVISORY_ISSUE_KINDS = frozenset({"missing_candle", "off_calendar", "long_gap"})
+
+
+def classify_issues(
+    issues: Iterable[QualityIssue],
+) -> tuple[tuple[QualityIssue, ...], tuple[QualityIssue, ...]]:
+    """Split issues into ``(blocking, advisory)``.
+
+    Unknown kinds are classified as **blocking**: the caller must not be able
+    to trade on a problem this function does not recognise.
+    """
+    blocking: list[QualityIssue] = []
+    advisory: list[QualityIssue] = []
+    for issue in issues:
+        if issue.kind in ADVISORY_ISSUE_KINDS:
+            advisory.append(issue)
+        else:
+            blocking.append(issue)
+    return tuple(blocking), tuple(advisory)
 
 
 #: Weekly weekday trading calendar for NSE equity (Mon-Fri).
@@ -46,29 +114,30 @@ class TradingCalendar:
     """Trading-day predicate for detecting off-calendar candles.
 
     ``is_trading_day`` defaults to weekdays; supply a ``holidays`` iterable
-    (or a custom predicate) for exchange-specific closures. A candle on a
-    non-trading day is reported — never moved or dropped.
+    (or a custom predicate) for exchange-specific closures, and
+    ``special_sessions`` for weekend/holiday dates on which the exchange *did*
+    hold a live session (NSE opens for the Union Budget and for its own
+    contingency drills). A candle on a non-trading day is reported — never
+    moved or dropped.
     """
 
     def __init__(
         self,
         *,
         holidays: Iterable[date | str] | None = None,
+        special_sessions: Iterable[date | str] | None = None,
         is_trading_day: Callable[[date], bool] | None = None,
     ) -> None:
         self._is_trading_day = is_trading_day or _WEEKDAY_IS_TRADING
-        holidays = tuple(holidays or ())
-        normalized: set[date] = set()
-        for holiday in holidays:
-            if isinstance(holiday, str):
-                holiday = pd.Timestamp(holiday).date()
-            normalized.add(holiday)
-        self.holidays = frozenset(normalized)
+        self.holidays = frozenset(_normalise_dates(holidays))
+        self.special_sessions = frozenset(_normalise_dates(special_sessions))
 
     def is_trading_day(self, day: date | pd.Timestamp) -> bool:
         """Return whether ``day`` is a valid exchange trading day."""
         if isinstance(day, pd.Timestamp):
             day = day.date()
+        if day in self.special_sessions:
+            return True
         if day in self.holidays:
             return False
         return bool(self._is_trading_day(day))
@@ -80,12 +149,104 @@ class TradingCalendar:
             if self._is_trading_day is not _WEEKDAY_IS_TRADING
             else "nse_weekday",
             "holidays": sorted(h.isoformat() for h in self.holidays),
+            "special_sessions": sorted(d.isoformat() for d in self.special_sessions),
         }
 
 
+def _normalise_dates(values: Iterable[date | str] | None) -> set[date]:
+    """Coerce an iterable of dates/ISO strings/Timestamps into ``set[date]``."""
+    out: set[date] = set()
+    for value in values or ():
+        if isinstance(value, pd.Timestamp):
+            out.add(value.date())
+        elif isinstance(value, datetime):
+            out.add(value.date())
+        elif isinstance(value, str):
+            out.add(pd.Timestamp(value).date())
+        else:
+            out.add(value)
+    return out
+
+
 def nse_weekday_calendar() -> TradingCalendar:
-    """Return the default NSE weekday trading calendar (no holiday table)."""
+    """Return the plain weekday calendar (no holiday table).
+
+    AUDIT-011: kept only for callers that explicitly want "Mon–Fri and nothing
+    else". It reports every weekend Budget session as an error and treats every
+    Diwali as a normal trading day, so it is **not** the right default — use
+    :func:`nse_trading_calendar`.
+    """
     return TradingCalendar()
+
+
+#: Path of the committed exchange calendar (see :func:`nse_trading_calendar`).
+NSE_CALENDAR_FILE = (
+    Path(__file__).resolve().parent / "calendar" / "nse_trading_calendar.json"
+)
+
+_nse_calendar_cache: TradingCalendar | None = None
+_nse_calendar_years: tuple[int, ...] = ()
+
+
+def nse_trading_calendar(*, reload: bool = False) -> TradingCalendar:
+    """Return the NSE Capital-Market calendar (holidays + special sessions).
+
+    AUDIT-011. The default used to be "any weekday", so
+    :func:`detect_off_calendar_candles` flagged NSE's real Union-Budget
+    sessions (2025-02-01 and 2026-02-01) as corrupt data, and
+    :func:`detect_missing_candles` expected prices on Diwali. Both the false
+    positives and the false negatives are now gone for the covered years.
+
+    The data file is committed (``data/calendar/nse_trading_calendar.json``)
+    with its ``source`` and ``retrieved_at``, in the same provenance style as
+    the rest of the repository. If it is missing or unreadable this falls back
+    to the weekday-only calendar and **logs a warning**: it must never raise
+    inside a data-quality check, and it must never silently pretend the
+    holiday table is present.
+    """
+    global _nse_calendar_cache
+    if _nse_calendar_cache is not None and not reload:
+        return _nse_calendar_cache
+    _nse_calendar_cache = _load_nse_calendar()
+    return _nse_calendar_cache
+
+
+def nse_calendar_coverage() -> tuple[int, int]:
+    """Return ``(first_year, last_year)`` covered by the committed calendar.
+
+    ``(0, 0)`` when the calendar could not be loaded; callers must treat an
+    uncovered year as "calendar unknown", not as "no holidays".
+    """
+    if not _nse_calendar_years:
+        nse_trading_calendar()
+    if not _nse_calendar_years:
+        return (0, 0)
+    return (min(_nse_calendar_years), max(_nse_calendar_years))
+
+
+def _load_nse_calendar() -> TradingCalendar:
+    global _nse_calendar_years
+    import json
+    import logging
+
+    logger = logging.getLogger(__name__)
+    if not NSE_CALENDAR_FILE.is_file():
+        logger.warning(
+            "nse_calendar_missing path=%s — falling back to the weekday-only "
+            "calendar; off-calendar detection will report real Budget sessions",
+            NSE_CALENDAR_FILE,
+        )
+        return TradingCalendar()
+    try:
+        payload = json.loads(NSE_CALENDAR_FILE.read_text(encoding="utf-8"))
+        holidays = [entry["date"] for entry in payload["holidays"]]
+        special = [entry["date"] for entry in payload.get("special_sessions", ())]
+        years = tuple(int(year) for year in payload.get("years", ()))
+    except Exception:  # noqa: BLE001 - never raise from a data-quality check
+        logger.exception("nse_calendar_unreadable path=%s", NSE_CALENDAR_FILE)
+        return TradingCalendar()
+    _nse_calendar_years = years
+    return TradingCalendar(holidays=holidays, special_sessions=special)
 
 
 def detect_off_calendar_candles(
@@ -101,7 +262,7 @@ def detect_off_calendar_candles(
     """
     if accepted.empty:
         return []
-    calendar = calendar or nse_weekday_calendar()
+    calendar = calendar or nse_trading_calendar()
     issues: list[QualityIssue] = []
     for index, row in accepted.iterrows():
         parsed = pd.to_datetime(row["date"], errors="coerce")
@@ -538,9 +699,22 @@ def validate_market_bars(
     reference_now: datetime | None = None,
     max_staleness_days: float = 6.0,
     calendar: TradingCalendar | None = None,
+    as_of: date | datetime | pd.Timestamp | str | None = None,
 ) -> tuple[pd.DataFrame, DataQualityReport]:
-    """Full validation pipeline: rows, staleness, gaps; never fills data."""
-    accepted, report = check_ohlcv_long_frame(frame, source=source, exchange=exchange)
+    """Full validation pipeline: rows, future dates, staleness, gaps.
+
+    ``as_of`` enables the look-ahead guard in
+    :func:`check_ohlcv_long_frame`: observations dated strictly after it are
+    reported as ``future_date`` and excluded.
+
+    AUDIT-006: ``as_of`` was never forwarded, so the future-date guard was dead
+    on the only path the orchestration pipeline uses. ``run_day`` computes
+    ``as_of`` *after* validation, so a frame containing tomorrow's bars was
+    accepted and traded on.
+    """
+    accepted, report = check_ohlcv_long_frame(
+        frame, source=source, exchange=exchange, as_of=as_of
+    )
     extra: list[QualityIssue] = list(report.issues)
     staleness = detect_data_staleness(
         accepted, reference_now=reference_now, max_staleness_days=max_staleness_days

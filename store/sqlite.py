@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import sqlite3
 import threading
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -22,7 +23,10 @@ from models.domain import (
     ResearchResult,
 )
 
+from .protocols import EquitySnapshot
+
 __all__ = [
+    "SQLiteEquityRepository",
     "SQLiteOrderRepository",
     "SQLitePositionRepository",
     "SQLiteReconciliationRepository",
@@ -59,6 +63,18 @@ CREATE TABLE IF NOT EXISTS reconciliation (
     seq INTEGER PRIMARY KEY AUTOINCREMENT,
     result_json TEXT NOT NULL
 );
+-- AUDIT-030: mark-to-market equity history. Without it the daily-loss and
+-- drawdown risk checks had nothing to compare against and were inert.
+CREATE TABLE IF NOT EXISTS equity_snapshots (
+    seq INTEGER PRIMARY KEY AUTOINCREMENT,
+    day TEXT NOT NULL,
+    equity REAL NOT NULL,
+    cash REAL NOT NULL DEFAULT 0,
+    market_value REAL NOT NULL DEFAULT 0,
+    recorded_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_equity_snapshots_day
+    ON equity_snapshots (day);
 """
 
 
@@ -137,6 +153,64 @@ class SQLiteOrderRepository:
                 "SELECT intent_json FROM orders ORDER BY rowid"
             ).fetchall()
         return [OrderIntent.model_validate_json(r["intent_json"]) for r in rows]
+
+
+class SQLiteEquityRepository:
+    """Mark-to-market equity history (AUDIT-030)."""
+
+    def __init__(self, connection: _Connection) -> None:
+        self._conn = connection
+
+    def save_snapshot(self, snapshot: EquitySnapshot) -> EquitySnapshot:
+        with self._conn.lock, self._conn.conn:
+            self._conn.conn.execute(
+                "INSERT INTO equity_snapshots "
+                "(day, equity, cash, market_value, recorded_at) "
+                "VALUES (?, ?, ?, ?, ?)",
+                (
+                    snapshot.date,
+                    float(snapshot.equity),
+                    float(snapshot.cash),
+                    float(snapshot.market_value),
+                    (snapshot.recorded_at or datetime.now(UTC)).isoformat(),
+                ),
+            )
+        return snapshot
+
+    def snapshot_for_date(self, day: str) -> EquitySnapshot | None:
+        with self._conn.lock:
+            row = self._conn.conn.execute(
+                "SELECT day, equity, cash, market_value, recorded_at "
+                "FROM equity_snapshots WHERE day = ? ORDER BY seq LIMIT 1",
+                (day,),
+            ).fetchone()
+        return self._row(row) if row else None
+
+    def history(self, limit: int = 0) -> list[EquitySnapshot]:
+        with self._conn.lock:
+            if limit and limit > 0:
+                rows = self._conn.conn.execute(
+                    "SELECT day, equity, cash, market_value, recorded_at "
+                    "FROM equity_snapshots ORDER BY seq DESC LIMIT ?",
+                    (int(limit),),
+                ).fetchall()
+                rows = list(reversed(rows))
+            else:
+                rows = self._conn.conn.execute(
+                    "SELECT day, equity, cash, market_value, recorded_at "
+                    "FROM equity_snapshots ORDER BY seq"
+                ).fetchall()
+        return [self._row(row) for row in rows if row is not None]
+
+    @staticmethod
+    def _row(row: Any) -> EquitySnapshot:
+        return EquitySnapshot(
+            date=str(row["day"]),
+            equity=float(row["equity"]),
+            cash=float(row["cash"]),
+            market_value=float(row["market_value"]),
+            recorded_at=datetime.fromisoformat(str(row["recorded_at"])),
+        )
 
 
 class SQLitePositionRepository:
@@ -318,6 +392,7 @@ class SQLiteStore:
         self.runs = SQLiteRunRepository(self._connection)
         self.research = SQLiteResearchRepository(self._connection)
         self.reconciliation = SQLiteReconciliationRepository(self._connection)
+        self.equity = SQLiteEquityRepository(self._connection)
 
     def close(self) -> None:
         self._connection.close()

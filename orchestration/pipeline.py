@@ -17,13 +17,15 @@ in the run repository, the health document, and the alert log.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 from typing import Any, Mapping, Protocol, runtime_checkable
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 
-from data.quality import detect_data_staleness, validate_market_bars
+from data.quality import classify_issues, detect_data_staleness, validate_market_bars
 from execution.paper import PaperBroker
 from execution.service import ExecutionService, ExecutionSummary
 from models.domain import (
@@ -33,17 +35,26 @@ from models.domain import (
 )
 from observability.alerts import AlertService
 from observability.health import HealthService, SystemHealth
-from reconciliation.engine import ReconciliationEngine, ReconciliationInput
+from reconciliation.engine import (
+    ReconciliationEngine,
+    ReconciliationError,
+    ReconciliationInput,
+)
 from research.contracts import MarketData, Signal, Strategy
 from research.ledger import HypothesisLedger
 from risk_kill import RiskContext, RiskGuard, RiskState
+from store.memory import InMemoryEquityRepository
 from store.protocols import (
+    EquityRepository,
+    EquitySnapshot,
     OrderRepository,
     PositionRepository,
     ReconciliationRepository,
     ResearchRepository,
     RunRepository,
 )
+
+logger = logging.getLogger(__name__)
 
 __all__ = [
     "ApprovalGate",
@@ -53,6 +64,17 @@ __all__ = [
     "ManualApprovalGate",
     "RecordingApprovalGate",
 ]
+
+
+#: Indian market timezone. Session dates (and therefore the as-of bound for the
+#: look-ahead guard) are IST dates, not UTC dates: after 00:00 IST but before
+#: 18:30 UTC the two still differ by a day.
+IST = ZoneInfo("Asia/Kolkata")
+
+
+def _ist_today() -> date:
+    """Return the current calendar date in IST."""
+    return datetime.now(IST).date()
 
 
 @runtime_checkable
@@ -175,6 +197,7 @@ class DailyPipeline:
         order_repository: OrderRepository,
         research_repository: ResearchRepository,
         reconciliation_repository: ReconciliationRepository,
+        equity_repository: EquityRepository | None = None,
         reconciliation_engine: ReconciliationEngine | None = None,
         health_service: HealthService,
         alert_service: AlertService,
@@ -183,6 +206,7 @@ class DailyPipeline:
         dataset_version: str = "unknown",
         max_staleness_days: float = 6.0,
         cash_for_allocation: float = 1_000_000.0,
+        max_advisory_issue_fraction: float = 0.05,
     ) -> None:
         self.strategy = strategy
         self.constructor = constructor
@@ -194,6 +218,14 @@ class DailyPipeline:
         self.order_repository = order_repository
         self.research_repository = research_repository
         self.reconciliation_repository = reconciliation_repository
+        # AUDIT-030: mark-to-market history. Defaults to an in-memory store so
+        # existing callers keep working, but a real deployment must pass the
+        # SQLite/Supabase repository or the daily-loss and drawdown checks
+        # reset on every restart.
+        self.equity_repository: EquityRepository = (
+            equity_repository or InMemoryEquityRepository()
+        )
+        self._incomplete_context: list[str] = []
         self.reconciliation_engine = reconciliation_engine or ReconciliationEngine(
             self.risk_guard
         )
@@ -204,9 +236,39 @@ class DailyPipeline:
         self.dataset_version = dataset_version
         self.max_staleness_days = max_staleness_days
         self.cash_for_allocation = float(cash_for_allocation)
+        # AUDIT-010: advisory data-quality issues are tolerated up to this
+        # fraction of (symbols x sessions); beyond it the day halts.
+        if not 0.0 <= max_advisory_issue_fraction <= 1.0:
+            raise ValueError("max_advisory_issue_fraction must be within [0, 1]")
+        self.max_advisory_issue_fraction = float(max_advisory_issue_fraction)
         self._equity_peak: float | None = None
 
     # -- helpers -------------------------------------------------------------
+
+    @staticmethod
+    def _restore_risk_state() -> str | None:
+        """AUDIT-021: the protective state the previous process died with.
+
+        Returns ``None`` when nothing protective was recorded, so a normal
+        start is unaffected. Never raises.
+        """
+        try:
+            from datahub.kill_switch import restore_risk_state
+
+            value = restore_risk_state()
+        except Exception:  # noqa: BLE001
+            logger.exception("risk_state_restore_failed")
+            return None
+        if not value:
+            return None
+        # Only the protective states survive; NOMINAL must never be restored
+        # (that would be the same bug in the other direction).
+        protective = {
+            member.value
+            for member in RiskState
+            if member is not RiskState.NOMINAL
+        }
+        return value if value in protective else None
 
     def _equity(self, prices: Mapping[str, float]) -> float:
         total = self.broker.get_cash()
@@ -214,6 +276,99 @@ class DailyPipeline:
             price = prices.get(position.symbol, position.average_price or 0.0)
             total += position.quantity * float(price)
         return total
+
+    def _mark_to_market(self, prices: Mapping[str, float]) -> EquitySnapshot:
+        """Record one equity observation and return it.
+
+        AUDIT-030: called on every mark-to-market so ``equity_day_start`` and
+        ``equity_peak`` come from persisted history rather than from whatever
+        the current process happens to remember.
+        """
+        cash = float(self.broker.get_cash())
+        market_value = 0.0
+        for position in self.broker.get_positions():
+            market_value += position.quantity * float(
+                prices.get(position.symbol, position.average_price or 0.0)
+            )
+        snapshot = EquitySnapshot(
+            date=_ist_today().isoformat(),
+            equity=cash + market_value,
+            cash=cash,
+            market_value=market_value,
+            recorded_at=datetime.now(UTC),
+        )
+        try:
+            self.equity_repository.save_snapshot(snapshot)
+        except Exception:  # noqa: BLE001 - persistence must never break a halt
+            logger.exception("equity_snapshot_persist_failed")
+        return snapshot
+
+    def _broker_connected(self) -> bool | None:
+        """Probe the broker; ``None`` means "unknown", which fails closed.
+
+        AUDIT-030: this used to be the literal ``True``, so
+        ``RiskGuard.check_broker_connectivity`` could never fire. A broker that
+        cannot be probed is not a connected broker, so ``None`` is returned
+        (and the guard maps that to ``LOCK_ACCOUNT``) rather than ``True``.
+        """
+        probe = getattr(self.broker, "ping", None)
+        if not callable(probe):
+            self._note_incomplete_context("broker_connected", "broker has no ping()")
+            return None
+        try:
+            connected = bool(probe())
+        except Exception:  # noqa: BLE001 - an unprobed broker is not connected
+            logger.exception("broker_ping_failed")
+            self._note_incomplete_context("broker_connected", "ping raised")
+            return None
+        try:
+            from datahub.state import beat
+
+            beat(
+                "broker_ping",
+                {"connected": connected, "broker": type(self.broker).__name__},
+            )
+        except Exception:  # noqa: BLE001 - heartbeats are best-effort
+            logger.debug("broker_ping_heartbeat_failed", exc_info=True)
+        return connected
+
+    def _order_timestamps(self, now: datetime) -> tuple[datetime, ...]:
+        """Timestamps of orders actually submitted in the last hour.
+
+        AUDIT-030: this used to be the empty tuple, so
+        ``RiskGuard.check_order_rate`` could never fire no matter how fast the
+        system submitted orders.
+        """
+        timestamps: list[datetime] = []
+        try:
+            window_start = now.timestamp() - 3600.0
+            for intent in self.order_repository.list_intents():
+                result = self.order_repository.get_result(intent.internal_order_id)
+                candidate = getattr(result, "timestamp", None) or intent.timestamp
+                if candidate is None:
+                    continue
+                moment = candidate if candidate.tzinfo else candidate.replace(tzinfo=UTC)
+                if moment.timestamp() >= window_start:
+                    timestamps.append(moment)
+        except Exception:  # noqa: BLE001 - an unreadable ledger is not an empty one
+            logger.exception("order_timestamps_read_failed")
+            self._note_incomplete_context("order_timestamps", "order ledger unreadable")
+            return ()
+        return tuple(sorted(timestamps))
+
+    def _note_incomplete_context(self, field_name: str, reason: str) -> None:
+        """Log — and surface — a risk input that could not be determined."""
+        self._incomplete_context.append(f"{field_name}: {reason}")
+        logger.warning("risk_context_incomplete field=%s reason=%s", field_name, reason)
+        if self.alerts is not None:
+            try:
+                self.alerts.warning(
+                    "risk_context_incomplete",
+                    field=field_name,
+                    reason=reason,
+                )
+            except Exception:  # noqa: BLE001
+                logger.debug("risk_context_incomplete_alert_failed", exc_info=True)
 
     def _risk_context(
         self,
@@ -229,23 +384,78 @@ class DailyPipeline:
                 exposure[position.symbol] = notional
                 gross += notional
         equity = self._equity(prices)
-        self._equity_peak = (
-            equity if self._equity_peak is None else max(self._equity_peak, equity)
+
+        # The day's opening equity: the first mark-to-market recorded today.
+        # That is the honest definition of "start of day" for a system that is
+        # started once per session — and it means a re-run or a restart inside
+        # the same day measures the loss against the real opening value, not
+        # against itself.
+        today = _ist_today().isoformat()
+        opening = None
+        try:
+            opening = self.equity_repository.snapshot_for_date(today)
+        except Exception:  # noqa: BLE001
+            logger.exception("equity_snapshot_read_failed")
+        if opening is None:
+            opening = self._mark_to_market(prices)
+        equity_day_start: float | None = float(opening.equity)
+
+        # The peak must survive a restart, so it is the max over the persisted
+        # history *and* the in-process high-water mark.
+        peak_candidates = [equity]
+        try:
+            peak_candidates.extend(
+                float(row.equity) for row in self.equity_repository.history()
+            )
+        except Exception:  # noqa: BLE001
+            logger.exception("equity_history_read_failed")
+            self._note_incomplete_context("equity_peak", "equity history unreadable")
+        self._equity_peak = max(self._equity_peak or equity, *peak_candidates)
+
+        now = (
+            self.broker.clock
+            if self.broker.clock.tzinfo
+            else self.broker.clock.replace(tzinfo=UTC)
         )
         return RiskContext(
-            now=self.broker.clock
-            if self.broker.clock.tzinfo
-            else self.broker.clock.replace(tzinfo=UTC),
+            now=now,
             equity_now=equity,
-            equity_day_start=equity,
+            equity_day_start=equity_day_start,
             equity_peak=self._equity_peak,
             position_exposure=exposure,
             gross_exposure=gross,
             data_last_updated=data_last_updated,
-            broker_connected=True,
-            order_timestamps=(),
+            broker_connected=self._broker_connected(),
+            order_timestamps=self._order_timestamps(now),
             reconciliation_locked=locked,
         )
+
+    def _advisory_budget(self, accepted: pd.DataFrame) -> int:
+        """How many advisory issues a run may carry before it halts.
+
+        AUDIT-010 compensating control #1: the relaxation is bounded. Without
+        a cap, "advisory" would eventually mean "ignored".
+        """
+        if accepted.empty:
+            return 0
+        sessions = int(accepted["date"].nunique())
+        symbols = int(accepted["symbol"].nunique())
+        return max(1, int(symbols * sessions * self.max_advisory_issue_fraction))
+
+    @staticmethod
+    def _record_risk_state(state: RiskState, reason: str = "") -> None:
+        """AUDIT-021: persist the automatic protective state across restarts.
+
+        ``RiskGuard`` holds no state of its own, so without this a
+        ``LOCK_ACCOUNT`` decision was lost the moment the process exited and
+        the next run began from ``NOMINAL``.
+        """
+        try:
+            from datahub.kill_switch import record_risk_state
+
+            record_risk_state(state.value, reason=reason)
+        except Exception:  # noqa: BLE001 - never let persistence break a halt
+            logger.exception("risk_state_persist_failed state=%s", state.value)
 
     def _reference_prices(self, accepted: pd.DataFrame) -> dict[str, float]:
         latest = (
@@ -328,11 +538,75 @@ class DailyPipeline:
         *,
         fundamentals: pd.DataFrame | None = None,
         approved_by: str | None = None,
+        as_of: date | None = None,
     ) -> DailyRunResult:
-        """Run the full daily flow for one day of data."""
+        """Run the full daily flow for one day of data.
+
+        ``as_of`` bounds the look-ahead guard: bars dated strictly after it are
+        reported as ``future_date`` and excluded, and (because the pipeline
+        halts on any issue) they halt the day. It defaults to *today in IST* —
+        never to the maximum date in the frame, which would make the guard a
+        no-op. Pass an explicit date for deterministic replay of past sessions.
+        """
         if approved_by:
             if isinstance(self.approval_gate, ManualApprovalGate):
                 self.approval_gate.grant_approval(run_id)
+
+        # 0a) AUDIT-021 — operator kill switch, checked before the run claim so
+        #     that an armed switch does not even consume the run id. datahub.
+        #     state is the single authority and is persisted, so this also holds
+        #     across a restart. Fails closed: an unreadable state file stops the
+        #     day rather than permitting it.
+        try:
+            from datahub.kill_switch import blocked_reason, require_not_killed
+
+            kill_switch_engaged = require_not_killed("run_day")
+            kill_switch_detail = blocked_reason()
+        except Exception:  # noqa: BLE001 - never let a guard raise into trading
+            logger.exception("kill_switch_lookup_failed_failing_closed")
+            kill_switch_engaged, kill_switch_detail = True, "kill switch unreadable"
+        if kill_switch_engaged:
+            self.health.set_state(
+                SystemHealth.LOCKED,
+                "operator kill switch is armed",
+                run_id=run_id,
+            )
+            self.alerts.critical(
+                "kill_switch_halt", run_id=run_id, detail=kill_switch_detail
+            )
+            return DailyRunResult(
+                run_id=run_id,
+                status="halted_kill_switch",
+                health=self.health.state.value,
+                risk_state=RiskState.LOCK_ACCOUNT.value,
+                approved=False,
+                metrics={"halt_reason": kill_switch_detail},
+            )
+
+        # 0b) AUDIT-021 — re-apply the last automatic protective state.
+        #     RiskGuard is in-memory only, so before this change a process that
+        #     locked the account was forgotten on restart and the next run
+        #     started from NOMINAL.
+        restored = self._restore_risk_state()
+        if restored is not None:
+            self.health.set_state(
+                SystemHealth.LOCKED,
+                f"restored protective risk state {restored}",
+                run_id=run_id,
+            )
+            self.alerts.critical(
+                "restored_protective_risk_state",
+                run_id=run_id,
+                risk_state=restored,
+            )
+            return DailyRunResult(
+                run_id=run_id,
+                status="halted_risk",
+                health=self.health.state.value,
+                risk_state=restored,
+                approved=False,
+                metrics={"halt_reason": f"restored protective state {restored}"},
+            )
 
         # 0) run claim: concurrent executions cannot duplicate the run.
         if not self.run_repository.claim_run(
@@ -348,24 +622,70 @@ class DailyPipeline:
             )
 
         # 1) data validation (fail closed on any quality issue).
+        #    AUDIT-006: forward the as-of bound so the look-ahead guard in
+        #    data.quality actually runs. Defaulting to the frame's own max date
+        #    would let a frame containing future bars validate itself.
+        effective_as_of = as_of if as_of is not None else _ist_today()
         accepted, report = validate_market_bars(
-            raw_frame, max_staleness_days=self.max_staleness_days
+            raw_frame,
+            max_staleness_days=self.max_staleness_days,
+            as_of=effective_as_of,
         )
-        data_quality = report.to_dict()
         staleness = detect_data_staleness(
             accepted, max_staleness_days=self.max_staleness_days
         )
-        if accepted.empty or report.issues:
+        # AUDIT-010: not every quality issue is a reason to stop the day.
+        # ``missing_candle`` and ``off_calendar`` describe the shape of real
+        # NSE data (symbols that did not trade, Budget special sessions) and
+        # reject no rows; everything else means the data is wrong. An
+        # unrecognised kind is treated as blocking.
+        blocking, advisory = classify_issues(report.issues)
+        budget = self._advisory_budget(accepted)
+        over_budget = len(advisory) > budget
+        data_quality = report.to_dict()
+        data_quality.update(
+            {
+                "blocking_issue_count": len(blocking),
+                "blocking_issue_kinds": sorted({issue.kind for issue in blocking}),
+                "advisory_issue_count": len(advisory),
+                "advisory_issue_kinds": sorted({issue.kind for issue in advisory}),
+                "advisory_budget": budget,
+                "advisory_over_budget": over_budget,
+            }
+        )
+        if advisory:
+            # A degraded run must never be silent (compensating control #2).
+            self.alerts.warning(
+                "data_quality_advisory",
+                run_id=run_id,
+                advisory_issue_count=len(advisory),
+                advisory_issue_kinds=sorted({issue.kind for issue in advisory}),
+                budget=budget,
+                over_budget=over_budget,
+            )
+        if accepted.empty or blocking or over_budget:
+            reason = (
+                "no rows accepted by data validation"
+                if accepted.empty
+                else (
+                    f"advisory issues {len(advisory)} exceed budget {budget}"
+                    if over_budget and not blocking
+                    else f"blocking data quality issues: {len(blocking)}"
+                )
+            )
             self.run_repository.save_run(run_id, "halted_data_quality", data_quality)
             self.health.set_state(
                 SystemHealth.HALTED,
-                f"data quality issues: {len(report.issues)}",
+                reason,
                 run_id=run_id,
             )
             self.alerts.critical(
                 "data_quality_halt",
                 run_id=run_id,
-                issue_count=len(report.issues),
+                reason=reason,
+                blocking_issue_count=len(blocking),
+                advisory_issue_count=len(advisory),
+                advisory_budget=budget,
                 staleness=staleness.detail if staleness else None,
             )
             return DailyRunResult(
@@ -375,6 +695,7 @@ class DailyPipeline:
                 risk_state="NOMINAL",
                 approved=False,
                 data_quality=data_quality,
+                metrics={"halt_reason": reason},
             )
 
         data = MarketData.from_long_frame(accepted)
@@ -422,10 +743,19 @@ class DailyPipeline:
         # 4) risk checks before anything can be submitted.
         prior_reconciliation = self.reconciliation_repository.latest_result()
         prior_locked = bool(prior_reconciliation and prior_reconciliation.locked)
+        self._incomplete_context = []
         context = self._risk_context(prices, data_last_updated, prior_locked)
         decision = self.risk_guard.evaluate(context)
+        self._record_risk_state(decision.state)
         if decision.state is not RiskState.NOMINAL:
-            self.run_repository.save_run(run_id, "halted_risk", decision.to_dict())
+            self.run_repository.save_run(
+                run_id,
+                "halted_risk",
+                {
+                    **decision.to_dict(),
+                    "incomplete_context": list(self._incomplete_context),
+                },
+            )
             self.health.set_state(
                 SystemHealth.HALTED,
                 f"risk state {decision.state.value}",
@@ -562,6 +892,7 @@ class DailyPipeline:
                 run_id=run_id,
                 kinds=[m.kind for m in reconciliation.mismatches],
             )
+            self._record_risk_state(RiskState.LOCK_ACCOUNT, "reconciliation mismatch")
             self._persist_research(run_id, status="halted", execution=execution)
             return DailyRunResult(
                 run_id=run_id,
@@ -595,16 +926,66 @@ class DailyPipeline:
             reconciliation=reconciliation,
             signals_generated=True,
             data_quality=data_quality,
+            metrics=(
+                {"risk_context_incomplete": list(self._incomplete_context)}
+                if self._incomplete_context
+                else {}
+            ),
         )
 
     def _all_broker_orders(self) -> list:
-        """All orders known to the broker (open + terminal)."""
-        results = []
+        """All orders as **the broker** reports them (open + terminal).
+
+        AUDIT-022: this used to read ``self.order_repository`` — the same
+        store that :meth:`_expected_state` reads. Every order-side check was
+        therefore comparing the local ledger with itself: ``_check_fills``,
+        ``_check_duplicates`` and the order half of ``_check_open_orders``
+        could not fail, no matter what the broker actually did.
+
+        Orders the local store never submitted (no persisted result — for
+        example an intent that was skipped for want of a reference price) are
+        not expected at the broker and are skipped. Anything the local store
+        *believes* was submitted must be enumerable by the broker; if it is
+        not, the broker's view is unknown and reconciliation fails closed
+        with :class:`ReconciliationError` instead of silently substituting
+        the stored result.
+        """
+        orders: list[Any] = []
         for intent in self.order_repository.list_intents():
-            result = self.order_repository.get_result(intent.internal_order_id)
-            if result is not None:
-                results.append(result)
-        return results
+            local = self.order_repository.get_result(intent.internal_order_id)
+            if local is None:
+                # Never submitted: the broker legitimately has nothing.
+                continue
+            try:
+                record = self.broker.get_order_status(intent.internal_order_id)
+            except Exception as exc:  # noqa: BLE001 - an unprobed broker is unknown
+                raise ReconciliationError(
+                    f"broker could not be queried for order "
+                    f"{intent.internal_order_id}: {type(exc).__name__}: {exc}"
+                ) from exc
+            if record is None:
+                raise ReconciliationError(
+                    f"order {intent.internal_order_id} was submitted according "
+                    "to the local ledger but the broker cannot enumerate it; "
+                    "reconciliation cannot be performed"
+                )
+            orders.append(self._as_order_result(record, intent.internal_order_id))
+        return orders
+
+    @staticmethod
+    def _as_order_result(record: Any, internal_order_id: str) -> Any:
+        """Normalise a broker status record to :class:`OrderResult`."""
+        from models.domain import OrderResult
+
+        if isinstance(record, OrderResult):
+            return record
+        # A real adapter returns its own BrokerOrderRecord.
+        from broker.reconciler import record_to_result
+
+        result = record_to_result(record)
+        if result.internal_order_id != internal_order_id:
+            result = result.model_copy(update={"internal_order_id": internal_order_id})
+        return result
 
     def _persist_research(
         self,

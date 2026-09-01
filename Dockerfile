@@ -10,7 +10,13 @@ WORKDIR /app
 RUN groupadd --system quant && useradd --system --gid quant --create-home quant
 
 COPY . .
-RUN python -m pip install --upgrade pip && python -m pip install --no-cache-dir --no-deps .
+# AUDIT-018: this used to install the project *without* its dependencies,
+# *project* but none of pandas/numpy/pyarrow/pydantic. `python -m
+# dashboard.server` then died in `get_paper_service()` with
+# `ModuleNotFoundError: No module named 'numpy'` before it ever bound the
+# port, so the image crash-looped on a fresh machine. Dependencies must be
+# installed with the project.
+RUN python -m pip install --upgrade pip && python -m pip install --no-cache-dir .
 
 RUN mkdir -p /app/var /app/logs && chown -R quant:quant /app
 USER quant

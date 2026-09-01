@@ -8,7 +8,11 @@ import pandas as pd
 import pytest
 
 from backtest.benchmarks import benchmark_suite
-from backtest.engine import BacktestConfig, VectorBTResearchEngine
+from backtest.engine import (
+    MEMBERSHIP_FROM_PRICES,
+    BacktestConfig,
+    VectorBTResearchEngine,
+)
 from backtest.validation import run_walk_forward
 from portfolio.construction import EqualWeightConstructor
 from research.contracts import (
@@ -83,7 +87,7 @@ def _run(strategy: Strategy, data: MarketData, *, validate: bool = True) -> tupl
     engine = _engine()
     weights = EqualWeightConstructor().construct(strategy.generate_signals(data), data)
     result = engine.run(
-        data.close, weights, strategy_name=strategy.name, universe_history=[]
+        data.close, weights, strategy_name=strategy.name, universe_history=MEMBERSHIP_FROM_PRICES
     )
     benchmarks = benchmark_suite(data.close, weights, engine=engine, random_seed=42)
     validated = None
@@ -112,17 +116,25 @@ def _gate(**config) -> ResearchGate:
 
 class TestGateVerdscts:
     def test_strong_strategy_passes(self) -> None:
-        """A strategy that beats all benchmarks and placebos passes."""
-        data = _data(periods=520)
+        """A fully-evidenced strategy beats all benchmarks and placebos.
+
+        AUDIT-032/038: PASS now requires everything the gate claims to check:
+        declared trial count, *out-of-sample* returns, walk-forward/CPCV
+        validation and a real trade count. Supplying only the benchmarks and
+        placebos is no longer enough to reach PASS (see
+        ``test_undeclared_evidence_cannot_pass``).
+        """
+        data = _data(periods=780)
         result, benchmarks, validated, _ = _run(_MomentumWinner(), data)
         placebos = generate_placebo_results(
             data.close, engine=_engine(), samples=30, seed=42
         )
-        decision = _gate().evaluate(
+        decision = _gate(tested_variants=len(placebos) + len(benchmarks) + 1).evaluate(
             result,
             benchmarks=benchmarks,
             validation=validated,
             placebo_results=placebos,
+            oos_returns=result.returns,
             universe="synthetic",
         )
         assert decision.verdict == GateVerdict.PASS.value
@@ -133,8 +145,43 @@ class TestGateVerdscts:
         ]
         assert "PASS" in decision.to_markdown()
         # Every decision explains itself.
-        assert len(decision.checks) == 8
+        assert len(decision.checks) == 9
         assert all(check.message for check in decision.checks)
+        assert decision.metrics["evidence_kind"] == "out_of_sample"
+
+    def test_undeclared_evidence_cannot_pass(self) -> None:
+        """AUDIT-032: the three leaks that used to still reach FRAGILE.
+
+        At the audited commit a strategy could reach FRAGILE with (a) no
+        declared trial count, (b) in-sample returns presented as evidence and
+        (c) no walk-forward/CPCV validation. (c) is now a hard fail and (a)/(b)
+        are warnings, none of which can be part of a PASS.
+        """
+        data = _data(periods=780)
+        result, benchmarks, validated, _ = _run(_MomentumWinner(), data)
+        # (a) + (b): declared trials and out-of-sample returns are missing.
+        decision = _gate().evaluate(
+            result,
+            benchmarks=benchmarks,
+            validation=validated,
+            oos_returns=result.returns,
+        )
+        assert decision.verdict == GateVerdict.FRAGILE.value
+        names = {check.name for check in decision.warnings}
+        assert "trial_count_declared" in names
+        # With out-of-sample returns supplied the in-sample warning is absent.
+        assert "in_sample_evidence" not in names
+        assert decision.metrics["evidence_kind"] == "out_of_sample"
+
+        # (b): no out-of-sample returns at all.
+        in_sample = _gate(tested_variants=100).evaluate(
+            result, benchmarks=benchmarks, validation=validated
+        )
+        assert in_sample.verdict == GateVerdict.FRAGILE.value
+        assert any(
+            check.name == "in_sample_evidence" for check in in_sample.warnings
+        )
+        assert in_sample.metrics["evidence_kind"] == "in_sample"
 
     def test_zero_signals_fail_with_reasons(self) -> None:
         """A cash strategy cannot pass: it fails statistical confidence."""
@@ -152,14 +199,21 @@ class TestGateVerdscts:
         )
         assert any("Sharpe" in check.message for check in decision.checks)
 
-    def test_missing_validation_gives_fragile_not_pass(self) -> None:
-        """No validation evidence can never be silently approved."""
-        data = _data(periods=520)
+    def test_missing_validation_fails(self) -> None:
+        """AUDIT-032: no validation evidence is a failure, not a warning.
+
+        It used to be a "warn", which put an unvalidated strategy one step
+        from PASS. Without walk-forward or CPCV folds there is no evidence the
+        result survives a different period, so the gate now fails it.
+        """
+        data = _data(periods=780)
         result, benchmarks, _, _ = _run(_MomentumWinner(), data)
-        decision = _gate().evaluate(result, benchmarks=benchmarks)
-        assert decision.verdict == GateVerdict.FRAGILE.value
+        decision = _gate(tested_variants=100).evaluate(
+            result, benchmarks=benchmarks, oos_returns=result.returns
+        )
+        assert decision.verdict == GateVerdict.FAIL.value
         assert any(
-            check.name == "validation_consistency" and check.status == "warn"
+            check.name == "validation_consistency" and check.status == "fail"
             for check in decision.checks
         )
 

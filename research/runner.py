@@ -7,7 +7,12 @@ from dataclasses import dataclass
 import pandas as pd
 
 from backtest.benchmarks import benchmark_suite, compare_results
-from backtest.engine import BacktestConfig, BacktestResult, VectorBTResearchEngine
+from backtest.engine import (
+    MEMBERSHIP_FROM_PRICES,
+    BacktestConfig,
+    BacktestResult,
+    VectorBTResearchEngine,
+)
 from portfolio.construction import EqualWeightConstructor
 
 from .contracts import MarketData, PortfolioConstructor, Strategy
@@ -57,12 +62,17 @@ def run_strategy(
         research_data.close,
         weights,
         strategy_name=strategy.name,
-        universe_history=universe.history if universe is not None else [],
+        universe_history=(
+            universe.history if universe is not None else MEMBERSHIP_FROM_PRICES
+        ),
     )
     benchmarks = benchmark_suite(
         research_data.close,
         weights,
         engine=backtest_engine,
         random_seed=random_seed,
+        universe_history=(
+            universe.history if universe is not None else MEMBERSHIP_FROM_PRICES
+        ),
     )
     return ResearchRun(result=result, benchmarks=benchmarks)

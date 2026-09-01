@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -10,7 +11,12 @@ import pandas as pd
 from portfolio.construction import inverse_volatility
 from research.contracts import ResearchInputError
 
-from .engine import BacktestConfig, BacktestResult, VectorBTResearchEngine
+from .engine import (
+    MEMBERSHIP_FROM_PRICES,
+    BacktestConfig,
+    BacktestResult,
+    VectorBTResearchEngine,
+)
 
 BENCHMARK_NAMES = (
     "buy_and_hold",
@@ -88,6 +94,7 @@ def benchmark_suite(
     config: BacktestConfig | None = None,
     random_seed: int = 42,
     inverse_volatility_window: int = 20,
+    universe_history: Any = MEMBERSHIP_FROM_PRICES,
 ) -> dict[str, BacktestResult]:
     """Run all required benchmarks with the same engine and cost assumptions."""
     validated = _validate_prices(prices)
@@ -106,7 +113,12 @@ def benchmark_suite(
         "persistence": persistence_weights(strategy_weights),
     }
     return {
-        name: runner.run(validated, weights, strategy_name=name, universe_history=[])
+        name: runner.run(
+            validated,
+            weights,
+            strategy_name=name,
+            universe_history=universe_history,
+        )
         for name, weights in benchmark_weights.items()
     }
 

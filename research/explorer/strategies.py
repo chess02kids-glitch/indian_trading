@@ -432,8 +432,6 @@ def run_specs(
             continue
         if mask is not None:
             weights = weights.where(mask, 0.0)
-        # renormalize after mask
-        denom = weights.abs().sum(axis=1).replace(0.0, np.nan)
         # long-only strategies may have sums that are zero; keep as-is for L/S
         # row-normalize only rows with nonzero gross (preserve gross on L/S).
         def _norm(row):

@@ -55,10 +55,43 @@ FORBIDDEN_EXECUTION_MODULES = {
     "auth",
 }
 
+# AUDIT-003: the previous pattern anchored the keyword with ``\b``. ``\b``
+# cannot match between ``_`` and a letter, so ``FRED_API_KEY = "…32 hex chars"``
+# (scripts/ingest_macro.py) was invisible to this test while a live FRED API
+# key sat in the repository. The lookarounds below deliberately allow a leading
+# ``_`` (so ``FRED_API_KEY`` / ``MY_SECRET`` are covered) while still refusing
+# ``api_keys`` / ``tokenize`` / ``passwordless``.
 _SECRET_RE = re.compile(
-    r"(?i)\b(api[_-]?key|secret|token|password|passphrase)\b"
-    r"\s*[:=]\s*['\"][A-Za-z0-9_\-]{16,}['\"]"
+    r"(?i)(?<![A-Za-z0-9])"
+    r"(api[_-]?key|secret|token|password|passphrase)"
+    r"(?![A-Za-z0-9])"
+    r"\s*[:=]\s*['\"]([A-Za-z0-9_\-]{16,})['\"]"
 )
+
+#: Placeholder-looking values (docs, examples, env-var *names*) are not secrets.
+_SECRET_PLACEHOLDER_RE = re.compile(
+    r"(?i)^(your|my|the|replace|changeme|example|sample|dummy|fake|placeholder|"
+    r"xxx+|todo|<.*>|\*{3,})"
+)
+
+
+def _looks_like_secret(value: str) -> bool:
+    """Heuristic: a real credential mixes character classes and is not a name.
+
+    ``"TELEGRAM_BOT_TOKEN"`` (an environment-variable *name* assigned to
+    ``_ENV_TOKEN`` in a test) must not trip the scanner, while
+    ``FRED_API_KEY = "<32 hex chars>"`` must.
+    """
+    if _SECRET_PLACEHOLDER_RE.match(value):
+        return False
+    if value.isupper() and "_" in value:  # ENV_VAR_NAME, not a value
+        return False
+    has_digit = any(char.isdigit() for char in value)
+    has_alpha = any(char.isalpha() for char in value)
+    mixed_case = any(char.islower() for char in value) and any(
+        char.isupper() for char in value
+    )
+    return (has_digit and has_alpha) or mixed_case or len(value) >= 40
 
 
 def _imported_modules(source: str) -> set[str]:
@@ -177,4 +210,8 @@ class TestNoSecretsInSource:
     def test_no_hardcoded_credentials(self, path: Path) -> None:
         text = path.read_text(encoding="utf-8")
         match = _SECRET_RE.search(text)
-        assert match is None, f"possible hardcoded secret in {path}"
+        if match is not None and _looks_like_secret(match.group(2)):
+            pytest.fail(
+                f"possible hardcoded secret in {path}: "
+                f"{match.group(1)!r} assigned a credential-looking literal"
+            )

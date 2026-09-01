@@ -201,7 +201,9 @@ def render(
     advanced_path: str | Path = DEFAULT_ADVANCED_PATH,
 ) -> None:
     """Render the research dashboard (called by ``streamlit run``)."""
-    import streamlit as st
+    from dashboard.streamlit_guard import require_streamlit as _require_streamlit
+
+    st = _require_streamlit()
 
     st.set_page_config(page_title="Quant India — Research", layout="wide")
     st.title("Quant India — Research Dashboard")

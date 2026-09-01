@@ -39,6 +39,7 @@ from data.quality import (
 
 __all__ = [
     "EOD2_SOURCE",
+    "EQ_SERIES",
     "Eod2SourceSpec",
     "Eod2SymbolFile",
     "parse_eod2_daily_file",
@@ -65,6 +66,10 @@ EOD2_DAILY_HEADER = (
 )
 
 _SYMBOL_RE = re.compile(r"^[A-Z0-9&.\-]+$")
+
+#: The only NSE series the research pipeline models: plain equity.
+#: See ``parse_eod2_daily_file`` (AUDIT-012) for the measured impact.
+EQ_SERIES = "EQ"
 
 
 @dataclass(frozen=True, slots=True)
@@ -128,7 +133,11 @@ class Eod2SourceSpec:
 
 @dataclass(frozen=True, slots=True)
 class Eod2SymbolFile:
-    """One source file's identity + content fingerprint."""
+    """One source file's identity + content fingerprint.
+
+    ``rows`` counts rows in the *parsed* frame, i.e. after the series filter
+    has been applied. ``dropped_series`` reports what the filter removed.
+    """
 
     symbol: str
     path: Path
@@ -136,6 +145,7 @@ class Eod2SymbolFile:
     rows: int
     first_date: str
     last_date: str
+    dropped_series: Mapping[str, int] = field(default_factory=dict)
 
 
 def symbol_to_filename(symbol: str) -> str:
@@ -150,16 +160,39 @@ def symbol_to_filename(symbol: str) -> str:
 
 
 def _read_raw_csv(path: str | Path) -> pd.DataFrame:
+    """Read one eod2 CSV, normalising header case and validating the header.
+
+    AUDIT-005: the module docstring and ``EOD2_DAILY_HEADER`` claim an
+    order-sensitive strict header check, but none existed. A source file with a
+    truncated header made ``pandas`` promote the first data column to the index,
+    after which ``parse_eod2_daily_file`` raised ``AttributeError: Can only use
+    .dt accessor with datetimelike values`` — an opaque crash instead of the
+    documented :class:`DataQualityError`. Validate the header explicitly.
+    """
     path = Path(path)
     if not path.is_file():
         raise FileNotFoundError(f"eod2 source file missing: {path}")
     raw = pd.read_csv(path)
     # Map headers to standard title-case format
     header_map = {
-        "date": "Date", "open": "Open", "high": "High", "low": "Low", 
+        "date": "Date", "open": "Open", "high": "High", "low": "Low",
         "close": "Close", "volume": "Volume", "series": "Series"
     }
     raw.rename(columns=lambda x: header_map.get(str(x).strip().lower(), str(x)), inplace=True)
+
+    present = [str(column).strip() for column in raw.columns]
+    normalised = [header_map.get(name.lower(), name) for name in present]
+    expected = list(EOD2_DAILY_HEADER)
+    # The upstream mirror ships two header dialects (``TOTAL_TRADES/QTY_PER_TRADE/
+    # DLV_QTY`` and, on ~100 newer symbols, lowercase equivalents). Only the
+    # OHLCV prefix is load-bearing for the research contract, so require that
+    # prefix in order and let the trailing columns vary.
+    required_prefix = expected[:6]
+    if normalised[: len(required_prefix)] != required_prefix:
+        raise DataQualityError(
+            f"unexpected header in {path.name}: expected at least "
+            f"{required_prefix} in order, got {present}"
+        )
     return raw
 
 
@@ -168,14 +201,35 @@ def parse_eod2_daily_file(
     symbol: str,
     *,
     spec: Eod2SourceSpec,
+    series_filter: str | None = EQ_SERIES,
+    dropped_series: dict[str, int] | None = None,
 ) -> pd.DataFrame:
     """Normalise one eod2 ``daily/*.csv`` into the canonical long frame.
 
-    The returned frame keeps every source row (malformed values become
-    ``NaN`` so the quality layer can *report* them, not the adapter);
+    The returned frame keeps every **equity** source row (malformed values
+    become ``NaN`` so the quality layer can *report* them, not the adapter);
     symbol/date normalisation (uppercase symbol, parsed dates) and the
     provenance columns (``source``, ``exchange``, ``ingested_at``,
     ``source_ts``, ``adjustment_state``) are applied here.
+
+    AUDIT-012 — ``series_filter``: NSE's bhavcopy carries one row per traded
+    *series*, and the source files mix them. Measured over 600 committed
+    files: ``EQ 1,145,575`` rows, but also ``BE 86,775``, ``SM 51,847``,
+    ``ST 10,175`` and ``BZ 2,523`` — roughly 8% of all rows, across 377 of
+    600 symbols. ``BE`` is the trade-for-trade/odd-lot session and the others
+    are institutional/negotiated blocks; stitching them into one continuous
+    "close" series produces artificial jumps at every series transition, for
+    a symbol that is supposedly a single equity.
+
+    The filter therefore defaults to ``EQ`` and is applied here, at the
+    boundary, rather than downstream. Pass ``series_filter=None`` to keep
+    every row (the pre-audit behaviour), and pass a dict as
+    ``dropped_series`` to learn what was removed: it is populated with
+    ``{series: row_count}``.
+
+    A file with rows but no rows in the requested series raises
+    :class:`DataQualityError` rather than returning an empty frame — a symbol
+    with no equity history is a data problem, not a silent no-op.
     """
     raw = _read_raw_csv(path)
     normalized_symbol = symbol.strip().upper()
@@ -190,7 +244,23 @@ def parse_eod2_daily_file(
             "volume": pd.to_numeric(raw.get("Volume", raw.get("volume")), errors="coerce"),
         }
     )
-    frame["series"] = raw.get("Series", raw.get("series", "")).astype(str)
+    series_column = raw.get("Series", raw.get("series", "")).astype(str)
+    if series_filter:
+        wanted = series_filter.strip().upper()
+        keep = series_column.str.strip().str.upper() == wanted
+        if dropped_series is not None:
+            for value, count in (
+                series_column.loc[~keep].str.strip().str.upper().value_counts().items()
+            ):
+                dropped_series[str(value)] = dropped_series.get(str(value), 0) + int(count)
+        if not keep.any() and len(frame):
+            raise DataQualityError(
+                f"{path.name}: no rows in series {wanted!r} "
+                f"(series present: {sorted(set(series_column.str.strip().str.upper()))})"
+            )
+        frame = frame.loc[keep].reset_index(drop=True)
+        series_column = series_column.loc[keep].reset_index(drop=True)
+    frame["series"] = series_column
     frame["source"] = EOD2_SOURCE
     frame["exchange"] = "NSE"
     frame["ingested_at"] = spec.ingested_at
@@ -222,7 +292,8 @@ def load_eod2_symbol(
     silently repaired).
     """
     path = Path(source_dir) / symbol_to_filename(symbol)
-    frame = parse_eod2_daily_file(path, symbol, spec=spec)
+    dropped: dict[str, int] = {}
+    frame = parse_eod2_daily_file(path, symbol, spec=spec, dropped_series=dropped)
     accepted, report = check_ohlcv_long_frame(
         frame,
         source=EOD2_SOURCE,
@@ -237,6 +308,7 @@ def load_eod2_symbol(
         rows=len(frame),
         first_date=str(dates.min().date()) if len(dates) else "",
         last_date=str(dates.max().date()) if len(dates) else "",
+        dropped_series=dict(sorted(dropped.items())),
     )
     return accepted, report, stats
 

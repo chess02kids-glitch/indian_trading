@@ -33,7 +33,11 @@ import numpy as np
 import pandas as pd
 
 from backtest.benchmarks import random_weights
-from backtest.engine import BacktestResult, VectorBTResearchEngine
+from backtest.engine import (
+    MEMBERSHIP_FROM_PRICES,
+    BacktestResult,
+    VectorBTResearchEngine,
+)
 from backtest.metrics import PerformanceMetrics
 from backtest.validation import (
     BootstrapConfidenceInterval,
@@ -209,6 +213,10 @@ class ResearchGateConfig:
     placebo_percentile: float = 0.95
     min_positive_fold_fraction: float = 0.5
     tested_variants: int | None = None
+    #: AUDIT-038: a backtest with too few trades is noise. ``VectorBTResearch``
+    #: reports ``trade_count`` from turnover, so a strategy that rebalances
+    #: twice in five years cannot claim statistical significance.
+    min_trade_count: int = 30
 
     def __post_init__(self) -> None:
         if self.minimum_observations < 2:
@@ -229,6 +237,8 @@ class ResearchGateConfig:
             raise ResearchInputError("placebo_percentile must be in [0, 1]")
         if not 0 <= self.min_positive_fold_fraction <= 1:
             raise ResearchInputError("min_positive_fold_fraction must be in [0, 1]")
+        if self.min_trade_count < 0:
+            raise ResearchInputError("min_trade_count cannot be negative")
 
 
 def _annualized_turnover(turnover: float, observations: int, periods: int) -> float:
@@ -245,6 +255,7 @@ def generate_placebo_results(
     engine: VectorBTResearchEngine,
     samples: int = 50,
     seed: int = 42,
+    universe_history: Any = MEMBERSHIP_FROM_PRICES,
 ) -> dict[str, BacktestResult]:
     """Run ``samples`` seeded random portfolios as a placebo family.
 
@@ -265,7 +276,7 @@ def generate_placebo_results(
             prices,
             weights,
             strategy_name=f"placebo_{number:05d}",
-            universe_history=[],
+            universe_history=universe_history,
         )
     return output
 
@@ -426,6 +437,12 @@ class ResearchGate:
                     "sharpe_ci_upper": sharpe_ci.upper,
                     "trials": trials,
                     "observations": len(evidence_returns),
+                    # AUDIT-032: without this, the reader cannot tell whether
+                    # the probability above is an out-of-sample estimate or an
+                    # in-sample one presented as if it were.
+                    "evidence_kind": (
+                        "out_of_sample" if oos_returns is not None else "in_sample"
+                    ),
                 },
             )
         )
@@ -436,8 +453,52 @@ class ResearchGate:
                 "sharpe_ci_lower": sharpe_ci.lower,
                 "sharpe_ci_upper": sharpe_ci.upper,
                 "trials_corrected": trials,
+                "evidence_kind": (
+                    "out_of_sample" if oos_returns is not None else "in_sample"
+                ),
             }
         )
+
+        # 2b) AUDIT-032 — the multiple-testing correction is only as good as
+        #     the trial count. When the caller does not declare how many
+        #     variants were tried, the gate silently falls back to
+        #     ``benchmarks + placebos + 1``, which understates the real count
+        #     (it ignores every abandoned variant) and therefore *inflates*
+        #     the deflated-Sharpe probability. Such a strategy can never PASS.
+        if config.tested_variants is None:
+            checks.append(
+                GateCheck(
+                    name="trial_count_declared",
+                    status="warn",
+                    message=(
+                        f"tested_variants was not declared; the deflated Sharpe "
+                        f"correction used {trials} trials (benchmarks + placebos "
+                        "+ 1), which understates the true number of variants "
+                        "tried and inflates the probability below"
+                    ),
+                    evidence={
+                        "assumed_trials": trials,
+                        "declared": False,
+                    },
+                )
+            )
+
+        # 2c) AUDIT-032 — an in-sample Sharpe presented as evidence is not
+        #     evidence. Record it as a warning: the verdict can no longer be
+        #     PASS while the probability above is computed in-sample.
+        if oos_returns is None:
+            checks.append(
+                GateCheck(
+                    name="in_sample_evidence",
+                    status="warn",
+                    message=(
+                        "no out-of-sample returns were supplied; the deflated "
+                        "Sharpe probability above is computed on the same "
+                        "returns the strategy was selected on"
+                    ),
+                    evidence={"evidence_kind": "in_sample"},
+                )
+            )
 
         # 3) benchmark competitiveness -----------------------------------------------
         benchmark_metrics = {
@@ -542,11 +603,19 @@ class ResearchGate:
 
         # 7) validation consistency -----------------------------------------------------
         if validation is None:
+            # AUDIT-032: this used to be a "warn", which let a strategy with
+            # no walk-forward or CPCV evidence at all reach FRAGILE — one
+            # warning away from being traded. Without validation there is no
+            # evidence the result survives a different time period, so the
+            # check fails.
             checks.append(
                 GateCheck(
                     name="validation_consistency",
-                    status="warn",
-                    message="no walk-forward/CPCV validation evidence supplied",
+                    status="fail",
+                    message=(
+                        "no walk-forward/CPCV validation evidence supplied; "
+                        "the gate requires out-of-sample fold evidence"
+                    ),
                     evidence={},
                 )
             )
@@ -620,8 +689,44 @@ class ResearchGate:
                 )
             )
 
+        # 9) AUDIT-038 — enough trading activity for the statistics to mean
+        #    anything. ``metadata["trade_count"]`` counts periods with non-zero
+        #    turnover, which is zero for a strategy that keeps the same names,
+        #    so the count used here is the number of rebalance events (each is
+        #    a portfolio trade decision) and both numbers are reported.
+        trade_count = int(result.metadata.get("trade_count", 0) or 0)
+        rebalance_events = (
+            int(result.trades["rebalance"].astype(bool).sum())
+            if "rebalance" in result.trades
+            else 0
+        )
+        activity = max(trade_count, rebalance_events)
+        activity_ok = activity >= config.min_trade_count
+        checks.append(
+            GateCheck(
+                name="trade_count",
+                status="pass" if activity_ok else "fail",
+                message=(
+                    f"{activity} trade events "
+                    f"({rebalance_events} rebalances, {trade_count} with "
+                    f"non-zero turnover) against a minimum of "
+                    f"{config.min_trade_count}; too few trades makes Sharpe, "
+                    "drawdown and the deflated Sharpe ratio indistinguishable "
+                    "from noise"
+                ),
+                evidence={
+                    "trade_events": activity,
+                    "rebalance_events": rebalance_events,
+                    "turnover_events": trade_count,
+                    "minimum": config.min_trade_count,
+                },
+            )
+        )
+
         # -- verdict ----------------------------------------------------------------------
         metrics.update(candidate_metrics)
+        metrics["trade_count"] = trade_count
+        metrics["rebalance_events"] = rebalance_events
         metrics.update(
             {
                 "max_drawdown": max_drawdown,

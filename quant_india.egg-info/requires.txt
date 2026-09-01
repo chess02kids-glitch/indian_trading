@@ -9,9 +9,13 @@ psycopg2-binary>=2.9.9
 numpy<3.0,>=1.26
 plotly<6.0,>=5.0
 vectorbt<1.0,>=0.26
+seaborn>=0.13.0
 cryptography>=50.0.0
 setuptools>=83.0.0
 wheel>=0.48.0
+
+[dashboards]
+streamlit>=1.30
 
 [dev]
 pytest>=9.0.3
@@ -19,6 +23,9 @@ pytest-mock
 hypothesis<7.0,>=6.0
 ruff
 pre-commit
+
+[paper]
+upstox-python-sdk>=2.0
 
 [tracking]
 mlflow<4.0,>=2.15

@@ -165,22 +165,29 @@ def generate_reconciliation_data() -> dict:
 
 
 def generate_execution_log() -> list[dict]:
-    """Generate sample execution log."""
-    return [
+    """Generate a sample execution log that matches :class:`OrderResult`.
+
+    AUDIT-031: this used to emit ``price`` / ``expected_price`` /
+    ``actual_price``, a vocabulary no code path produces, so the sample
+    contradicted the model it claims to record. Records below carry the
+    :class:`~models.domain.OrderResult` field names, plus the two broker-side
+    fields (``limit_price``, ``filled_at``) that the adapter attaches. Every
+    record is validated against the real model before it is written.
+    """
+    now = datetime.now(timezone.utc)
+    records = [
         {
             "internal_order_id": "ORD-001",
             "idempotency_key": "ik_001",
             "broker_order_id": "BRK-001",
             "symbol": "RELIANCE",
             "side": "BUY",
-            "quantity": 100,
-            "price": 2500.0,
             "status": "FILLED",
+            "requested_quantity": 100,
             "filled_quantity": 100,
-            "expected_price": 2500.0,
-            "actual_price": 2500.5,
-            "submitted_at": datetime.now(timezone.utc).isoformat(),
-            "filled_at": datetime.now(timezone.utc).isoformat(),
+            "average_fill_price": 2500.5,
+            "timestamp": now.isoformat(),
+            "reason": None,
         },
         {
             "internal_order_id": "ORD-002",
@@ -188,14 +195,12 @@ def generate_execution_log() -> list[dict]:
             "broker_order_id": "BRK-002",
             "symbol": "TCS",
             "side": "BUY",
-            "quantity": 50,
-            "price": 3500.0,
             "status": "FILLED",
+            "requested_quantity": 50,
             "filled_quantity": 50,
-            "expected_price": 3500.0,
-            "actual_price": 3499.5,
-            "submitted_at": datetime.now(timezone.utc).isoformat(),
-            "filled_at": datetime.now(timezone.utc).isoformat(),
+            "average_fill_price": 3499.5,
+            "timestamp": now.isoformat(),
+            "reason": None,
         },
         {
             "internal_order_id": "ORD-003",
@@ -203,17 +208,19 @@ def generate_execution_log() -> list[dict]:
             "broker_order_id": "BRK-003",
             "symbol": "INFY",
             "side": "SELL",
-            "quantity": 25,
-            "price": 1500.0,
             "status": "REJECTED",
+            "requested_quantity": 25,
             "filled_quantity": 0,
-            "expected_price": 1500.0,
-            "actual_price": None,
-            "submitted_at": datetime.now(timezone.utc).isoformat(),
-            "filled_at": None,
+            "average_fill_price": None,
+            "timestamp": now.isoformat(),
             "reason": "Insufficient margin",
         },
     ]
+    from models.domain import OrderResult
+
+    for record in records:
+        OrderResult(**record)
+    return records
 
 
 def generate_alerts() -> list[dict]:

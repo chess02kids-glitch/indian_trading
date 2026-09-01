@@ -78,7 +78,6 @@ def _turnover_stats(result, cost_rate: float) -> dict[str, float]:
 
 
 def _yearly(returns: pd.Series) -> dict[str, float]:
-    equity = (1.0 + returns).cumprod()
     out = {}
     for year, sub in returns.groupby(returns.index.year):
         sub_eq = (1.0 + sub).cumprod()

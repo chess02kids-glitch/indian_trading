@@ -20,7 +20,6 @@ from typing import Any, Mapping
 from zoneinfo import ZoneInfo
 
 from config.costs import SCENARIO_MARKET_CONDITIONS, CostScenario, load_charge_table
-
 from datahub import state as sysstate
 from datahub.quotes import QuoteChain, build_quote_chain
 
@@ -230,6 +229,49 @@ class PaperTradingService:
             )
         return self.status()
 
+    def rebalance_blockers(self, strategy_id: str | None = None) -> list[str]:
+        """Return the human-readable reasons a paper rebalance cannot run now.
+
+        AUDIT-013/AUDIT-034: the Operations page offered a paper-rebalance
+        control with no way to see *why* it was unavailable, so the whole
+        paper-trading flow looked broken when in fact the research gate was
+        simply holding ``momrem`` (the only strategy with a target builder)
+        at ``paper_approved: false``. An empty list means nothing is
+        blocking; a rebalance can still fail later on stale quotes or a risk
+        breach, and those are reported by :meth:`preview_rebalance`.
+        """
+        settings = self.ledger.settings()
+        name = str(
+            strategy_id or settings.get("auto_strategy") or "momrem"
+        ).strip().lower()
+        blockers: list[str] = []
+        if sysstate.is_killed():
+            switch = sysstate.kill_switch()
+            reason = switch.get("reason")
+            blockers.append(
+                "kill switch is armed"
+                + (f" ({reason})" if reason else "")
+                + " \u2014 disarm it on the Operations page"
+            )
+        if not settings["running"]:
+            blockers.append(
+                "paper monitor is stopped \u2014 start it on the Paper Trading page"
+            )
+        definition = self.strategies().get(name)
+        if not definition:
+            blockers.append(f"strategy '{name}' is not in the paper registry")
+        elif not definition.get("paper_approved"):
+            detail = str(definition.get("reason") or "").strip()
+            blockers.append(
+                f"strategy '{name}' is not paper-approved"
+                + (f": {detail}" if detail else "")
+            )
+        elif name != "momrem":
+            blockers.append(
+                f"no paper target builder has been registered for '{name}'"
+            )
+        return blockers
+
     def start_monitor(self) -> dict[str, Any]:
         self.ledger.start(None)
         return self.status()
@@ -384,6 +426,12 @@ class PaperTradingService:
         }, signal
 
     def preview_rebalance(self, strategy_id: str) -> dict[str, Any]:
+        """Build the virtual order list for one strategy and price it.
+
+        Quotes come from :meth:`_quote_chain` (UPSTOX -> SIM -> EOD), so the
+        returned ``quote_sources`` and each order's ``quote_source`` describe
+        where the price actually came from.
+        """
         strategy_id = strategy_id.strip().lower()
         if not self.is_paper_approved(strategy_id):
             raise ValueError("strategy is not paper-approved by the research gate")
@@ -396,14 +444,31 @@ class PaperTradingService:
             str(p["symbol"]): int(p["quantity"]) for p in self.ledger.positions()
         }
         symbols = sorted(set(target) | set(current))
+        # Surface unmapped symbols as an explicit refusal (never a silent skip).
+        self._instrument_map(symbols)
         # New targets get a real quote snapshot too, so virtual fills never use old EOD close.
+        #
+        # AUDIT-015: this used to call ``self.market_data.fetch_quotes(...)``
+        # directly, bypassing the QuoteChain (UPSTOX -> SIM -> EOD) that exists
+        # precisely so a missing access token degrades to clearly-labelled
+        # simulated prices. The result: the dashboard tape happily showed SIM
+        # quotes (refresh_quotes uses the chain) while the one action that
+        # creates virtual orders hard-failed with
+        # "configure UPSTOX_ACCESS_TOKEN; API key/secret alone cannot fetch
+        # quotes". Route through the chain and record the *actual* source on
+        # every fill so a simulated fill is never labelled as an Upstox one.
         try:
-            quotes = self.market_data.fetch_quotes(self._instrument_map(symbols))
-            self.ledger.record_marks([quote.to_dict() for quote in quotes.values()])
+            chain = self._quote_chain()
+            quotes = chain.fetch(symbols)
+            self.ledger.record_marks(
+                [quote.as_market_quote_dict() for quote in quotes.values()]
+            )
             stale_symbols = [
                 symbol
                 for symbol, quote in quotes.items()
-                if (datetime.now(UTC) - quote.timestamp.astimezone(UTC)).total_seconds()
+                if (
+                    datetime.now(UTC) - quote.source_timestamp.astimezone(UTC)
+                ).total_seconds()
                 > self.quote_stale_seconds * 3
             ]
             if stale_symbols:
@@ -458,7 +523,8 @@ class PaperTradingService:
                     "estimated_fill_price": price,
                     "estimated_notional": amount,
                     "estimated_charges": costs,
-                    "quote_timestamp": quote.timestamp.isoformat(),
+                    "quote_timestamp": quote.source_timestamp.isoformat(),
+                    "quote_source": str(quote.source).upper(),
                     "status": "READY",
                 }
             )
@@ -468,6 +534,10 @@ class PaperTradingService:
             and all(item["status"] == "READY" for item in orders)
             and bool(risk["allowed"])
         )
+        # AUDIT-015: surface the pricing provenance next to the orders so the
+        # operator can see whether the fills below are real, simulated, or
+        # frozen end-of-day marks.
+        sources = sorted({str(quote.source).upper() for quote in quotes.values()})
         return {
             "strategy_id": strategy_id,
             "ready": ready,
@@ -483,6 +553,7 @@ class PaperTradingService:
             "signal": signal,
             "orders": orders,
             "risk": risk,
+            "quote_sources": sources,
             "cost_model": self._cost_model_metadata(),
         }
 
@@ -584,7 +655,7 @@ class PaperTradingService:
     def _pretrade_risk(
         self,
         target: Mapping[str, int],
-        quotes: Mapping[str, MarketQuote],
+        quotes: Mapping[str, Any],  # MarketQuote or datahub.quotes.QuoteResult
         order_count: int,
     ) -> dict[str, Any]:
         current = self.ledger.latest_equity()
@@ -630,6 +701,20 @@ class PaperTradingService:
         summary["allowed"] = not summary["breaches"]
         return summary
 
+    @staticmethod
+    def _fill_source(order: Mapping[str, Any], default: str) -> str:
+        """Label a virtual fill with the quote source that actually priced it.
+
+        AUDIT-015: every fill used to be stamped ``upstox_quote_read_only``
+        regardless of where the price came from. With the quote chain now in
+        play, a fill priced by the simulator must say so — an audit trail that
+        calls a simulated price "upstox" is worse than no trail at all.
+        """
+        source = str(order.get("quote_source") or "").strip().lower()
+        if source in ("upstox", "sim", "eod"):
+            return f"{source}_quote_read_only"
+        return f"{source}_read_only" if source else default
+
     def _apply_preview(
         self, strategy_id: str, preview: Mapping[str, Any], *, source: str
     ) -> dict[str, Any]:
@@ -646,7 +731,7 @@ class PaperTradingService:
                 quantity=int(order["quantity"]),
                 fill_price=float(order["estimated_fill_price"]),
                 charges=float(order["estimated_charges"]),
-                source=source,
+                source=self._fill_source(order, default=source),
                 quote_timestamp=str(order["quote_timestamp"]),
             )
             results.append(result)
@@ -912,6 +997,9 @@ class PaperTradingService:
                 (float(benchmark["last_price"]) / float(benchmark_start) - 1) * 100,
                 4,
             )
+        # AUDIT-013/AUDIT-034 — publish *why* the paper rebalance control is
+        # disabled instead of leaving the operator to guess.
+        blockers = self.rebalance_blockers()
         return {
             "paper_only": True,
             "kill_switch": sysstate.kill_switch(),
@@ -937,6 +1025,8 @@ class PaperTradingService:
             "orders": self.ledger.order_history(),
             "equity_history": history,
             "strategies": self.strategies(),
+            "rebalance_blockers": blockers,
+            "rebalance_blocked_reason": "; ".join(blockers) or None,
             "events": self.ledger.events(),
             "server_time": datetime.now(UTC).isoformat(),
         }

@@ -1,8 +1,11 @@
 """Environment validation for deployment safety."""
 
+import logging
 import os
 
 import psycopg2
+
+logger = logging.getLogger(__name__)
 
 
 class ConfigurationError(Exception):
@@ -10,8 +13,22 @@ class ConfigurationError(Exception):
 
 
 def validate_environment() -> None:
-    """Validate environment variables for safe deployment."""
-    system_mode = os.getenv("SYSTEM_MODE", "PAPER").upper()
+    """Validate environment variables for safe deployment.
+
+    AUDIT-036: ``SYSTEM_MODE`` used to default to ``PAPER`` while
+    ``.env.example`` documents ``LOCAL``. ``PAPER`` requires
+    ``DATABASE_URL``, so a clean checkout that followed the documented
+    setup failed its own preflight. The default is now ``LOCAL`` — the
+    least-privileged mode, which reaches neither a remote database nor a
+    broker — and an unset mode is logged loudly rather than assumed.
+    """
+    system_mode = os.getenv("SYSTEM_MODE", "").strip().upper() or "LOCAL"
+    if not os.getenv("SYSTEM_MODE"):
+        logger.warning(
+            "SYSTEM_MODE is not set; assuming LOCAL (no remote database, no "
+            "broker). Set SYSTEM_MODE explicitly to PAPER, VPS or PRODUCTION "
+            "for any deployment."
+        )
 
     if system_mode not in ("LOCAL", "PAPER", "VPS", "PRODUCTION"):
         raise ConfigurationError(

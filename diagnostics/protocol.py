@@ -257,21 +257,18 @@ class DiagnosticProtocol:
             FAILED if none do
         """
         try:
-            from backtest.engine import BacktestEngine
-            from backtest.costs import ZeroCostModel
-            
             edge_found = False
             results = []
             
             for strategy_config in strategies_data:
                 strategy_id = strategy_config.get('id', 'unknown')
                 
-                # Run with zero costs
-                engine = BacktestEngine(cost_model=ZeroCostModel())
-                
-                # Simplified: we need the actual strategy signals
-                # For now, check if any stored results exist with zero costs
-                # In practice, this would re-run the backtests
+                # NOTE(forensic audit): the zero-cost edge check below reads
+                # a *stored* `zero_cost_results` block instead of re-running
+                # the backtest with a ZeroCostModel. The BacktestEngine was
+                # constructed here and never used. If no stored block exists
+                # this check silently reports "no edge" — it is not evidence
+                # either way.
                 
                 # Check if we have stored zero-cost results
                 if 'zero_cost_results' in strategy_config:
@@ -632,14 +629,14 @@ def run_full_diagnostics(
     try:
         from data.loader import load_historical_data
         historical_universe = load_historical_data()
-    except:
+    except Exception:
         pass
     
     try:
         from research.ledger import HypothesisLedger
         ledger = HypothesisLedger()
         current_universe = list(ledger.get_current_universe())
-    except:
+    except Exception:
         pass
     
     # Determine test window from index data

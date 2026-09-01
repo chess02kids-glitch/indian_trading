@@ -140,7 +140,9 @@ def render() -> None:
     Read-only by construction: no callbacks mutate state. Streamlit is
     imported lazily so this module is importable without the dependency.
     """
-    import streamlit as st
+    from dashboard.streamlit_guard import require_streamlit as _require_streamlit
+
+    st = _require_streamlit()
 
     st.set_page_config(page_title="Quant India — Broker Health", layout="wide")
     st.title("Broker Health — Sandbox (read-only)")

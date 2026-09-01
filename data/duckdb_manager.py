@@ -14,11 +14,20 @@ class DuckDBManager:
 
     def __init__(
         self,
-        db_path: Path = settings.storage.duckdb_path,
-        data_dir: Path = settings.storage.raw_dir,
+        db_path: Path | None = None,
+        data_dir: Path | None = None,
     ):
-        self.db_path = db_path
-        self.data_dir = data_dir
+        # AUDIT-027: the defaults used to be evaluated at *import* time
+        # (``db_path: Path = settings.storage.duckdb_path``), so
+        # ``QUANT_DATA_DIR`` was frozen before any fixture could redirect
+        # it and a test run wrote straight into the committed
+        # ``data/quant.duckdb``. Resolve lazily instead.
+        self.db_path = (
+            Path(db_path) if db_path is not None else settings.storage.duckdb_path
+        )
+        self.data_dir = (
+            Path(data_dir) if data_dir is not None else settings.storage.raw_dir
+        )
         self.logger = ContextLogger(base_logger, operation="duckdb")
         self._init_db()
 
@@ -56,6 +65,8 @@ class DuckDBManager:
 
     def create_snapshot(self, name: str) -> Path:
         """Exports the current market_data view to a single snapshot parquet file."""
+        # AUDIT-027: ``settings.storage.data_dir`` is a property, so this is
+        # resolved at call time rather than being bound at import time.
         snapshot_dir = settings.storage.data_dir / "snapshots"
         snapshot_dir.mkdir(parents=True, exist_ok=True)
         snapshot_path = snapshot_dir / f"{name}.parquet"

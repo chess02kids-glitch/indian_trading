@@ -96,6 +96,28 @@ def main() -> int:
     try:
         if os.getenv("QUANT_EXECUTION_MODE", "PAPER").upper() not in {"", "PAPER"}:
             raise ValueError("run_daily only permits QUANT_EXECUTION_MODE=PAPER")
+        # AUDIT-021: the operator kill switch is authoritative for *every*
+        # order-creating path, including this scheduled entry point. Fails
+        # closed: an unreadable state file refuses to start.
+        from datahub.kill_switch import blocked_reason, is_killed
+
+        if is_killed():
+            detail = blocked_reason()
+            payload = {
+                "status": "halted_kill_switch",
+                "mode": "PAPER",
+                "failure_reason": detail,
+                "status_document_timestamp": datetime.now(UTC).isoformat(),
+                "fresh": True,
+            }
+            try:
+                blocked_health = HealthService(args.status_file)
+                blocked_health.set_state(SystemHealth.LOCKED, detail)
+                blocked_health.write_extended_status(payload)
+            except Exception:  # noqa: BLE001 - never mask the refusal
+                logging.getLogger(__name__).warning("daily_status_write_failed")
+            _emit(payload)
+            return EXIT_CODES["halted_risk"]
         run_date = date.fromisoformat(args.run_date)
         if run_date > date.today():
             raise ValueError("run date cannot be in the future")

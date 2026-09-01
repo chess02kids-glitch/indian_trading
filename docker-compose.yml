@@ -12,12 +12,32 @@ services:
     ports:
       - "${QUANT_INDIA_PORT:-8080}:8080"
     volumes:
-      - ./var:/app/var:ro
+      # AUDIT-019: this was mounted `:ro` while the container also ran
+      # `read_only: true`. `var/` is where the dashboard writes
+      # `system_state.json` (the operator kill switch, via datahub.state) and
+      # `paper_trading.sqlite`. With a read-only mount every write raised
+      # `PermissionError`, so POST /api/kill-switch returned
+      # `503 {"error": "kill switch unavailable"}` — the kill switch could not
+      # be armed in the very deployment that is supposed to be the safe one,
+      # while GET /api/status still reported the switch as `armed: false`.
+      # Market *data* stays read-only; `var/` must be writable.
+      - ./var:/app/var
       - ./logs:/app/logs
-      - ./data:/app/data:ro
+      # AUDIT-037: this was mounted `:ro`, but the dashboard writes into
+      # `data/` — `/api/data/rebuild-prices` rewrites
+      # `data/clean/prices.parquet` and `config.settings` defaults the DuckDB
+      # store to `data/quant.duckdb`. A read-only mount turned those routes
+      # into `503`s inside the container. The root filesystem stays
+      # `read_only: true` below, so `data/` and `var/` are the *only*
+      # writable paths; mount `data/` read-only again only if the deployment
+      # never calls a mutating data route.
+      - ./data:/app/data
     read_only: true
     tmpfs:
       - /tmp
+      # Python needs a writable HOME for pip caches / matplotlib config; the
+      # container sets HOME=/home/quant, which is inside the read-only root.
+      - /home/quant
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/healthz', timeout=3).read()"]

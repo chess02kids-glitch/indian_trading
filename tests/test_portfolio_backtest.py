@@ -16,7 +16,11 @@ from backtest.benchmarks import (
     persistence_weights,
     random_weights,
 )
-from backtest.engine import BacktestConfig, VectorBTResearchEngine
+from backtest.engine import (
+    MEMBERSHIP_FROM_PRICES,
+    BacktestConfig,
+    VectorBTResearchEngine,
+)
 from backtest.metrics import (
     compute_performance_metrics,
     drawdown,
@@ -110,7 +114,7 @@ def test_backtest_rebalances_and_applies_costs() -> None:
         use_vectorbt=False,
     )
     engine = VectorBTResearchEngine(config)
-    result = engine.run(prices, weights, strategy_name="unit", universe_history=[])
+    result = engine.run(prices, weights, strategy_name="unit", universe_history=MEMBERSHIP_FROM_PRICES)
     assert result.returns.index.equals(prices.index)
     assert result.equity_curve.iloc[-1] > 1.0
     assert result.trades["rebalance"].sum() > 1
@@ -124,7 +128,7 @@ def test_backtest_vectorbt_backend_is_available_or_falls_back() -> None:
     prices = _prices(80)
     weights = equal_weight_weights(prices)
     result = VectorBTResearchEngine(BacktestConfig()).run(
-        prices, weights, universe_history=[]
+        prices, weights, universe_history=MEMBERSHIP_FROM_PRICES
     )
     assert result.metadata["backend"] in {"vectorbt", "pandas"}
     assert len(result.returns) == len(prices)
@@ -143,7 +147,7 @@ def test_backtest_volatility_targeting_hook() -> None:
             use_vectorbt=False,
         )
     )
-    result = engine.run(prices, weights, universe_history=[])
+    result = engine.run(prices, weights, universe_history=MEMBERSHIP_FROM_PRICES)
     assert result.weights.abs().sum(axis=1).max() <= 1.0 + 1e-8
 
 
@@ -166,7 +170,7 @@ def test_metrics_and_benchmark_suite_are_standardized() -> None:
     assert tuple(benchmarks) == BENCHMARK_NAMES
     comparison = compare_results(
         {
-            "strategy": engine.run(prices, strategy_weights, universe_history=[]),
+            "strategy": engine.run(prices, strategy_weights, universe_history=MEMBERSHIP_FROM_PRICES),
             **benchmarks,
         }
     )
@@ -197,7 +201,7 @@ def test_invalid_backtest_inputs_are_rejected() -> None:
     weights = equal_weight_weights(prices)
     with pytest.raises(ResearchInputError):
         VectorBTResearchEngine().run(
-            prices.iloc[::-1], weights.iloc[::-1], universe_history=[]
+            prices.iloc[::-1], weights.iloc[::-1], universe_history=MEMBERSHIP_FROM_PRICES
         )
     with pytest.raises(ResearchInputError):
         compute_performance_metrics(

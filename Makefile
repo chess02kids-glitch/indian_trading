@@ -14,13 +14,19 @@ pre-commit:
 	pre-commit run --all-files
 
 # Dashboard commands
+# AUDIT-033: `streamlit` is an optional extra, so `pip install -e .[dev]`
+# alone does not provide it. These targets install it on demand instead of
+# failing with "streamlit: command not found".
 dashboard:
+	python -c "import streamlit" 2>/dev/null || pip install -e ".[dashboards]"
 	streamlit run dashboard/main_dashboard.py
 
 dashboard-research:
+	python -c "import streamlit" 2>/dev/null || pip install -e ".[dashboards]"
 	streamlit run dashboard/research_dashboard.py
 
 dashboard-paper:
+	python -c "import streamlit" 2>/dev/null || pip install -e ".[dashboards]"
 	streamlit run dashboard/paper_dashboard.py
 
 # Diagnostic commands

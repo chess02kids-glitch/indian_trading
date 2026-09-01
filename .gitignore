@@ -21,3 +21,6 @@ var/
 logs/
 .venv/
 data/*.duckdb
+
+# Forensic-audit scratch / build artefacts
+build/

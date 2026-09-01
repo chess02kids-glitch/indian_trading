@@ -1,10 +1,39 @@
+"""Fetch Indian/global macro series from FRED into ``data/raw``.
+
+Credentials: FRED requires a per-user API key. It is **never** stored in this
+repository — supply it through the environment::
+
+    export FRED_API_KEY=...
+
+AUDIT-002: a real FRED API key was committed here. It has been removed from
+the source; treat the historical key as compromised and rotate it at
+https://fred.stlouisfed.org/docs/api/api_key.html. Removing the value from the
+working tree does not remove it from git history — rotation is mandatory.
+"""
+
+from __future__ import annotations
+
+import os
 from pathlib import Path
 
 import pandas as pd
 import requests
 
-# The user's FRED API key
-FRED_API_KEY = "0a7fba5965eb42e16d16f0eee41a9bb8"
+
+class MissingCredential(RuntimeError):
+    """Raised when a required API credential is absent from the environment."""
+
+
+def _fred_api_key() -> str:
+    key = (os.getenv("FRED_API_KEY") or "").strip()
+    if not key:
+        raise MissingCredential(
+            "FRED_API_KEY is not set. Get a free key at "
+            "https://fred.stlouisfed.org/docs/api/api_key.html and export it "
+            "before running this script."
+        )
+    return key
+
 
 # FRED Series IDs for India and global macro
 SERIES = {
@@ -17,7 +46,10 @@ SERIES = {
 
 
 def fetch_series(series_id):
-    url = f"https://api.stlouisfed.org/fred/series/observations?series_id={series_id}&api_key={FRED_API_KEY}&file_type=json"
+    url = (
+        f"https://api.stlouisfed.org/fred/series/observations"
+        f"?series_id={series_id}&api_key={_fred_api_key()}&file_type=json"
+    )
     response = requests.get(url, timeout=30)
     if response.status_code == 200:
         data = response.json()

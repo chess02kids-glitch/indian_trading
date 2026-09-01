@@ -1603,7 +1603,9 @@ const App = {
       try {
         const out = await this.api("/api/live/bot", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: window.QUANT_DASHBOARD_TOKEN
+            ? { "Content-Type": "application/json", "X-Quant-Token": window.QUANT_DASHBOARD_TOKEN }
+            : { "Content-Type": "application/json" },
           body: JSON.stringify({ enabled: next, risk_pct: this.bot.risk_pct }),
         });
         this.renderBot(out);
@@ -1617,7 +1619,9 @@ const App = {
       try {
         const out = await this.api("/api/live/bot", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: window.QUANT_DASHBOARD_TOKEN
+            ? { "Content-Type": "application/json", "X-Quant-Token": window.QUANT_DASHBOARD_TOKEN }
+            : { "Content-Type": "application/json" },
           body: JSON.stringify({ enabled: this.bot.enabled, risk_pct: parseFloat(e.target.value) }),
         });
         this.renderBot(out);
