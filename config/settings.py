@@ -7,26 +7,43 @@ from pathlib import Path
 class StorageConfig:
     """Storage configuration for paths and databases.
 
-    AUDIT-027: ``data_dir`` used to be a dataclass field whose default was
-    evaluated **once, when the module was imported**. Because ``settings``
-    is a module-level singleton, ``QUANT_DATA_DIR`` was frozen before any
-    test fixture (or a ``os.environ`` change at runtime) could redirect it,
-    so a test run wrote straight into the committed ``data/quant.duckdb``
-    and ``data/snapshots/`` and left the working tree dirty. It is a
-    property now, resolved on every access.
+    AUDIT-027: ``data_dir`` is a dataclass field whose default is evaluated
+    **once**, when ``settings`` is constructed — which happens at import.
+    Because ``settings`` is a module-level singleton, a later
+    ``QUANT_DATA_DIR`` change (a test fixture monkeypatching the
+    environment, or a supervisor rewriting it) has no effect by itself, and
+    every caller keeps writing into the committed ``data/``. Two things fix
+    that:
+
+    * ``StorageManager`` / ``DuckDBManager`` no longer bind
+      ``settings.storage.*`` as *default arguments* (which Python evaluates
+      at import), so they read the current value at construction time;
+    * :meth:`rebind` re-resolves the field from the current environment for
+      callers that need it.
+
+    Tests redirect the attribute directly with
+    ``monkeypatch.setattr(settings.storage, "data_dir", path)``, which is
+    restored correctly — a property-plus-override scheme was tried first and
+    leaked a stale override into later tests.
     """
 
-    _data_dir_override: Path | None = field(default=None, repr=False)
+    data_dir: Path = field(
+        default_factory=lambda: Path(os.getenv("QUANT_DATA_DIR", "data"))
+    )
 
-    @property
-    def data_dir(self) -> Path:
-        # An explicit assignment wins over the environment, so deployments
-        # and tests can still pin a directory.
-        return self._data_dir_override or Path(os.getenv("QUANT_DATA_DIR", "data"))
+    def rebind(self, data_dir: Path | str | None = None) -> Path:
+        """Re-resolve ``data_dir`` from the environment and return it.
 
-    @data_dir.setter
-    def data_dir(self, value: Path | str | None) -> None:
-        self._data_dir_override = Path(value) if value is not None else None
+        AUDIT-027: the default is evaluated once, when ``settings`` is
+        constructed, so a later ``QUANT_DATA_DIR`` change (a test fixture
+        monkeypatching the environment, or a supervisor rewriting it) had no
+        effect and every caller kept writing into the committed ``data/``.
+        Callers that must honour the current environment call this first.
+        """
+        self.data_dir = Path(data_dir) if data_dir is not None else Path(
+            os.getenv("QUANT_DATA_DIR", "data")
+        )
+        return self.data_dir
 
     @property
     def raw_dir(self) -> Path:

@@ -213,13 +213,29 @@ def parse_eod2_daily_file(
     ``source_ts``, ``adjustment_state``) are applied here.
 
     AUDIT-012 — ``series_filter``: NSE's bhavcopy carries one row per traded
-    *series*, and the source files mix them. Measured over 600 committed
-    files: ``EQ 1,145,575`` rows, but also ``BE 86,775``, ``SM 51,847``,
-    ``ST 10,175`` and ``BZ 2,523`` — roughly 8% of all rows, across 377 of
-    600 symbols. ``BE`` is the trade-for-trade/odd-lot session and the others
-    are institutional/negotiated blocks; stitching them into one continuous
-    "close" series produces artificial jumps at every series transition, for
-    a symbol that is supposedly a single equity.
+    *series*, and the source files mix them. Measured over **all 3,694
+    committed files** (2026-09-01, after the filter was added):
+
+    ==================  =========  =========================================
+    series              rows       meaning
+    ==================  =========  =========================================
+    ``EQ`` (kept)       6,664,240  normal equity market
+    ``BE``               500,424   trade-for-trade / odd-lot session
+    ``SM``               308,264   institutional / negotiated block
+    ``NAN``              269,627   index, VIX and g-sec files (no equity)
+    ``ST``                62,225   SME trade-for-trade
+    ``BZ``                34,775   negotiated block
+    ==================  =========  =========================================
+
+    So **1,175,315 of 7,839,555 rows (14.99%) were not the equity series**
+    and were being stitched into one continuous "close" per symbol, which
+    produces an artificial jump at every series transition.
+
+    Separately, **741 of 3,694 files contain no EQ row at all** and are now
+    refused (``DataQualityError``) instead of contributing an empty or
+    misleading history: 566 ``*_SME`` names, 165 Nifty index / g-sec files,
+    India VIX, and 9 delisted/odd names. Before the filter those index files
+    were ingested as if they were tradeable equities.
 
     The filter therefore defaults to ``EQ`` and is applied here, at the
     boundary, rather than downstream. Pass ``series_filter=None`` to keep

@@ -20,6 +20,7 @@ from typing import Any, Mapping
 from zoneinfo import ZoneInfo
 
 from config.costs import SCENARIO_MARKET_CONDITIONS, CostScenario, load_charge_table
+from config.risk_policy import DEFAULT_RISK_POLICY
 from datahub import state as sysstate
 from datahub.quotes import QuoteChain, build_quote_chain
 
@@ -33,13 +34,13 @@ from .market_data import (
 
 DEFAULT_WATCHLIST = ("NIFTY_50", "RELIANCE", "HDFCBANK", "ICICIBANK", "TCS")
 IST = ZoneInfo("Asia/Kolkata")
-DEFAULT_RISK_POLICY = {
-    "max_position_weight": 0.15,
-    "max_gross_exposure": 1.00,
-    "daily_loss_limit": 0.03,
-    "max_drawdown": 0.15,
-    "max_orders_per_rebalance": 30,
-}
+# AUDIT-024: DEFAULT_RISK_POLICY used to be a second, conflicting copy of the
+# risk limits — 15% / 100% / 3% / 15% against risk_kill.RiskLimits'
+# 25% / 100% / 3% / 10%, with nothing saying which governed. It now comes from
+# config.risk_policy, which derives it from risk_kill (the single source of
+# truth) and takes the more conservative value wherever they differ. The paper
+# drawdown limit therefore moves 15% -> 10%; nothing is loosened.
+
 DEFAULT_REGISTRY = {
     "momrem": {
         "label": "MomReM momentum + regime filter",

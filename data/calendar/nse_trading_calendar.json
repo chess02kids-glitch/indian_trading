@@ -8,13 +8,13 @@
     "2025": "https://www.nseindia.com/api/holiday-master?type=trading&year=2025",
     "2026": "https://www.nseindia.com/api/holiday-master?type=trading"
   },
-  "retrieved_at": "2026-09-01",
+  "retrieved_at": "2026-09-02",
   "years": [
     2024,
     2025,
     2026
   ],
-  "notes": "Retrieved from NSE's public holiday-master API, \"CM\" (Capital Market) segment, which is the authoritative published list of equity trading holidays. Weekend entries are included because the exchange sometimes closes on a weekend (e.g. 2026-08-15 Independence Day, a Saturday) and sometimes opens one (see special_sessions). Refresh this file when NSE publishes the next calendar year; the loader warns when a date outside the covered years is queried.",
+  "notes": "Retrieved from NSE's public holiday-master API, \"CM\" (Capital Market) segment, which is the authoritative published list of equity trading holidays. Weekend entries are included because the exchange sometimes closes on a weekend (e.g. 2026-08-15 Independence Day, a Saturday) and sometimes opens one (see special_sessions). Refresh this file when NSE publishes the next calendar year; the loader warns when a date outside the covered years is queried. Special sessions are checked BEFORE holidays, so a date can be both a published holiday and a live session (Muhurat trading on Diwali). Known limitation: only the sessions listed here are recognised; a Muhurat session on a Diwali date that is not listed will still be reported as off-calendar until this file is refreshed. Verified 2026-09-02 against NSE/BSE circulars and press coverage for 2024-01-20, 2024-05-18 and 2025-10-21.",
   "holidays": [
     {
       "date": "2024-01-22",
@@ -330,6 +330,27 @@
       "weekday": "Sunday",
       "description": "Union Budget 2026 special session (Sunday)",
       "source": "https://www.nseindia.com/ (NSE circular dated 2026-01-16); reported by Business Standard, 2026-01-16 and India Today, 2026-01-31"
+    },
+    {
+      "date": "2024-01-20",
+      "weekday": "Saturday",
+      "description": "Special live trading session with intraday switchover to the DR site (disaster-recovery test). Trades were real, not simulated.",
+      "source": "NSE/BSE circulars, 2023-12-28; Business Standard 2024-01-19 https://www.business-standard.com/markets/stock-market-news/bse-nse-to-open-on-january-20-for-special-trading-session-check-details-124011900529_1.html",
+      "session": "09:15-10:00 (primary) and 11:30-12:30 (DR)"
+    },
+    {
+      "date": "2024-05-18",
+      "weekday": "Saturday",
+      "description": "Special live trading session with intraday switchover to the DR site (disaster-recovery test).",
+      "source": "NSE/BSE circulars 2024-05-13; Mint 2024-05-17 https://www.livemint.com/market/stock-market-news/stock-market-news-bse-nse-are-open-for-trade-tomorrow-this-is-the-reason-11715935341321.html",
+      "session": "09:15-10:00 (primary) and 11:30-12:30 (DR)"
+    },
+    {
+      "date": "2025-10-21",
+      "weekday": "Tuesday",
+      "description": "Diwali Laxmi Pujan \u2014 market closed for the regular session but a live one-hour Muhurat trading session was held, so real prices exist for this date.",
+      "source": "NSE/BSE holiday circular; NDTV Profit 2025-10-17 https://www.ndtvprofit.com/markets/diwali-2025-stock-market-holidays-will-nse-bse-remain-closed-for-laxmi-pujan-and-balipratipada",
+      "session": "13:45-14:45 (Muhurat trading)"
     }
   ]
 }

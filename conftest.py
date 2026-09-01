@@ -51,14 +51,24 @@ def isolated_derived_data(tmp_path, monkeypatch):
     clean checkout (1293) and a dirty one (1411).  A test run was therefore not
     reproducible.
 
-    Any code that resolves its data directory through ``QUANT_DATA_DIR`` now
-    gets a per-test temporary directory.  Paths that hard-code ``data/`` keep
-    doing so, so this is a safety net rather than a claim that the problem is
-    fully solved; the remaining offenders are listed in ``FIX_PLAN.md`` (B11).
+    Every test gets a per-test temporary data directory, applied **twice**:
+
+    * ``QUANT_DATA_DIR`` in the environment, for code that builds its own
+      :class:`~config.settings.StorageConfig`;
+    * ``settings.storage.data_dir`` itself, because ``settings`` is a
+      module-level singleton whose field default was already evaluated at
+      import time — setting only the environment is not enough (this is the
+      bug the fixture was written for and did not actually fix).
+
+    Paths that hard-code ``data/`` keep doing so, so this is a safety net
+    rather than a claim that the problem is fully solved.
     """
+    from config.settings import settings
+
     data_dir = tmp_path / "data"
     data_dir.mkdir(parents=True, exist_ok=True)
     monkeypatch.setenv("QUANT_DATA_DIR", str(data_dir))
+    monkeypatch.setattr(settings.storage, "data_dir", data_dir)
     previous = os.getcwd()
     yield data_dir
     os.chdir(previous)

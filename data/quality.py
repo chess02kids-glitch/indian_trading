@@ -19,6 +19,7 @@ from typing import Any, Callable, Iterable, Mapping
 
 import pandas as pd
 
+from config.risk_policy import MAX_DATA_AGE_QUALITY_DAYS
 from models.domain import MarketBar
 
 __all__ = [
@@ -607,12 +608,22 @@ def detect_data_staleness(
     frame: pd.DataFrame | Iterable[pd.Timestamp],
     *,
     reference_now: datetime | None = None,
-    max_staleness_days: float = 6.0,
+    max_staleness_days: float = MAX_DATA_AGE_QUALITY_DAYS,
 ) -> QualityIssue | None:
     """Report when the latest observation is older than the allowed age.
 
-    Weekends/holidays make a 6-day default safe for daily data; tighten for
-    intraday. Returns None when fresh.
+    The default is :data:`config.risk_policy.MAX_DATA_AGE_QUALITY_DAYS`,
+    which is defined next to the trading window
+    (:data:`config.risk_policy.MAX_DATA_AGE_HOURS`, 18h) on purpose.
+
+    AUDIT-029: this layer tolerated data 6 days old while
+    ``risk_kill.RiskLimits`` refused to trade on anything older than 18
+    hours — an 8x gap that let a dataset be reported clean and still be
+    untradable, with no component noticing. The two numbers are different
+    because they answer different questions (is this *daily history*
+    complete? vs may I trade on this *quote* right now?), but they are now
+    defined in one place and checked for consistency. Tighten for intraday.
+    Returns None when fresh.
     """
     if isinstance(frame, pd.DataFrame):
         if "date" not in {str(c).lower() for c in frame.columns} or frame.empty:
@@ -697,7 +708,7 @@ def validate_market_bars(
     source: str = "unknown",
     exchange: str = "NSE",
     reference_now: datetime | None = None,
-    max_staleness_days: float = 6.0,
+    max_staleness_days: float = MAX_DATA_AGE_QUALITY_DAYS,
     calendar: TradingCalendar | None = None,
     as_of: date | datetime | pd.Timestamp | str | None = None,
 ) -> tuple[pd.DataFrame, DataQualityReport]:

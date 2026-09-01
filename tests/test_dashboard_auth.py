@@ -396,3 +396,89 @@ def test_environment_variables_are_documented():
     text = open(runbook, encoding="utf-8").read()
     for name in (TOKEN_ENV, BIND_ENV, ALLOW_INSECURE_ENV):
         assert name in text, f"{name} is undocumented"
+
+
+# ---------------------------------------------------------------------------
+# AUDIT-028 — the healthcheck must be able to observe a broken dependency
+# ---------------------------------------------------------------------------
+
+
+class TestHealthzIsNotShallow:
+    """``/healthz`` is the Docker/compose probe; it must reflect reality."""
+
+    def test_health_reports_every_subsystem(self):
+        from dashboard.server import (
+            CRITICAL_SUBSYSTEMS,
+            RUNTIME_DEPENDENCIES,
+            subsystem_health,
+        )
+
+        health = subsystem_health()
+        expected = {name for name, _, _ in CRITICAL_SUBSYSTEMS} | {
+            f"dependency:{name}" for name in RUNTIME_DEPENDENCIES
+        }
+        assert set(health["subsystems"]) == expected
+        assert health["status"] == "ok"
+        assert health["failed"] == []
+
+    def test_healthz_returns_200_when_healthy(self, server):
+        port, _ = server
+        status, raw = _request("GET", "/healthz", port=port)
+        assert status == 200
+        payload = json.loads(raw)
+        assert payload["status"] == "ok"
+        assert "subsystems" in payload
+
+    def test_healthz_returns_503_when_a_dependency_is_broken(self, server, monkeypatch):
+        """A missing third-party module must fail the probe, not be hidden."""
+        import importlib
+
+        from dashboard import server as server_module
+
+        broken = {"numpy", "pandas"}
+        real_import_module = importlib.import_module
+
+        def fake_import_module(name, *args, **kwargs):
+            if name in broken:
+                raise ModuleNotFoundError(f"No module named {name!r}")
+            return real_import_module(name, *args, **kwargs)
+
+        # ``importlib.import_module`` is what the probe calls, so patching
+        # ``builtins.__import__`` would not be observed at all.
+        monkeypatch.setattr(importlib, "import_module", fake_import_module)
+        health = server_module.subsystem_health()
+        assert health["status"] == "degraded"
+        assert "dependency:numpy" in health["failed"]
+        assert "dependency:pandas" in health["failed"]
+
+    def test_healthz_status_code_follows_the_subsystems(self, server, monkeypatch):
+        from dashboard import server as server_module
+
+        monkeypatch.setattr(
+            server_module,
+            "subsystem_health",
+            lambda: {
+                "status": "degraded",
+                "subsystems": {"paper_trading": "ModuleNotFoundError: numpy"},
+                "failed": ["paper_trading"],
+            },
+        )
+        port, _ = server
+        status, raw = _request("GET", "/healthz", port=port)
+        assert status == 503
+        payload = json.loads(raw)
+        assert payload["status"] == "degraded"
+        assert payload["failed"] == ["paper_trading"]
+
+    def test_subsystem_health_never_raises(self, monkeypatch):
+        """The probe itself must not become another way to crash."""
+        from dashboard import server as server_module
+
+        monkeypatch.setattr(
+            server_module,
+            "CRITICAL_SUBSYSTEMS",
+            (("explodes", "no.such.module", "whatever"),),
+        )
+        health = server_module.subsystem_health()
+        assert health["status"] == "degraded"
+        assert health["failed"] == ["explodes"]

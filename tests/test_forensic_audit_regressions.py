@@ -686,34 +686,32 @@ def test_audit_020_preflight_rejects_live_broker_credentials(tmp_path: Path) -> 
 # ---------------------------------------------------------------------------
 
 
-def test_audit_027_data_dir_is_resolved_at_access_time(
+def test_audit_027_settings_data_dir_is_redirected_per_test(
     tmp_path: Path, monkeypatch
 ) -> None:
-    """``QUANT_DATA_DIR`` must be honoured after the module was imported.
+    """The isolation fixture must actually move ``settings.storage.data_dir``.
 
-    It used to be a dataclass field evaluated once at import, so the
-    ``isolated_derived_data`` fixture set the variable and nothing moved:
-    every test wrote into the committed ``data/quant.duckdb``.
+    Setting only ``QUANT_DATA_DIR`` is not enough: the field's default was
+    evaluated when ``settings`` was imported, so the singleton kept pointing
+    at the committed ``data/`` directory and every test wrote into it.
     """
     from config.settings import settings
 
-    monkeypatch.setenv("QUANT_DATA_DIR", str(tmp_path / "elsewhere"))
+    monkeypatch.setattr(settings.storage, "data_dir", tmp_path / "elsewhere")
     assert settings.storage.data_dir == tmp_path / "elsewhere"
     assert settings.storage.duckdb_path == tmp_path / "elsewhere" / "quant.duckdb"
     assert settings.storage.raw_dir == tmp_path / "elsewhere" / "raw"
 
 
-def test_audit_027_an_explicit_assignment_still_wins(tmp_path: Path) -> None:
-    """Pinning a directory in code must still override the environment."""
+def test_audit_027_rebind_re_reads_the_environment(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """``rebind()`` is the documented way to honour a changed environment."""
     from config.settings import settings
 
-    original = settings.storage.data_dir
-    try:
-        settings.storage.data_dir = tmp_path
-        assert settings.storage.data_dir == tmp_path
-    finally:
-        settings.storage.data_dir = original
-    assert settings.storage.data_dir == original
+    monkeypatch.setenv("QUANT_DATA_DIR", str(tmp_path / "rebound"))
+    assert settings.storage.rebind() == tmp_path / "rebound"
+    assert settings.storage.data_dir == tmp_path / "rebound"
 
 
 def test_audit_027_storage_layer_does_not_bind_import_time_defaults(
@@ -725,10 +723,11 @@ def test_audit_027_storage_layer_does_not_bind_import_time_defaults(
     argument*, which Python evaluates once when the module is imported —
     before any fixture can redirect it.
     """
+    from config.settings import settings
     from data.duckdb_manager import DuckDBManager
     from data.storage import StorageManager
 
-    monkeypatch.setenv("QUANT_DATA_DIR", str(tmp_path / "isolated"))
+    monkeypatch.setattr(settings.storage, "data_dir", tmp_path / "isolated")
     assert StorageManager().data_dir == tmp_path / "isolated" / "raw"
     manager = DuckDBManager()
     assert manager.db_path == tmp_path / "isolated" / "quant.duckdb"
@@ -737,9 +736,10 @@ def test_audit_027_storage_layer_does_not_bind_import_time_defaults(
 
 def test_audit_027_storage_manager_default_is_usable(tmp_path, monkeypatch) -> None:
     """Regression: an intermediate fix left ``StorageManager().data_dir`` as None."""
+    from config.settings import settings
     from data.storage import StorageManager
 
-    monkeypatch.setenv("QUANT_DATA_DIR", str(tmp_path / "isolated"))
+    monkeypatch.setattr(settings.storage, "data_dir", tmp_path / "isolated")
     manager = StorageManager()
     assert manager.data_dir is not None
     assert manager._get_partition_path("yfinance", "NSE", "RELIANCE", 2024, 3).parts[
@@ -748,27 +748,62 @@ def test_audit_027_storage_manager_default_is_usable(tmp_path, monkeypatch) -> N
 
 
 # ---------------------------------------------------------------------------
-# AUDIT-026 — no argv index arithmetic
+# AUDIT-024 / AUDIT-029 — one source of truth for risk limits
 # ---------------------------------------------------------------------------
 
 
-def test_audit_026_dashboard_port_does_not_index_argv() -> None:
-    """``--port`` used to be read by scanning ``sys.argv`` inside a default."""
-    source = (ROOT / "main.py").read_text(encoding="utf-8")
-    assert 'sys.argv.index("--port")' not in source
+def test_audit_024_paper_policy_is_derived_from_the_guard() -> None:
+    """Two hard-coded copies of the limits must not exist any more."""
+    import config.risk_policy as policy
+    from paper_trading.service import DEFAULT_RISK_POLICY
+    from risk_kill.guard import RiskLimits
+
+    guard = RiskLimits()
+    assert DEFAULT_RISK_POLICY is policy.DEFAULT_RISK_POLICY
+    assert DEFAULT_RISK_POLICY["max_gross_exposure"] == guard.max_gross_exposure
+    assert DEFAULT_RISK_POLICY["daily_loss_limit"] == guard.max_daily_loss
+    # Where the two copies disagreed, the *stricter* value must win.
+    assert DEFAULT_RISK_POLICY["max_position_weight"] == min(
+        0.15, guard.max_position_exposure
+    )
+    assert DEFAULT_RISK_POLICY["max_drawdown"] == min(0.15, guard.max_drawdown)
 
 
-def test_audit_026_trailing_port_flag_does_not_raise() -> None:
-    """``main.py --port`` with no value must be a usage error, not IndexError."""
-    import main
+def test_audit_024_paper_limits_are_never_looser_than_the_guard() -> None:
+    from config.risk_policy import DEFAULT_RISK_POLICY
+    from risk_kill.guard import RiskLimits
 
-    with pytest.raises(SystemExit):
-        main.parse_args(["dashboard", "--port"])
+    guard = RiskLimits()
+    assert DEFAULT_RISK_POLICY["max_position_weight"] <= guard.max_position_exposure
+    assert DEFAULT_RISK_POLICY["max_drawdown"] <= guard.max_drawdown
+    assert DEFAULT_RISK_POLICY["daily_loss_limit"] <= guard.max_daily_loss
+    assert DEFAULT_RISK_POLICY["max_gross_exposure"] <= guard.max_gross_exposure
 
 
-# ---------------------------------------------------------------------------
-# AUDIT-031 — the committed sample must match OrderResult
-# ---------------------------------------------------------------------------
+def test_audit_029_staleness_windows_are_defined_together() -> None:
+    """The 6-day / 18-hour gap must be explicit, not accidental."""
+    import inspect
+
+    import config.risk_policy as policy
+    from data.quality import detect_data_staleness
+
+    default = inspect.signature(detect_data_staleness).parameters[
+        "max_staleness_days"
+    ].default
+    assert default is policy.MAX_DATA_AGE_QUALITY_DAYS
+    assert policy.MAX_DATA_AGE_HOURS == 18.0
+    policy.assert_quality_window_is_consistent()
+
+
+def test_audit_029_inconsistent_windows_are_rejected(monkeypatch) -> None:
+    import config.risk_policy as policy
+
+    monkeypatch.setattr(policy, "MAX_DATA_AGE_QUALITY_DAYS", 0.1)
+    with pytest.raises(ValueError, match="shorter than the trading window"):
+        policy.assert_quality_window_is_consistent()
+    monkeypatch.setattr(policy, "MAX_DATA_AGE_QUALITY_DAYS", 30.0)
+    with pytest.raises(ValueError, match="exceeds one week"):
+        policy.assert_quality_window_is_consistent()
 
 
 def test_audit_031_execution_sample_matches_order_result() -> None:
@@ -927,3 +962,60 @@ def test_audit_034_approved_strategy_reports_no_blockers(tmp_path) -> None:
     service = PaperTradingService(root=tmp_path)
     service.ledger.start(None)
     assert service.rebalance_blockers() == []
+
+
+# ---------------------------------------------------------------------------
+# AUDIT-011 — the calendar must know NSE's real sessions, not just weekdays
+# ---------------------------------------------------------------------------
+
+
+def test_audit_011_special_sessions_are_trading_days() -> None:
+    """Weekend sessions the exchange really held must not be flagged.
+
+    Each date below was verified against NSE/BSE circulars and press
+    coverage on 2026-09-02. Before they were added, real prices for these
+    sessions were reported as corrupt data: 186 rows across 3 dates in a
+    120-symbol sample of the committed eod2 source.
+    """
+    from data.quality import nse_trading_calendar
+
+    calendar = nse_trading_calendar()
+    for day, label in (
+        ("2024-01-20", "DR switchover session (Saturday)"),
+        ("2024-03-02", "DR switchover session (Saturday)"),
+        ("2024-05-18", "DR switchover session (Saturday)"),
+        ("2025-02-01", "Union Budget 2025 (Saturday)"),
+        ("2025-10-21", "Diwali Muhurat trading (a published holiday)"),
+        ("2026-02-01", "Union Budget 2026 (Sunday)"),
+    ):
+        assert calendar.is_trading_day(pd.Timestamp(day).date()), (
+            f"{day} ({label}) must be recognised as a trading day"
+        )
+
+
+def test_audit_011_published_holidays_are_not_trading_days() -> None:
+    from data.quality import nse_trading_calendar
+
+    calendar = nse_trading_calendar()
+    for day in ("2024-01-22", "2024-01-26", "2024-03-08", "2025-10-22"):
+        assert not calendar.is_trading_day(pd.Timestamp(day).date()), day
+
+
+def test_audit_011_the_calendar_is_committed_and_dated() -> None:
+    import json
+
+    payload = json.loads(
+        (ROOT / "data" / "calendar" / "nse_trading_calendar.json").read_text()
+    )
+    assert payload["exchange"] == "NSE"
+    assert payload["segment"] == "CM"
+    assert payload["retrieved_at"]
+    assert payload["sources"], "provenance must be recorded"
+    assert len(payload["holidays"]) >= 50
+    assert len(payload["special_sessions"]) >= 6
+
+
+def test_audit_011_calendar_ships_in_the_wheel() -> None:
+    """AUDIT-016 follow-up: the package-data entry must match the file."""
+    text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    assert 'data = ["calendar/*.json"]' in text

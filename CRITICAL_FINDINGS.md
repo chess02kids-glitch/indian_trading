@@ -27,39 +27,39 @@ and `AUDIT_VERIFICATION.md`.
 | AUDIT-001 | **P0** | Risk / execution | Every protective risk decision crashed `ExecutionService` with `AttributeError` instead of halting | **FIXED** |
 | AUDIT-002 | **P0** | Security | A live FRED API key was committed to `scripts/ingest_macro.py` | **FIXED** (rotate!) |
 | AUDIT-003 | **P0** | Security | The secret scanner's `\b` anchor made `FRED_API_KEY = "…"` invisible to it | **FIXED** |
-| AUDIT-014 | **P0** | Data integrity | The research panel invents pre-listing prices and reports the symbol as "excluded" | **EXPOSED** (behaviour preserved by design decision) |
-| AUDIT-021 | **P0** | Kill switch | The operator kill switch is not consulted by execution or orchestration; the deterministic guard has no persistence | **ANALYSED** — patch proposed |
-| AUDIT-039 | **P0** | Security | The dashboard has no authentication at all, and an unauthenticated POST can **disarm** the kill switch | **ANALYSED** — patch proposed |
-| AUDIT-030 | **P0** | Risk | 3 of the risk checks (daily loss, broker connectivity, order rate) are structurally dead in the orchestrated path | **ANALYSED** — patch proposed |
+| AUDIT-014 | **P0** | Data integrity | The research panel invents pre-listing prices and reports the symbol as "excluded" | **FIXED** — defaults flipped (B3); every published number from a panel with an incomplete symbol must be re-derived |
+| AUDIT-021 | **P0** | Kill switch | The operator kill switch is not consulted by execution or orchestration; the deterministic guard has no persistence | **FIXED** — `datahub/kill_switch.py` is the sole authority; consulted by execution and orchestration; fails closed |
+| AUDIT-039 | **P0** | Security | The dashboard has no authentication at all, and an unauthenticated POST can **disarm** the kill switch | **FIXED** — loopback default, refusal on a routable bind without a token, origin + `X-Quant-Token` on all 12 mutating routes |
+| AUDIT-030 | **P0** | Risk | 3 of the risk checks (daily loss, broker connectivity, order rate) are structurally dead in the orchestrated path | **FIXED** — risk context is built from real broker ping/positions/timestamps |
 | AUDIT-004 | P1 | Real-data pipeline | The real-data CLI rejects the argument its own tests pass; 9 tests were dead | **FIXED** |
 | AUDIT-005 | P1 | Ingestion | A malformed source header crashes the adapter instead of raising `DataQualityError` | **FIXED** |
 | AUDIT-006 | P1 | Look-ahead | `validate_market_bars` never forwarded `as_of`, so the future-date guard was dead | **FIXED** |
-| AUDIT-007 | P1 | Survivorship | `universe_history` is mandatory but never read — the guard is decorative | **EXPOSED** |
-| AUDIT-008 | P1 | Backtest | Returns come from VectorBT while turnover/cost/trade-count come from pandas | **ANALYSED** — patch proposed |
-| AUDIT-009 | P1 | Backtest | `_validate_inputs` silently ffill+bfills the price panel | **ANALYSED** |
-| AUDIT-010 | P1 | Orchestration | `run_day` halts on *any* quality issue: 137 issues on 20 clean symbols | **ANALYSED** — patch proposed |
-| AUDIT-011 | P1 | Calendar | No NSE holiday table; real data contains weekend special sessions flagged as errors | **ANALYSED** |
-| AUDIT-012 | P1 | Data integrity | Non-EQ series (BE/SM/ST/BZ — 63% of symbols) are mixed into price history | **ANALYSED** |
-| AUDIT-013 | P1 | Paper trading | No strategy is `paper_approved`; the rebalance button can never succeed as shipped | **ANALYSED** |
+| AUDIT-007 | P1 | Survivorship | `universe_history` is mandatory but never read — the guard is decorative | **FIXED** — the membership mask is applied to weights; `membership_coverage` reported |
+| AUDIT-008 | P1 | Backtest | Returns come from VectorBT while turnover/cost/trade-count come from pandas | **FIXED** — `BacktestConfig.report_backend`; both backends computed, one reported, divergence logged |
+| AUDIT-009 | P1 | Backtest | `_validate_inputs` silently ffill+bfills the price panel | **FIXED** — `allow_price_fill=False`; a gap raises `ResearchInputError` |
+| AUDIT-010 | P1 | Orchestration | `run_day` halts on *any* quality issue: 137 issues on 20 clean symbols | **FIXED** — data-quality kinds are partitioned into blocking and advisory; only blocking kinds halt |
+| AUDIT-011 | P1 | Calendar | No NSE holiday table; real data contains weekend special sessions flagged as errors | **FIXED** — committed NSE CM calendar with 6 verified special sessions; re-measured 731 → 12 false off-calendar rows |
+| AUDIT-012 | P1 | Data integrity | Non-EQ series (BE/SM/ST/BZ — 63% of symbols) are mixed into price history | **FIXED** — EQ filter at the ingestion boundary; re-measured: 14.99% of rows were non-EQ, 741/3694 files have no EQ row |
+| AUDIT-013 | P1 | Paper trading | No strategy is `paper_approved`; the rebalance button can never succeed as shipped | **FIXED (partly)** — `momrem` is now in the registry with an explicit refusal reason and the UI publishes why it is blocked; it is deliberately still **not approved** |
 | AUDIT-015 | P1 | Integration | `preview_rebalance` bypasses the SIM quote chain the rest of the app uses | **FIXED** |
 | AUDIT-016 | P1 | Packaging | The wheel omits the `data` package | **FIXED** |
 | AUDIT-017 | P1 | Clean install | `seaborn` is imported but not declared → clean install cannot collect tests | **FIXED** |
 | AUDIT-018 | P1 | Deployment | `pip install --no-deps .` → the Docker image crash-loops | **FIXED** |
 | AUDIT-019 | P1 | Deployment | `var/` mounted read-only → the kill switch cannot be armed in the container | **FIXED** |
 | AUDIT-020 | P1 | Config | `validate_environment()` had no caller outside tests | **FIXED** (preflight added) |
-| AUDIT-022 | P1 | Reconciliation | Order/fill reconciliation compares the repository against itself | **ANALYSED** |
+| AUDIT-022 | P1 | Reconciliation | Order/fill reconciliation compares the repository against itself | **FIXED** — reconciliation diffs against the broker’s view and raises `ReconciliationError` |
 | AUDIT-023 | P1 | CI | Lint and format both fail at HEAD; CI is red | **FIXED** |
-| AUDIT-035 | P1 | Freshness | Shipped data is 7 days old → the signal is "stale" and every paper action is blocked out of the box | **ANALYSED** |
-| AUDIT-032 | P1 | Research gate | DSR trial count under-counts; missing validation is a *warning*, not a failure | **ANALYSED** |
-| AUDIT-024 | P2 | Risk | Two independent, conflicting risk-limit systems | **ANALYSED** |
-| AUDIT-025 | P2 | State machine | `execution/state_machine.py` is a 0-byte file | **ANALYSED** |
-| AUDIT-027 | P2 | Tests | Tests mutate committed data files — and the *number of tests that run* therefore changes between runs (1293 vs 1411 collected on the same tree) | **ANALYSED** |
-| AUDIT-028 | P2 | Observability | `/healthz` is stdlib-only, so the healthcheck passes while every panel 503s | **ANALYSED** |
-| AUDIT-029 | P2 | Config | Staleness threshold: 6 days in `data.quality`, 18 hours in `risk_kill` | **ANALYSED** |
-| AUDIT-033 | P2 | Dashboard | The Streamlit dashboard needs `streamlit`, which is not a declared dependency | **ANALYSED** |
-| AUDIT-034 | P2 | Dashboard | Reconciliation says "run a paper rebalance" when a rebalance is impossible | **ANALYSED** |
-| AUDIT-031 | P3 | Data | `execution/orders.jsonl` does not match the `OrderResult` schema | **ANALYSED** |
-| AUDIT-026 | P3 | CLI | `main.py dashboard --port` parses `sys.argv` inside the default | **ANALYSED** |
+| AUDIT-035 | P1 | Freshness | Shipped data is 7 days old → the signal is "stale" and every paper action is blocked out of the box | **OPEN — operator action**: refresh `data/clean/eod2_data` from the pinned source. A stale-data refusal is the correct behaviour, not a bug to patch |
+| AUDIT-032 | P1 | Research gate | DSR trial count under-counts; missing validation is a *warning*, not a failure | **FIXED** — declared trials, out-of-sample evidence and validation are now required; validation missing is a **fail** |
+| AUDIT-024 | P2 | Risk | Two independent, conflicting risk-limit systems | **FIXED** — `config/risk_policy.py` is the single source; paper limits derived from the guard, never looser |
+| AUDIT-025 | P2 | State machine | `execution/state_machine.py` is a 0-byte file | **FIXED** — `execution/state_machine.py` implemented and wired into `PaperBroker`; illegal transitions raise and leave the ledger intact |
+| AUDIT-027 | P2 | Tests | Tests mutate committed data files — and the *number of tests that run* therefore changes between runs (1293 vs 1411 collected on the same tree) | **FIXED** — `QUANT_DATA_DIR` is honoured per test; a full run leaves the working tree clean |
+| AUDIT-028 | P2 | Observability | `/healthz` is stdlib-only, so the healthcheck passes while every panel 503s | **FIXED** — `/healthz` probes the real dependencies and returns 503 when one is broken |
+| AUDIT-029 | P2 | Config | Staleness threshold: 6 days in `data.quality`, 18 hours in `risk_kill` | **FIXED** — both windows defined together in `config/risk_policy.py` and checked for consistency |
+| AUDIT-033 | P2 | Dashboard | The Streamlit dashboard needs `streamlit`, which is not a declared dependency | **FIXED** — `streamlit` is an optional extra; the missing-dependency error is actionable |
+| AUDIT-034 | P2 | Dashboard | Reconciliation says "run a paper rebalance" when a rebalance is impossible | **FIXED** — reconciliation detail corrected; `rebalance_blocked_reason` published |
+| AUDIT-031 | P3 | **FIXED** — sample regenerated and validated against `OrderResult` | `execution/orders.jsonl` does not match the `OrderResult` schema | **ANALYSED** |
+| AUDIT-026 | P3 | **FIXED** — no `sys.argv` index arithmetic | `main.py dashboard --port` parses `sys.argv` inside the default | **ANALYSED** |
 
 ---
 
@@ -980,6 +980,6 @@ Each is expanded in `FORENSIC_AUDIT_REPORT.md` §6.
 | AUDIT-031 | P3 | Committed `execution/orders.jsonl` uses `price`, `expected_price`, `actual_price`; `OrderResult` defines `limit_price` and `average_fill_price`. The committed sample does not match the model it supposedly records. | both files |
 | AUDIT-033 | P2 | `dashboard/main_dashboard.py`, `paper_dashboard.py`, `research_dashboard.py`, `broker_dashboard.py` import `streamlit`, which is in **neither** `dependencies` nor `dev`. `make dashboard` (`streamlit run dashboard/main_dashboard.py`) fails on a clean install. | grep + pyproject |
 | AUDIT-034 | P2 | `/api/operations` reconciliation reports *"the signal expects 20 positions but the paper account is flat — run a paper rebalance (or enable auto-paper) to track it"*, while a rebalance is impossible (AUDIT-013) and the data is stale (AUDIT-035). The UI instructs the user to do something the system will refuse. | live HTTP |
-| AUDIT-036 | P2 | `.env.example` documents `UPSTOX_API_KEY` and `UPSTOX_API_SECRET`, but `config/env_validator.validate_environment` **refuses to start** if either is set. Following the documented setup breaks the documented validator. | both files |
-| AUDIT-037 | P2 | `docker-compose.yml` mounts `./data:/app/data:ro` while the application writes `data/quant.duckdb` (see AUDIT-027); ingestion inside the container would fail. | compose + git status |
-| AUDIT-038 | P3 | `research/candidate_set.py` is the **only** caller that sets `ResearchGateConfig.tested_variants`; every other caller of `gate.evaluate` silently gets `trials=1` (AUDIT-032). | grep |
+| AUDIT-036 | P2 | `.env.example` documents `UPSTOX_API_KEY` and `UPSTOX_API_SECRET`, but `config/env_validator.validate_environment` **refuses to start** if either is set; and the validator defaults `SYSTEM_MODE` to `PAPER` (needs `DATABASE_URL`) while the example ships `LOCAL`, so a clean checkout fails its own preflight. | both files → **FIXED**: `SYSTEM_MODE` now defaults to `LOCAL`, and the example and `docs/secrets_management.md` state that the broker app credentials are fatal to the validator |
+| AUDIT-037 | P2 | `docker-compose.yml` mounts `./data:/app/data:ro` while the application writes `data/quant.duckdb`; ingestion inside the container would fail. | compose + git status → **FIXED**: the mount is writable (`/api/data/rebuild-prices` rewrites `data/clean/prices.parquet`) |
+| AUDIT-038 | P3 | `research/candidate_set.py` is the **only** caller that sets `ResearchGateConfig.tested_variants`; every other caller of `gate.evaluate` silently gets `trials=1` (AUDIT-032). | grep → **FIXED**: an undeclared trial count is now a `trial_count_declared` warning and `evidence_kind` records in-sample vs out-of-sample |

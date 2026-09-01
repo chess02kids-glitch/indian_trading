@@ -17,6 +17,7 @@ import queue
 import sys
 import threading
 import time
+from datetime import UTC, datetime
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -132,6 +133,77 @@ def _token_in_ui() -> bool:
     """Whether the server may hand the shared secret to the SPA shell."""
     flag = os.getenv(TOKEN_IN_UI_ENV, "").strip().lower()
     return flag in {"1", "true", "yes"}
+
+
+# ---------------------------------------------------------------------------
+# Health (AUDIT-028)
+# ---------------------------------------------------------------------------
+# ``/healthz`` used to need only the standard library, so the Docker and
+# compose healthchecks reported the container **healthy** while every
+# ``/api/*`` panel was failing. Verified before the fix: with the
+# third-party imports blocked, ``/healthz`` answered ``{"status": "ok"}``
+# while ``get_paper_service()`` raised ``ModuleNotFoundError: No module
+# named 'numpy'``. A healthcheck that cannot observe a broken dependency is
+# worse than no healthcheck, because it tells the orchestrator to keep
+# routing traffic to a dead container.
+#
+# The check below imports the modules that every API panel depends on and
+# touches one attribute from each, so a missing or broken dependency turns
+# into a 503 with a readable reason instead of a silent "ok".
+CRITICAL_SUBSYSTEMS: tuple[tuple[str, str, str], ...] = (
+    ("paper_trading", "paper_trading.service", "PaperTradingService"),
+    ("operations", "dashboard.operations", "build_report"),
+    ("data_panel", "datahub.panel", "data_status"),
+    ("kill_switch", "datahub.kill_switch", "is_killed"),
+)
+
+#: Third-party packages the API depends on. These are probed *by name* as
+#: well as through the subsystem imports above, because an already-imported
+#: module is served from ``sys.modules`` without a fresh import — a probe
+#: that only touched our own modules would keep reporting "ok" long after
+#: the environment around them broke.
+RUNTIME_DEPENDENCIES: tuple[str, ...] = (
+    "numpy",
+    "pandas",
+    "duckdb",
+    "pydantic",
+    "pyarrow",
+)
+
+
+def subsystem_health() -> dict[str, Any]:
+    """Import every critical subsystem and report which ones are broken.
+
+    Returns ``{"status": "ok"|"degraded", "subsystems": {...}, "failed": [...]}.
+    Never raises: the kill-switch entry is read-only and the rest are imports.
+    """
+    import importlib
+
+    subsystems: dict[str, str] = {}
+    failed: list[str] = []
+    for label, module_name, attribute in CRITICAL_SUBSYSTEMS:
+        try:
+            module = importlib.import_module(module_name)
+            getattr(module, attribute)
+        except Exception as exc:  # noqa: BLE001 - report, never raise
+            subsystems[label] = f"{type(exc).__name__}: {exc}"
+            failed.append(label)
+        else:
+            subsystems[label] = "ok"
+    for package in RUNTIME_DEPENDENCIES:
+        label = f"dependency:{package}"
+        try:
+            importlib.import_module(package)
+        except Exception as exc:  # noqa: BLE001 - report, never raise
+            subsystems[label] = f"{type(exc).__name__}: {exc}"
+            failed.append(label)
+        else:
+            subsystems[label] = "ok"
+    return {
+        "status": "ok" if not failed else "degraded",
+        "subsystems": subsystems,
+        "failed": failed,
+    }
 
 
 def get_live_feed() -> Any:
@@ -357,9 +429,14 @@ class DashboardHandler(BaseHTTPRequestHandler):
                     query[k] = unquote(v)
 
         if path == "/healthz":
+            health = subsystem_health()
+            health["component"] = "research-cockpit"
+            health["checked_at"] = datetime.now(UTC).isoformat()
             self._send_json(
-                HTTPStatus.OK,
-                {"status": "ok", "component": "research-cockpit"},
+                HTTPStatus.OK
+                if health["status"] == "ok"
+                else HTTPStatus.SERVICE_UNAVAILABLE,
+                health,
             )
         elif path == "/api/status":
             self._send_json(HTTPStatus.OK, collect_status())
