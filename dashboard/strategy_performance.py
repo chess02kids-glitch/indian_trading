@@ -1076,10 +1076,13 @@ def backtest_strategy(
     capital_alloc_pct: float = 0.95
 ) -> Tuple[pd.DataFrame, float, pd.Series]:
     """
-    Run backtest on a single strategy with hard ATR stop-loss and realistic Indian transaction costs.
-    Reconciles open positions at terminal date with mark-to-market unrealized P&L.
+    Run backtest on a single strategy with realistic execution:
+    - Signals confirmed at bar i Close -> Executed at bar i+1 Open (No lookahead)
+    - Hard ATR stop-loss evaluated during bar i+1 (Low <= stop_price)
+    - Terminal mark-to-market trade closing (no dropped open positions)
+    - Realistic Indian market transaction costs (15 bps round-trip default)
     """
-    if df is None or df.empty or len(df) < 10:
+    if df is None or df.empty or len(df) < 5:
         return pd.DataFrame(), initial_capital, pd.Series(dtype=float)
 
     # Check volume requirement
@@ -1094,6 +1097,7 @@ def backtest_strategy(
     if 'Buy_Signal' not in df_sig.columns or 'Sell_Signal' not in df_sig.columns:
         return pd.DataFrame(), initial_capital, pd.Series(dtype=float)
 
+    open_prices = _squeeze(df_sig, 'Open')
     close_prices = _squeeze(df_sig, 'Close')
     low_prices = _squeeze(df_sig, 'Low')
     atr_series = calc_atr(df_sig, 14)
@@ -1104,54 +1108,27 @@ def backtest_strategy(
     entry_date = None
     trades = []
     capital = float(initial_capital)
-    equity_curve = []
+    equity_curve = [capital]
 
     # One-way cost rate
     one_way_cost_rate = (brokerage_bps / 2.0) / 10_000.0
 
-    for i in range(len(df_sig)):
-        price = float(close_prices.iloc[i])
-        low = float(low_prices.iloc[i])
-        date = df_sig.index[i]
-        curr_atr = float(atr_series.iloc[i]) if not np.isnan(atr_series.iloc[i]) else (price * 0.015)
+    # Main execution loop: signal at bar i close -> fill at bar i+1 open
+    for i in range(len(df_sig) - 1):
+        curr_price = float(close_prices.iloc[i])
+        curr_atr = float(atr_series.iloc[i]) if not np.isnan(atr_series.iloc[i]) else (curr_price * 0.015)
 
-        if price <= 0:
-            equity_curve.append(capital)
-            continue
+        next_open = float(open_prices.iloc[i+1])
+        next_low = float(low_prices.iloc[i+1])
+        next_close = float(close_prices.iloc[i+1])
+        next_date = df_sig.index[i+1]
 
         buy_sig = bool(df_sig['Buy_Signal'].iloc[i])
         sell_sig = bool(df_sig['Sell_Signal'].iloc[i])
 
-        # 1. Check Stop Loss if in position
-        if position > 0 and atr_stop_multiplier > 0:
-            if low <= stop_price:
-                exit_price = max(min(price, stop_price), low)
-                gross_pnl = (exit_price - buy_price) * position
-                turnover = (buy_price + exit_price) * position
-                cost = (turnover * one_way_cost_rate) + (2.0 * fixed_brokerage)
-                net_pnl = gross_pnl - cost
-                capital += (exit_price * position) - (cost / 2.0)
-                trades.append({
-                    'Entry_Date': entry_date,
-                    'Exit_Date': date,
-                    'Buy_Price': round(buy_price, 2),
-                    'Sell_Price': round(exit_price, 2),
-                    'Qty': position,
-                    'Stop_Price': round(stop_price, 2),
-                    'Gross_PnL': round(gross_pnl, 2),
-                    'Cost': round(cost, 2),
-                    'Net_PnL': round(net_pnl, 2),
-                    'Return %': round((exit_price - buy_price) / buy_price * 100.0, 2),
-                    'Exit_Reason': 'STOP_LOSS',
-                    'Capital': round(capital, 2)
-                })
-                position = 0
-                buy_price = 0.0
-                stop_price = 0.0
-
-        # 2. Check Signal Exit if still in position
-        if position > 0 and sell_sig:
-            exit_price = price
+        # 1. Stop Loss check during bar i+1
+        if position > 0 and atr_stop_multiplier > 0 and next_low <= stop_price:
+            exit_price = max(min(next_open, stop_price), next_low)
             gross_pnl = (exit_price - buy_price) * position
             turnover = (buy_price + exit_price) * position
             cost = (turnover * one_way_cost_rate) + (2.0 * fixed_brokerage)
@@ -1159,7 +1136,33 @@ def backtest_strategy(
             capital += (exit_price * position) - (cost / 2.0)
             trades.append({
                 'Entry_Date': entry_date,
-                'Exit_Date': date,
+                'Exit_Date': next_date,
+                'Buy_Price': round(buy_price, 2),
+                'Sell_Price': round(exit_price, 2),
+                'Qty': position,
+                'Stop_Price': round(stop_price, 2),
+                'Gross_PnL': round(gross_pnl, 2),
+                'Cost': round(cost, 2),
+                'Net_PnL': round(net_pnl, 2),
+                'Return %': round((exit_price - buy_price) / buy_price * 100.0, 2),
+                'Exit_Reason': 'STOP_LOSS',
+                'Capital': round(capital, 2)
+            })
+            position = 0
+            buy_price = 0.0
+            stop_price = 0.0
+
+        # 2. Strategy Sell Signal: exit at bar i+1 Open
+        elif position > 0 and sell_sig:
+            exit_price = next_open
+            gross_pnl = (exit_price - buy_price) * position
+            turnover = (buy_price + exit_price) * position
+            cost = (turnover * one_way_cost_rate) + (2.0 * fixed_brokerage)
+            net_pnl = gross_pnl - cost
+            capital += (exit_price * position) - (cost / 2.0)
+            trades.append({
+                'Entry_Date': entry_date,
+                'Exit_Date': next_date,
                 'Buy_Price': round(buy_price, 2),
                 'Sell_Price': round(exit_price, 2),
                 'Qty': position,
@@ -1175,25 +1178,26 @@ def backtest_strategy(
             buy_price = 0.0
             stop_price = 0.0
 
-        # 3. Check Entry Signal if flat
+        # 3. Strategy Buy Signal: enter at bar i+1 Open
         elif position == 0 and buy_sig and not sell_sig:
-            alloc_capital = capital * capital_alloc_pct
-            quantity = int(alloc_capital / price)
-            if quantity >= 1:
-                buy_price = price
-                position = quantity
-                entry_date = date
-                buy_cost = (buy_price * position * one_way_cost_rate) + fixed_brokerage
-                capital -= (buy_price * position + buy_cost)
-                if atr_stop_multiplier > 0:
-                    stop_dist = curr_atr * atr_stop_multiplier
-                    stop_price = max(buy_price - stop_dist, 0.01)
+            buy_price = next_open
+            if buy_price > 0:
+                alloc_capital = capital * capital_alloc_pct
+                quantity = int(alloc_capital / buy_price)
+                if quantity >= 1:
+                    position = quantity
+                    entry_date = next_date
+                    buy_cost = (buy_price * position * one_way_cost_rate) + fixed_brokerage
+                    capital -= (buy_price * position + buy_cost)
+                    if atr_stop_multiplier > 0:
+                        stop_dist = curr_atr * atr_stop_multiplier
+                        stop_price = max(buy_price - stop_dist, 0.01)
 
-        # Mark to market equity
-        current_equity = capital + (position * price)
+        # Mark to market equity at bar i+1 Close
+        current_equity = capital + (position * next_close)
         equity_curve.append(current_equity)
 
-    # Close open position at end of data if still held (Section 4 Fix)
+    # Reconcile open position at end of backtest data (Section 4 / Issue 2 fix)
     if position > 0:
         final_price = float(close_prices.iloc[-1])
         final_date = df_sig.index[-1]
@@ -1219,7 +1223,8 @@ def backtest_strategy(
         position = 0
 
     eq_series = pd.Series(equity_curve, index=df_sig.index[:len(equity_curve)])
-    return pd.DataFrame(trades), round(eq_series.iloc[-1] if not eq_series.empty else initial_capital, 2), eq_series
+    final_cap = trades[-1]['Capital'] if trades else initial_capital
+    return pd.DataFrame(trades), round(final_cap, 2), eq_series
 
 
 # ==============================================================================
@@ -1532,6 +1537,27 @@ def run_portfolio_backtest(
         )
         total_equity = cash + portfolio_invested
         portfolio_equity_series.append(total_equity)
+
+    # Reconcile open positions at the end of backtest (END_OF_DATA)
+    final_ts = all_timestamps[-1] if all_timestamps else None
+    for sym, pos in list(open_positions.items()):
+        df = processed[sym]
+        final_price = float(_squeeze(df.iloc[-1], 'Close')) if not df.empty else pos['buy_price']
+        gross_pnl = (final_price - pos['buy_price']) * pos['qty']
+        cost = (pos['buy_price'] + final_price) * pos['qty'] * one_way_cost
+        net_pnl = gross_pnl - cost
+        cash += (final_price * pos['qty']) - (cost / 2.0)
+        all_trades.append({
+            'Symbol': sym,
+            'Entry_Date': pos['entry_date'],
+            'Exit_Date': final_ts,
+            'Buy_Price': round(pos['buy_price'], 2),
+            'Exit_Price': round(final_price, 2),
+            'Qty': pos['qty'],
+            'Net_PnL': round(net_pnl, 2),
+            'Return %': round((final_price - pos['buy_price']) / pos['buy_price'] * 100.0, 2),
+            'Exit_Reason': 'END_OF_DATA'
+        })
 
     eq_series = pd.Series(portfolio_equity_series, index=all_timestamps)
     trades_df = pd.DataFrame(all_trades)

@@ -177,6 +177,77 @@ class TestStrategyPerformanceEngine:
         assert len(port_res["equity_curve"]) > 0
         assert port_res["portfolio_metrics"]["Final Capital"] > 0
 
+    def test_next_bar_open_execution(self):
+        """[CRITICAL BUG FIX]: Verify Buy Signal on bar i fills at bar i+1 Open, preventing lookahead bias."""
+        dates = pd.date_range("2026-01-01", periods=10, freq="1D")
+        opens = [100.0, 101.0, 105.0, 110.0, 112.0, 115.0, 114.0, 110.0, 108.0, 105.0]
+        closes = [100.5, 102.0, 108.0, 111.0, 113.0, 114.0, 112.0, 109.0, 107.0, 104.0]
+        highs = [c + 1.0 for c in closes]
+        lows = [o - 1.0 for o in opens]
+        df = pd.DataFrame({
+            "Open": opens,
+            "High": highs,
+            "Low": lows,
+            "Close": closes,
+            "Volume": 10000
+        }, index=dates)
+
+        strat = sp.S05_EMA_9_21()
+        trades, _, eq = sp.backtest_strategy(df, strat, initial_capital=50000.0)
+        # If any trade occurred, the Buy_Price must match the Open price of the fill bar
+        for _, trade in trades.iterrows():
+            entry_idx = df.index.get_loc(trade["Entry_Date"])
+            assert trade["Buy_Price"] == round(df["Open"].iloc[entry_idx], 2)
+
+    def test_stochastic_bounds_and_no_nan(self, sample_ohlcv_data):
+        """[CRITICAL BUG FIX]: Verify Stochastic handles flat/zero-range periods gracefully without returning NaNs."""
+        # Flat series
+        dates = pd.date_range("2026-01-01", periods=50, freq="1D")
+        df_flat = pd.DataFrame({
+            "Open": [100.0] * 50,
+            "High": [100.0] * 50,
+            "Low": [100.0] * 50,
+            "Close": [100.0] * 50,
+            "Volume": 1000
+        }, index=dates)
+        k, d = sp.calc_stochastic(df_flat, 14, 3)
+        assert not k.isna().all()
+        assert not np.isinf(k).any()
+        assert not np.isinf(d).any()
+
+    def test_donchian_breakout_shift_no_lookahead(self):
+        """[CRITICAL BUG FIX]: Verify S10 Donchian Breakout shifts bands by 1 to prevent same-bar lookahead."""
+        dates = pd.date_range("2026-01-01", periods=25, freq="1D")
+        highs = list(range(100, 125)) # increasing high: 100, 101, ..., 124
+        df = pd.DataFrame({
+            "Open": highs,
+            "High": highs,
+            "Low": [h - 2 for h in highs],
+            "Close": highs,
+            "Volume": 1000
+        }, index=dates)
+        strat = sp.S10_Donchian_Breakout()
+        sig_df = strat.signals(df)
+        upper, _, _ = sp.calc_donchian(df, period=20)
+        # S10 compares Close to upper.shift(1)
+        assert sig_df["Buy_Signal"].iloc[20] == (df["Close"].iloc[20] > upper.iloc[19])
+
+    def test_supertrend_ratchet_logic(self):
+        """[CRITICAL BUG FIX]: Verify SuperTrend ratchet logic maintains uptrend during monotonic rises."""
+        dates = pd.date_range("2026-01-01", periods=20, freq="1D")
+        # Steady uptrend
+        close = pd.Series([100.0 + i * 2.0 for i in range(20)], index=dates)
+        df = pd.DataFrame({
+            "Open": close,
+            "High": close + 1.0,
+            "Low": close - 1.0,
+            "Close": close,
+            "Volume": 1000
+        }, index=dates)
+        direction = sp.calc_supertrend(df, period=7, multiplier=3.0)
+        # In a monotonic uptrend, direction should be +1 (bullish)
+        assert (direction.iloc[7:] == 1.0).all()
+
     def test_walk_forward_validation_split(self, sample_ohlcv_data):
         """Verify walk-forward train/test split and gate decision logic."""
         strat = sp.S05_EMA_9_21()
