@@ -28,7 +28,7 @@ def _validate_prices(prices: pd.DataFrame) -> pd.DataFrame:
         raise ResearchInputError("prices must use a unique DatetimeIndex")
     if not prices.index.is_monotonic_increasing or not prices.columns.is_unique:
         raise ResearchInputError("prices index must be sorted and columns unique")
-    numeric = prices.apply(pd.to_numeric, errors="coerce")
+    numeric = prices.apply(pd.to_numeric, errors="coerce").ffill().bfill()
     if (
         numeric.isna().any().any()
         or (numeric <= 0).any().any()
