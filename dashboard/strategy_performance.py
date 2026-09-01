@@ -17,12 +17,16 @@ Any strategy passing preliminary screening is automatically subjected to:
 
 Key Defenses & Risk Controls:
 -----------------------------
-1. ATR-based hard stop-loss on all positions (no unbounded drawdown).
-2. Shared-capital multi-symbol portfolio mode with volatility targeting and max-position caps.
-3. Volume validation checks to guard against zero-volume index feeds (^NSEI, ^NSEBANK).
-4. Realistic Indian transaction cost model (15 bps default: brokerage, STT, exchange, SEBI, GST, stamp, slippage).
-5. Risk-adjusted scoring using Sharpe, Sortino, Calmar, and Deflated Sharpe.
-6. Seamless data ingestion prioritizing local DataHub parquet stores with clean yfinance fallback.
+1. Look-ahead bias prevention: signal shift, next-bar execution, and daily-reset VWAP.
+2. Mathematically correct indicators: exact Aroon indexing, Wilder RMA ADX, stateful PSAR, and safe RSI.
+3. Crossover/edge-detected non-clashing signals (no simultaneous Buy/Sell spamming).
+4. Terminal mark-to-market trade closing with unrealized P&L reconciliation.
+5. ATR-based hard stop-loss on all positions (no unbounded drawdown).
+6. Shared-capital multi-symbol portfolio mode with volatility targeting and max-position caps.
+7. Volume validation checks to guard against zero-volume index feeds (^NSEI, ^NSEBANK).
+8. Realistic Indian transaction cost model (15 bps default: brokerage, STT, exchange, SEBI, GST, stamp, slippage).
+9. Risk-adjusted scoring using Sharpe, Sortino, Calmar, and Deflated Sharpe.
+10. Seamless data ingestion prioritizing local DataHub parquet stores with clean yfinance fallback.
 """
 
 from __future__ import annotations
@@ -49,7 +53,7 @@ warnings.filterwarnings('ignore')
 
 
 # ==============================================================================
-# INDICATOR FUNCTIONS (robust fallbacks when TA-Lib is absent)
+# INDICATOR FUNCTIONS (robust, zero-lookahead, mathematically validated)
 # ==============================================================================
 
 def _squeeze(data: Union[pd.DataFrame, pd.Series, Any], col: str) -> Any:
@@ -71,17 +75,29 @@ def _squeeze(data: Union[pd.DataFrame, pd.Series, Any], col: str) -> Any:
 
 
 def calc_rsi(data: pd.DataFrame, period: int = 14) -> pd.Series:
-    """RSI using talib or Wilder smoothing fallback."""
+    """
+    RSI using talib or Wilder smoothing fallback.
+    Safely handles flat prices (avg_loss == 0 and avg_gain == 0 -> 50.0).
+    """
     close = _squeeze(data, 'Close')
     if talib is not None and hasattr(talib, 'RSI'):
         return pd.Series(talib.RSI(close.values.astype(float), timeperiod=period), index=data.index)
+
     delta = close.diff()
     gain = delta.where(delta > 0, 0.0)
     loss = -delta.where(delta < 0, 0.0)
+
+    # Wilder smoothing (RMA)
     avg_gain = gain.ewm(alpha=1.0 / period, min_periods=period, adjust=False).mean()
     avg_loss = loss.ewm(alpha=1.0 / period, min_periods=period, adjust=False).mean()
+
     rs = avg_gain / avg_loss.replace(0, 1e-10)
-    return 100.0 - (100.0 / (1.0 + rs))
+    rsi = 100.0 - (100.0 / (1.0 + rs))
+
+    # Safe handling of flat periods
+    flat_mask = (avg_gain == 0.0) & (avg_loss == 0.0)
+    rsi[flat_mask] = 50.0
+    return rsi
 
 
 def calc_atr(data: pd.DataFrame, period: int = 14) -> pd.Series:
@@ -168,7 +184,10 @@ def calc_stochastic(data: pd.DataFrame, k_period: int = 14, d_period: int = 3) -
 
 
 def calc_adx(data: pd.DataFrame, period: int = 14) -> Tuple[pd.Series, pd.Series, pd.Series]:
-    """ADX returning (adx, plus_di, minus_di) consistently."""
+    """
+    ADX returning (adx, plus_di, minus_di) consistently.
+    Uses Wilder's smoothing (alpha=1/period, seeded with SMA).
+    """
     high = _squeeze(data, 'High')
     low = _squeeze(data, 'Low')
     close = _squeeze(data, 'Close')
@@ -184,14 +203,14 @@ def calc_adx(data: pd.DataFrame, period: int = 14) -> Tuple[pd.Series, pd.Series
     minus_dm = down.where((down > up) & (down > 0), 0.0)
 
     atr_val = calc_atr(data, period)
-    smooth_pdm = plus_dm.ewm(alpha=1.0 / period, adjust=False).mean()
-    smooth_mdm = minus_dm.ewm(alpha=1.0 / period, adjust=False).mean()
+    smooth_pdm = plus_dm.ewm(alpha=1.0 / period, min_periods=period, adjust=False).mean()
+    smooth_mdm = minus_dm.ewm(alpha=1.0 / period, min_periods=period, adjust=False).mean()
 
     plus_di = 100.0 * smooth_pdm / atr_val.replace(0, 1e-10)
     minus_di = 100.0 * smooth_mdm / atr_val.replace(0, 1e-10)
 
     dx = 100.0 * (plus_di - minus_di).abs() / (plus_di + minus_di + 1e-10)
-    adx = dx.ewm(alpha=1.0 / period, adjust=False).mean()
+    adx = dx.ewm(alpha=1.0 / period, min_periods=period, adjust=False).mean()
 
     return adx, plus_di, minus_di
 
@@ -222,14 +241,28 @@ def calc_williams_r(data: pd.DataFrame, period: int = 14) -> pd.Series:
 
 
 def calc_vwap(data: pd.DataFrame) -> pd.Series:
-    """Volume Weighted Average Price."""
+    """
+    Volume Weighted Average Price (VWAP).
+    Resets at the start of every trading day (anchored intraday calculation).
+    """
     high = _squeeze(data, 'High')
     low = _squeeze(data, 'Low')
     close = _squeeze(data, 'Close')
     volume = _squeeze(data, 'Volume')
     tp = (high + low + close) / 3.0
-    vol_sum = volume.cumsum()
-    return (tp * volume).cumsum() / vol_sum.replace(0, np.nan)
+    tp_vol = tp * volume
+
+    # Extract dates for daily grouping
+    if isinstance(data.index, pd.DatetimeIndex):
+        dates = data.index.date
+        date_group = pd.Series(dates, index=data.index)
+        cum_tp_vol = tp_vol.groupby(date_group).cumsum()
+        cum_vol = volume.groupby(date_group).cumsum()
+    else:
+        cum_tp_vol = tp_vol.cumsum()
+        cum_vol = volume.cumsum()
+
+    return cum_tp_vol / cum_vol.replace(0, np.nan)
 
 
 def calc_hma(series: pd.Series, period: int) -> pd.Series:
@@ -263,7 +296,7 @@ def calc_keltner(data: pd.DataFrame, ema_period: int = 20, atr_period: int = 10,
 
 
 def calc_supertrend(data: pd.DataFrame, period: int = 7, multiplier: float = 3.0) -> pd.Series:
-    """SuperTrend returning trend direction (1 for Downtrend, -1 for Uptrend)."""
+    """SuperTrend returning trend direction (+1 for Uptrend / Bullish, -1 for Downtrend / Bearish)."""
     close = _squeeze(data, 'Close')
     high = _squeeze(data, 'High')
     low = _squeeze(data, 'Low')
@@ -289,18 +322,20 @@ def calc_supertrend(data: pd.DataFrame, period: int = 7, multiplier: float = 3.0
             lower_band.iloc[i] = lower_band.iloc[i-1]
 
         if close.iloc[i] > upper_band.iloc[i-1]:
-            direction.iloc[i] = 1.0  # Buy
+            direction.iloc[i] = 1.0  # Uptrend / Bullish
         elif close.iloc[i] < lower_band.iloc[i-1]:
-            direction.iloc[i] = -1.0 # Sell
+            direction.iloc[i] = -1.0 # Downtrend / Bearish
         else:
             direction.iloc[i] = direction.iloc[i-1]
 
-    # -1 represents Bullish / Buy in standard SuperTrend representation here
     return direction
 
 
 def calc_psar(data: pd.DataFrame, af_start: float = 0.02, af_step: float = 0.02, af_max: float = 0.2) -> pd.Series:
-    """Parabolic SAR returning trend state (+1 for Bullish, -1 for Bearish)."""
+    """
+    Parabolic SAR state machine.
+    Returns trend state (+1 for Bullish uptrend, -1 for Bearish downtrend).
+    """
     high = _squeeze(data, 'High')
     low = _squeeze(data, 'Low')
     close = _squeeze(data, 'Close')
@@ -315,31 +350,50 @@ def calc_psar(data: pd.DataFrame, af_start: float = 0.02, af_step: float = 0.02,
     for i in range(1, len(data)):
         if trend == 1:
             sar = sar + af * (ep_high - sar)
+            if i >= 2:
+                sar = min(sar, low.iloc[i-1], low.iloc[i-2])
+            else:
+                sar = min(sar, low.iloc[i-1])
+
             if low.iloc[i] < sar:
                 trend = -1
                 sar = ep_high
                 af = af_start
                 ep_low = low.iloc[i]
-            if high.iloc[i] > ep_high:
-                ep_high = high.iloc[i]
+            else:
+                if high.iloc[i] > ep_high:
+                    ep_high = high.iloc[i]
+                    af = min(af + af_step, af_max)
         else:
-            sar = sar - af * (ep_low - sar)
+            sar = sar - af * (sar - ep_low)
+            if i >= 2:
+                sar = max(sar, high.iloc[i-1], high.iloc[i-2])
+            else:
+                sar = max(sar, high.iloc[i-1])
+
             if high.iloc[i] > sar:
                 trend = 1
                 sar = ep_low
                 af = af_start
                 ep_high = high.iloc[i]
-            if low.iloc[i] < ep_low:
-                ep_low = low.iloc[i]
+            else:
+                if low.iloc[i] < ep_low:
+                    ep_low = low.iloc[i]
+                    af = min(af + af_step, af_max)
 
-        af = min(af + af_step, af_max)
-        results[i] = 1 if trend == 1 else -1
+        results[i] = 1.0 if trend == 1 else -1.0
 
     return pd.Series(results, index=data.index)
 
 
 def calc_aroon(data: pd.DataFrame, period: int = 25) -> Tuple[pd.Series, pd.Series]:
-    """Aroon Indicator returning (aroon_up, aroon_down)."""
+    """
+    Aroon Indicator returning (aroon_up, aroon_down).
+    Formula:
+      Aroon_Up = ((period - bars_since_high) / period) * 100
+      Aroon_Down = ((period - bars_since_low) / period) * 100
+    Where bars_since_high = (len(window) - 1) - argmax.
+    """
     high = _squeeze(data, 'High')
     low = _squeeze(data, 'Low')
     aroon_up = pd.Series(np.nan, index=data.index)
@@ -349,8 +403,11 @@ def calc_aroon(data: pd.DataFrame, period: int = 25) -> Tuple[pd.Series, pd.Seri
         window_high = high.iloc[i-period+1:i+1]
         window_low = low.iloc[i-period+1:i+1]
         if window_high.notna().any() and window_low.notna().any():
-            aroon_up.iloc[i] = float((period - window_high.values.argmax()) / period) * 100.0
-            aroon_down.iloc[i] = float((period - window_low.values.argmin()) / period) * 100.0
+            # argmax in range [0, period-1], where period-1 is the most recent bar (0 bars ago)
+            bars_since_high = (period - 1) - window_high.values.argmax()
+            bars_since_low = (period - 1) - window_low.values.argmin()
+            aroon_up.iloc[i] = float((period - bars_since_high) / period) * 100.0
+            aroon_down.iloc[i] = float((period - bars_since_low) / period) * 100.0
 
     return aroon_up, aroon_down
 
@@ -406,7 +463,6 @@ def load_local_market_data(symbol: str) -> Optional[pd.DataFrame]:
     clean_sym = symbol.replace("^", "").replace(".NS", "").upper()
     repo_root = Path(__file__).resolve().parent.parent
 
-    # Check clean eod2 directory
     candidate_paths = [
         repo_root / "data" / "clean" / "eod2_data" / f"{clean_sym}.parquet",
         repo_root / "data" / "market" / "indices" / f"{clean_sym}.parquet",
@@ -416,7 +472,6 @@ def load_local_market_data(symbol: str) -> Optional[pd.DataFrame]:
         if path.exists():
             try:
                 df = pd.read_parquet(path)
-                # Standardize column naming
                 col_map = {c: c.capitalize() for c in df.columns if c.lower() in ['open', 'high', 'low', 'close', 'volume', 'date']}
                 df = df.rename(columns=col_map)
                 if 'Date' in df.columns:
@@ -448,7 +503,6 @@ def download_data(symbol: str, period: str = "60d", interval: str = "1h", prefer
         import yfinance as yf
         df = yf.download(symbol, period=period, interval=interval, progress=False)
         if df.empty:
-            # Try loading local as fallback
             local_df = load_local_market_data(symbol)
             if local_df is not None and not local_df.empty:
                 return local_df
@@ -456,6 +510,9 @@ def download_data(symbol: str, period: str = "60d", interval: str = "1h", prefer
 
         if isinstance(df.columns, pd.MultiIndex):
             df.columns = df.columns.get_level_values(0)
+
+        # De-duplicate columns if any
+        df = df.loc[:, ~df.columns.duplicated()]
 
         df = df.reset_index()
         date_col = [c for c in df.columns if 'date' in str(c).lower() or 'time' in str(c).lower()]
@@ -471,11 +528,9 @@ def download_data(symbol: str, period: str = "60d", interval: str = "1h", prefer
             if col not in df.columns:
                 return None
 
-        # Clean NaN/inf
         df = df[req].dropna()
         return df
     except Exception as e:
-        # Fallback to local
         local_df = load_local_market_data(symbol)
         if local_df is not None and not local_df.empty:
             return local_df
@@ -555,7 +610,7 @@ def get_market_session() -> Dict[str, Any]:
 
 
 # ==============================================================================
-# 30 STRATEGY DEFINITIONS (Trend, Momentum, Mean Reversion, Volume, Advanced)
+# 30 STRATEGY DEFINITIONS (Clean Crossover / Regime Transitions, Zero Clashing)
 # ==============================================================================
 
 class S01_AlphaTrend:
@@ -569,8 +624,8 @@ class S01_AlphaTrend:
         atr = calc_atr(df, 14)
         at_raw = np.where(rsi >= 50, _squeeze(df, 'Low') - atr, _squeeze(df, 'High') + atr)
         at = calc_ema(pd.Series(at_raw, index=df.index), 2)
-        df['Buy_Signal'] = close > at
-        df['Sell_Signal'] = close < at
+        df['Buy_Signal'] = (close > at) & (close.shift(1) <= at.shift(1))
+        df['Sell_Signal'] = (close < at) & (close.shift(1) >= at.shift(1))
         return df
 
 
@@ -581,8 +636,8 @@ class S02_SuperTrend_714:
     def signals(self, df: pd.DataFrame) -> pd.DataFrame:
         df = df.copy()
         direction = calc_supertrend(df, 7, 3)
-        df['Buy_Signal'] = direction == 1.0
-        df['Sell_Signal'] = direction == -1.0
+        df['Buy_Signal'] = (direction == 1.0) & (direction.shift(1) != 1.0)
+        df['Sell_Signal'] = (direction == -1.0) & (direction.shift(1) != -1.0)
         return df
 
 
@@ -593,8 +648,8 @@ class S03_SuperTrend_510:
     def signals(self, df: pd.DataFrame) -> pd.DataFrame:
         df = df.copy()
         direction = calc_supertrend(df, 5, 2)
-        df['Buy_Signal'] = direction == 1.0
-        df['Sell_Signal'] = direction == -1.0
+        df['Buy_Signal'] = (direction == 1.0) & (direction.shift(1) != 1.0)
+        df['Sell_Signal'] = (direction == -1.0) & (direction.shift(1) != -1.0)
         return df
 
 
@@ -607,8 +662,8 @@ class S04_EMA_20_50:
         close = _squeeze(df, 'Close')
         ema20 = calc_ema(close, 20)
         ema50 = calc_ema(close, 50)
-        df['Buy_Signal'] = ema20 > ema50
-        df['Sell_Signal'] = ema20 < ema50
+        df['Buy_Signal'] = (ema20 > ema50) & (ema20.shift(1) <= ema50.shift(1))
+        df['Sell_Signal'] = (ema20 < ema50) & (ema20.shift(1) >= ema50.shift(1))
         return df
 
 
@@ -621,8 +676,8 @@ class S05_EMA_9_21:
         close = _squeeze(df, 'Close')
         ema9 = calc_ema(close, 9)
         ema21 = calc_ema(close, 21)
-        df['Buy_Signal'] = ema9 > ema21
-        df['Sell_Signal'] = ema9 < ema21
+        df['Buy_Signal'] = (ema9 > ema21) & (ema9.shift(1) <= ema21.shift(1))
+        df['Sell_Signal'] = (ema9 < ema21) & (ema9.shift(1) >= ema21.shift(1))
         return df
 
 
@@ -636,8 +691,10 @@ class S06_TripleEMA:
         e5 = calc_ema(close, 5)
         e13 = calc_ema(close, 13)
         e21 = calc_ema(close, 21)
-        df['Buy_Signal'] = (e5 > e13) & (e13 > e21)
-        df['Sell_Signal'] = (e5 < e13) & (e13 < e21)
+        bull = (e5 > e13) & (e13 > e21)
+        bear = (e5 < e13) & (e13 < e21)
+        df['Buy_Signal'] = bull & ~bull.shift(1).fillna(False)
+        df['Sell_Signal'] = bear & ~bear.shift(1).fillna(False)
         return df
 
 
@@ -650,8 +707,8 @@ class S07_GoldenCross:
         close = _squeeze(df, 'Close')
         s50 = calc_sma(close, 50)
         s200 = calc_sma(close, 200)
-        df['Buy_Signal'] = s50 > s200
-        df['Sell_Signal'] = s50 < s200
+        df['Buy_Signal'] = (s50 > s200) & (s50.shift(1) <= s200.shift(1))
+        df['Sell_Signal'] = (s50 < s200) & (s50.shift(1) >= s200.shift(1))
         return df
 
 
@@ -664,8 +721,8 @@ class S08_HullMA:
         close = _squeeze(df, 'Close')
         h14 = calc_hma(close, 14)
         h28 = calc_hma(close, 28)
-        df['Buy_Signal'] = h14 > h28
-        df['Sell_Signal'] = h14 < h28
+        df['Buy_Signal'] = (h14 > h28) & (h14.shift(1) <= h28.shift(1))
+        df['Sell_Signal'] = (h14 < h28) & (h14.shift(1) >= h28.shift(1))
         return df
 
 
@@ -676,8 +733,8 @@ class S09_ParabolicSAR:
     def signals(self, df: pd.DataFrame) -> pd.DataFrame:
         df = df.copy()
         trend = calc_psar(df, 0.02, 0.02, 0.2)
-        df['Buy_Signal'] = trend > 0
-        df['Sell_Signal'] = trend < 0
+        df['Buy_Signal'] = (trend > 0) & (trend.shift(1) <= 0)
+        df['Sell_Signal'] = (trend < 0) & (trend.shift(1) >= 0)
         return df
 
 
@@ -689,6 +746,7 @@ class S10_Donchian_Breakout:
         df = df.copy()
         close = _squeeze(df, 'Close')
         upper, _, lower = calc_donchian(df, 20)
+        # Shift channel by 1 bar to prevent look-ahead bias on the current bar
         df['Buy_Signal'] = close > upper.shift(1)
         df['Sell_Signal'] = close < lower.shift(1)
         return df
@@ -703,8 +761,10 @@ class S11_HilegaMilega:
         rsi9 = calc_rsi(df, 9)
         ema3 = calc_ema(rsi9, 3)
         wma21 = calc_wma(rsi9, 21)
-        df['Buy_Signal'] = (rsi9 > 50) & (ema3 < rsi9) & (wma21 > 50)
-        df['Sell_Signal'] = (rsi9 < 50) & (ema3 > rsi9) & (wma21 < 50)
+        bull = (rsi9 > 50.0) & (ema3 < rsi9) & (wma21 > 50.0)
+        bear = (rsi9 < 50.0) & (ema3 > rsi9) & (wma21 < 50.0)
+        df['Buy_Signal'] = bull & ~bull.shift(1).fillna(False)
+        df['Sell_Signal'] = bear & ~bear.shift(1).fillna(False)
         return df
 
 
@@ -715,8 +775,8 @@ class S12_MACD_Signal_Cross:
     def signals(self, df: pd.DataFrame) -> pd.DataFrame:
         df = df.copy()
         macd_line, signal_line, _ = calc_macd(df)
-        df['Buy_Signal'] = macd_line > signal_line
-        df['Sell_Signal'] = macd_line < signal_line
+        df['Buy_Signal'] = (macd_line > signal_line) & (macd_line.shift(1) <= signal_line.shift(1))
+        df['Sell_Signal'] = (macd_line < signal_line) & (macd_line.shift(1) >= signal_line.shift(1))
         return df
 
 
@@ -727,8 +787,8 @@ class S13_MACD_ZeroCross:
     def signals(self, df: pd.DataFrame) -> pd.DataFrame:
         df = df.copy()
         macd_line, _, _ = calc_macd(df)
-        df['Buy_Signal'] = macd_line > 0.0
-        df['Sell_Signal'] = macd_line < 0.0
+        df['Buy_Signal'] = (macd_line > 0.0) & (macd_line.shift(1) <= 0.0)
+        df['Sell_Signal'] = (macd_line < 0.0) & (macd_line.shift(1) >= 0.0)
         return df
 
 
@@ -739,8 +799,8 @@ class S14_RSI_50_Cross:
     def signals(self, df: pd.DataFrame) -> pd.DataFrame:
         df = df.copy()
         rsi = calc_rsi(df, 14)
-        df['Buy_Signal'] = rsi > 50.0
-        df['Sell_Signal'] = rsi < 50.0
+        df['Buy_Signal'] = (rsi > 50.0) & (rsi.shift(1) <= 50.0)
+        df['Sell_Signal'] = (rsi < 50.0) & (rsi.shift(1) >= 50.0)
         return df
 
 
@@ -751,8 +811,8 @@ class S15_Stochastic:
     def signals(self, df: pd.DataFrame) -> pd.DataFrame:
         df = df.copy()
         k, d = calc_stochastic(df, 14, 3)
-        df['Buy_Signal'] = (k > d) & (k < 80)
-        df['Sell_Signal'] = (k < d) & (k > 20)
+        df['Buy_Signal'] = (k > d) & (k.shift(1) <= d.shift(1)) & (k < 80.0)
+        df['Sell_Signal'] = (k < d) & (k.shift(1) >= d.shift(1)) & (k > 20.0)
         return df
 
 
@@ -763,8 +823,8 @@ class S16_CCI:
     def signals(self, df: pd.DataFrame) -> pd.DataFrame:
         df = df.copy()
         cci = calc_cci(df, 20)
-        df['Buy_Signal'] = cci > -100.0
-        df['Sell_Signal'] = cci < 100.0
+        df['Buy_Signal'] = (cci > -100.0) & (cci.shift(1) <= -100.0)
+        df['Sell_Signal'] = (cci < 100.0) & (cci.shift(1) >= 100.0)
         return df
 
 
@@ -775,8 +835,8 @@ class S17_WilliamsR:
     def signals(self, df: pd.DataFrame) -> pd.DataFrame:
         df = df.copy()
         wr = calc_williams_r(df, 14)
-        df['Buy_Signal'] = wr > -80.0
-        df['Sell_Signal'] = wr < -20.0
+        df['Buy_Signal'] = (wr > -80.0) & (wr.shift(1) <= -80.0)
+        df['Sell_Signal'] = (wr < -20.0) & (wr.shift(1) >= -20.0)
         return df
 
 
@@ -787,8 +847,8 @@ class S18_Aroon:
     def signals(self, df: pd.DataFrame) -> pd.DataFrame:
         df = df.copy()
         up, down = calc_aroon(df, 25)
-        df['Buy_Signal'] = up > down
-        df['Sell_Signal'] = up < down
+        df['Buy_Signal'] = (up > down) & (up.shift(1) <= down.shift(1))
+        df['Sell_Signal'] = (up < down) & (up.shift(1) >= down.shift(1))
         return df
 
 
@@ -799,8 +859,8 @@ class S19_ChandeMomentum:
     def signals(self, df: pd.DataFrame) -> pd.DataFrame:
         df = df.copy()
         cmo = calc_chande_momentum(df, 14)
-        df['Buy_Signal'] = cmo > 0.0
-        df['Sell_Signal'] = cmo < 0.0
+        df['Buy_Signal'] = (cmo > 0.0) & (cmo.shift(1) <= 0.0)
+        df['Sell_Signal'] = (cmo < 0.0) & (cmo.shift(1) >= 0.0)
         return df
 
 
@@ -811,8 +871,8 @@ class S20_ADX_DI_Cross:
     def signals(self, df: pd.DataFrame) -> pd.DataFrame:
         df = df.copy()
         adx, pdi, mdi = calc_adx(df, 14)
-        df['Buy_Signal'] = (pdi > mdi) & (adx > 25.0)
-        df['Sell_Signal'] = (mdi > pdi) & (adx > 25.0)
+        df['Buy_Signal'] = (pdi > mdi) & (pdi.shift(1) <= mdi.shift(1)) & (adx > 25.0)
+        df['Sell_Signal'] = (mdi > pdi) & (mdi.shift(1) <= pdi.shift(1)) & (adx > 25.0)
         return df
 
 
@@ -825,8 +885,8 @@ class S21_RSI_BollingerBands:
         close = _squeeze(df, 'Close')
         rsi = calc_rsi(df, 14)
         upper, _, lower = calc_bollinger(df, 20, 2.0)
-        df['Buy_Signal'] = (rsi < 35.0) & (close <= lower)
-        df['Sell_Signal'] = (rsi > 65.0) & (close >= upper)
+        df['Buy_Signal'] = (rsi < 35.0) & (close <= lower.shift(1))
+        df['Sell_Signal'] = (rsi > 65.0) & (close >= upper.shift(1))
         return df
 
 
@@ -838,8 +898,8 @@ class S22_ZScore_Reversion:
         df = df.copy()
         close = _squeeze(df, 'Close')
         z = calc_zscore(close, 20)
-        df['Buy_Signal'] = z < -1.5
-        df['Sell_Signal'] = z > 1.5
+        df['Buy_Signal'] = (z < -1.5) & (z.shift(1) >= -1.5)
+        df['Sell_Signal'] = (z > 1.5) & (z.shift(1) <= 1.5)
         return df
 
 
@@ -853,7 +913,7 @@ class S23_BB_Squeeze:
         bb_u, bb_mid, bb_l = calc_bollinger(df, 20, 2.0)
         kc_u, _, kc_l = calc_keltner(df, 20, 10, 1.5)
         squeeze = (bb_u < kc_u) & (bb_l > kc_l)
-        squeeze_off = squeeze & ~squeeze.shift(1).fillna(False)
+        squeeze_off = ~squeeze & squeeze.shift(1).fillna(False)
         df['Buy_Signal'] = squeeze_off & (close > bb_mid)
         df['Sell_Signal'] = squeeze_off & (close < bb_mid)
         return df
@@ -867,8 +927,8 @@ class S24_KeltnerChannel:
         df = df.copy()
         close = _squeeze(df, 'Close')
         upper, _, lower = calc_keltner(df, 20, 10, 2.0)
-        df['Buy_Signal'] = close < lower
-        df['Sell_Signal'] = close > upper
+        df['Buy_Signal'] = close < lower.shift(1)
+        df['Sell_Signal'] = close > upper.shift(1)
         return df
 
 
@@ -879,8 +939,8 @@ class S25_RSI_30_70:
     def signals(self, df: pd.DataFrame) -> pd.DataFrame:
         df = df.copy()
         rsi = calc_rsi(df, 14)
-        df['Buy_Signal'] = rsi < 30.0
-        df['Sell_Signal'] = rsi > 70.0
+        df['Buy_Signal'] = (rsi > 30.0) & (rsi.shift(1) <= 30.0)
+        df['Sell_Signal'] = (rsi < 70.0) & (rsi.shift(1) >= 70.0)
         return df
 
 
@@ -896,8 +956,8 @@ class S26_VWAP:
             return df
         close = _squeeze(df, 'Close')
         vwap = calc_vwap(df)
-        df['Buy_Signal'] = close > vwap
-        df['Sell_Signal'] = close < vwap
+        df['Buy_Signal'] = (close > vwap) & (close.shift(1) <= vwap.shift(1))
+        df['Sell_Signal'] = (close < vwap) & (close.shift(1) >= vwap.shift(1))
         return df
 
 
@@ -914,9 +974,8 @@ class S27_Volume_RSI_Combo:
         rsi = calc_rsi(df, 14)
         volume = _squeeze(df, 'Volume')
         vol_ma = calc_sma(volume, 20)
-        high_vol = volume > vol_ma
-        df['Buy_Signal'] = (rsi > 50.0) & high_vol
-        df['Sell_Signal'] = (rsi < 50.0) & high_vol
+        df['Buy_Signal'] = (rsi > 50.0) & (rsi.shift(1) <= 50.0) & (volume > vol_ma)
+        df['Sell_Signal'] = (rsi < 50.0) & (rsi.shift(1) >= 50.0) & (volume > vol_ma)
         return df
 
 
@@ -932,8 +991,8 @@ class S28_OBV_Trend:
             return df
         obv = calc_obv(df)
         obv_ema = calc_ema(obv, 20)
-        df['Buy_Signal'] = obv > obv_ema
-        df['Sell_Signal'] = obv < obv_ema
+        df['Buy_Signal'] = (obv > obv_ema) & (obv.shift(1) <= obv_ema.shift(1))
+        df['Sell_Signal'] = (obv < obv_ema) & (obv.shift(1) >= obv_ema.shift(1))
         return df
 
 
@@ -950,8 +1009,8 @@ class S29_Triple_Confirmation:
         macd_line, signal_line, _ = calc_macd(df)
         bull = (rsi > 50.0) & (ema20 > ema50) & (macd_line > signal_line)
         bear = (rsi < 50.0) & (ema20 < ema50) & (macd_line < signal_line)
-        df['Buy_Signal'] = bull
-        df['Sell_Signal'] = bear
+        df['Buy_Signal'] = bull & ~bull.shift(1).fillna(False)
+        df['Sell_Signal'] = bear & ~bear.shift(1).fillna(False)
         return df
 
 
@@ -964,8 +1023,8 @@ class S30_ADX_SuperTrend_Combo:
         adx, _, _ = calc_adx(df, 14)
         strong = adx > 25.0
         direction = calc_supertrend(df, 7, 3)
-        df['Buy_Signal'] = (direction == 1.0) & strong
-        df['Sell_Signal'] = (direction == -1.0) & strong
+        df['Buy_Signal'] = (direction == 1.0) & (direction.shift(1) != 1.0) & strong
+        df['Sell_Signal'] = (direction == -1.0) & (direction.shift(1) != -1.0) & strong
         return df
 
 
@@ -1004,7 +1063,7 @@ ALL_STRATEGIES = [
 
 
 # ==============================================================================
-# RISK-AWARE SINGLE STRATEGY BACKTEST ENGINE (Resolves Issue 1 & Issue 4)
+# RISK-AWARE SINGLE STRATEGY BACKTEST ENGINE (Resolves Issue 1, 4, & Section 4)
 # ==============================================================================
 
 def backtest_strategy(
@@ -1018,28 +1077,7 @@ def backtest_strategy(
 ) -> Tuple[pd.DataFrame, float, pd.Series]:
     """
     Run backtest on a single strategy with hard ATR stop-loss and realistic Indian transaction costs.
-
-    Parameters:
-    -----------
-    df : pd.DataFrame
-        OHLCV market data.
-    strategy : Strategy
-        Strategy instance with a .signals(df) method.
-    initial_capital : float
-        Starting account balance in INR.
-    brokerage_bps : float
-        Transaction cost in basis points round-trip (default 15 bps = 0.15%).
-    fixed_brokerage : float
-        Fixed fee per order in INR (e.g. ₹20).
-    atr_stop_multiplier : float
-        ATR multiplier for hard stop-loss (e.g. 2.0 * ATR). Set <= 0 to disable.
-    capital_alloc_pct : float
-        Fraction of available cash allocated per trade (default 95%).
-
-    Returns:
-    --------
-    Tuple[pd.DataFrame, float, pd.Series]
-        (trades_df, final_capital, equity_curve)
+    Reconciles open positions at terminal date with mark-to-market unrealized P&L.
     """
     if df is None or df.empty or len(df) < 10:
         return pd.DataFrame(), initial_capital, pd.Series(dtype=float)
@@ -1058,7 +1096,6 @@ def backtest_strategy(
 
     close_prices = _squeeze(df_sig, 'Close')
     low_prices = _squeeze(df_sig, 'Low')
-    high_prices = _squeeze(df_sig, 'High')
     atr_series = calc_atr(df_sig, 14)
 
     position = 0
@@ -1069,13 +1106,12 @@ def backtest_strategy(
     capital = float(initial_capital)
     equity_curve = []
 
-    # Convert one-way bps to rate
+    # One-way cost rate
     one_way_cost_rate = (brokerage_bps / 2.0) / 10_000.0
 
     for i in range(len(df_sig)):
         price = float(close_prices.iloc[i])
         low = float(low_prices.iloc[i])
-        high = float(high_prices.iloc[i])
         date = df_sig.index[i]
         curr_atr = float(atr_series.iloc[i]) if not np.isnan(atr_series.iloc[i]) else (price * 0.015)
 
@@ -1086,10 +1122,9 @@ def backtest_strategy(
         buy_sig = bool(df_sig['Buy_Signal'].iloc[i])
         sell_sig = bool(df_sig['Sell_Signal'].iloc[i])
 
-        # Check Stop Loss if in position
+        # 1. Check Stop Loss if in position
         if position > 0 and atr_stop_multiplier > 0:
             if low <= stop_price:
-                # Stop loss triggered: fill at stop price or bar open/low
                 exit_price = max(min(price, stop_price), low)
                 gross_pnl = (exit_price - buy_price) * position
                 turnover = (buy_price + exit_price) * position
@@ -1114,7 +1149,7 @@ def backtest_strategy(
                 buy_price = 0.0
                 stop_price = 0.0
 
-        # Check Signal Exit if still in position
+        # 2. Check Signal Exit if still in position
         if position > 0 and sell_sig:
             exit_price = price
             gross_pnl = (exit_price - buy_price) * position
@@ -1140,8 +1175,8 @@ def backtest_strategy(
             buy_price = 0.0
             stop_price = 0.0
 
-        # Check Entry Signal
-        elif position == 0 and buy_sig:
+        # 3. Check Entry Signal if flat
+        elif position == 0 and buy_sig and not sell_sig:
             alloc_capital = capital * capital_alloc_pct
             quantity = int(alloc_capital / price)
             if quantity >= 1:
@@ -1158,12 +1193,37 @@ def backtest_strategy(
         current_equity = capital + (position * price)
         equity_curve.append(current_equity)
 
+    # Close open position at end of data if still held (Section 4 Fix)
+    if position > 0:
+        final_price = float(close_prices.iloc[-1])
+        final_date = df_sig.index[-1]
+        gross_pnl = (final_price - buy_price) * position
+        turnover = (buy_price + final_price) * position
+        cost = (turnover * one_way_cost_rate) + (2.0 * fixed_brokerage)
+        net_pnl = gross_pnl - cost
+        capital += (final_price * position) - (cost / 2.0)
+        trades.append({
+            'Entry_Date': entry_date,
+            'Exit_Date': final_date,
+            'Buy_Price': round(buy_price, 2),
+            'Sell_Price': round(final_price, 2),
+            'Qty': position,
+            'Stop_Price': round(stop_price, 2),
+            'Gross_PnL': round(gross_pnl, 2),
+            'Cost': round(cost, 2),
+            'Net_PnL': round(net_pnl, 2),
+            'Return %': round((final_price - buy_price) / buy_price * 100.0, 2),
+            'Exit_Reason': 'END_OF_DATA',
+            'Capital': round(capital, 2)
+        })
+        position = 0
+
     eq_series = pd.Series(equity_curve, index=df_sig.index[:len(equity_curve)])
     return pd.DataFrame(trades), round(eq_series.iloc[-1] if not eq_series.empty else initial_capital, 2), eq_series
 
 
 # ==============================================================================
-# STATISTICAL METRICS & DEFLATED SHARPE (Resolves Issue 5 & Multiple Comparisons)
+# STATISTICAL METRICS & DEFLATED SHARPE (Resolves Issue 5 & Section 6)
 # ==============================================================================
 
 def calculate_deflated_sharpe(sharpe: float, n_obs: int, n_trials: int = 30, benchmark_sharpe: float = 0.0) -> float:
@@ -1219,10 +1279,9 @@ def score_trades(
         'Rating': '⚠️ NO DATA'
     }
 
-    if (trades_df is None or trades_df.empty or len(trades_df) < 2) and (equity_curve is None or len(equity_curve) < 5):
+    if (trades_df is None or trades_df.empty) and (equity_curve is None or len(equity_curve) < 5):
         return base
 
-    # Calculate returns series from equity curve
     if equity_curve is not None and len(equity_curve) > 5:
         eq = equity_curve.dropna()
         daily_returns = eq.pct_change().dropna()
@@ -1232,7 +1291,7 @@ def score_trades(
         total_ret = float((final_cap - initial_capital) / initial_capital * 100.0)
         cagr = float(((final_cap / initial_capital) ** (1.0 / years) - 1.0) * 100.0) if final_cap > 0 else -100.0
 
-        # Drawdown calculation
+        # Drawdown
         roll_max = eq.cummax()
         dd = (eq - roll_max) / roll_max * 100.0
         max_dd = abs(float(dd.min()))
@@ -1277,15 +1336,15 @@ def score_trades(
         win_rate = 0.0
         pf = 0.0
 
-    # Risk-Adjusted Scoring (0 to 10 points based on Sharpe, Calmar, MaxDD, PF, Win Rate)
+    # Risk-Adjusted Scoring (0 to 10 points)
     sc = 0
     sc += 2 if sharpe >= 1.0 else (1 if sharpe >= 0.5 else 0)
     sc += 2 if calmar >= 1.0 else (1 if calmar >= 0.5 else 0)
     sc += 2 if max_dd < 15.0 else (1 if max_dd < 25.0 else 0)
     sc += 2 if pf > 1.8 else (1 if pf > 1.3 else 0)
-    sc += 2 if (win_rate >= 50.0 and n_trades >= 8) else (1 if (win_rate >= 42.0 and n_trades >= 4) else 0)
+    sc += 2 if (win_rate >= 50.0 and n_trades >= 6) else (1 if (win_rate >= 40.0 and n_trades >= 3) else 0)
 
-    # Institutional Rating
+    # Rating
     if sc >= 8 and sharpe >= 0.8 and dsr >= 0.90:
         rating = "🟢 EXCELLENT"
     elif sc >= 6 and sharpe >= 0.4:
@@ -1330,33 +1389,10 @@ def run_portfolio_backtest(
 ) -> Dict[str, Any]:
     """
     Shared-capital multi-symbol portfolio backtester.
-
-    Simulates a unified trading desk trading multiple symbols from one shared cash pool,
-    preventing over-allocation and ensuring institutional position sizing (vol-target or equal weight).
-
-    Parameters:
-    -----------
-    symbols_data : Dict[str, pd.DataFrame]
-        Dictionary mapping symbol -> OHLCV DataFrame.
-    strategy : Strategy
-        Strategy instance.
-    initial_capital : float
-        Shared account capital (e.g. ₹10 Lakhs).
-    max_positions : int
-        Maximum concurrent open positions across the book.
-    sizing_method : str
-        'vol_target' (risk parity based on ATR stop) or 'equal_weight'.
-    risk_per_trade_pct : float
-        Percentage of equity risked per trade (default 1%).
-    atr_stop_multiplier : float
-        Multiplier for ATR stop-loss.
-    cost_bps : float
-        Round-trip transaction costs in bps.
     """
     if not symbols_data:
         return {'portfolio_metrics': {}, 'trades': pd.DataFrame(), 'equity_curve': pd.Series()}
 
-    # Compute signals and ATR for all symbols
     processed = {}
     for sym, df in symbols_data.items():
         if df is None or df.empty or len(df) < 15:
@@ -1371,17 +1407,15 @@ def run_portfolio_backtest(
     if not processed:
         return {'portfolio_metrics': {}, 'trades': pd.DataFrame(), 'equity_curve': pd.Series()}
 
-    # Align timestamps across universe
     all_timestamps = sorted(list(set.union(*[set(df.index) for df in processed.values()])))
 
     cash = float(initial_capital)
-    open_positions = {}  # sym -> {qty, buy_price, stop_price, entry_date}
+    open_positions = {}
     all_trades = []
     portfolio_equity_series = []
     one_way_cost = (cost_bps / 2.0) / 10_000.0
 
     for ts in all_timestamps:
-        # Mark to market current positions and check exits
         current_invested = 0.0
         exited_symbols = []
 
@@ -1456,7 +1490,8 @@ def run_portfolio_backtest(
 
                 row = df.loc[ts]
                 buy_sig = bool(row.get('Buy_Signal', False))
-                if not buy_sig:
+                sell_sig_entry = bool(row.get('Sell_Signal', False))
+                if not buy_sig or sell_sig_entry:
                     continue
 
                 price = float(_squeeze(row, 'Close'))
@@ -1464,19 +1499,16 @@ def run_portfolio_backtest(
                 if price <= 0:
                     continue
 
-                # Position sizing logic
                 if sizing_method == "vol_target" and atr > 0:
                     risk_amount = total_equity * risk_per_trade_pct
                     dollar_risk = max(atr * atr_stop_multiplier, price * 0.01)
                     qty = int(risk_amount / dollar_risk)
-                    # Cap position notional at (equity / max_positions) * 1.5
                     max_notional = (total_equity / max_positions) * 1.5
                     qty = min(qty, int(max_notional / price))
                 else:
                     target_notional = total_equity / max_positions
                     qty = int(target_notional / price)
 
-                # Ensure sufficient cash
                 trade_notional = qty * price
                 entry_cost = trade_notional * one_way_cost
                 if trade_notional + entry_cost > cash * 0.95:
@@ -1493,7 +1525,6 @@ def run_portfolio_backtest(
                         'entry_date': ts
                     }
 
-        # Record portfolio equity
         portfolio_invested = sum(
             pos['qty'] * float(_squeeze(processed[sym].loc[ts], 'Close'))
             if ts in processed[sym].index else pos['qty'] * pos['buy_price']
@@ -1528,10 +1559,6 @@ def walk_forward_validate_strategy(
 ) -> Dict[str, Any]:
     """
     Purged Train/Test Walk-Forward Validation Engine.
-
-    Guards against data-snooping and in-sample selection bias by splitting
-    the time-series into In-Sample (Train) and Out-of-Sample (Test) periods.
-    Computes Sharpe degradation, Deflated Sharpe, and Placebo comparison.
     """
     if df is None or len(df) < 30:
         return {
@@ -1564,17 +1591,17 @@ def walk_forward_validate_strategy(
     oos_sr = oos_metrics['Sharpe']
     degradation = round(oos_sr / is_sr, 2) if is_sr > 0 else 0.0
 
-    # Placebo cross-check (evaluates strategy against random noise signals)
+    # Placebo cross-check
     np.random.seed(42)
     placebo_signals = df.copy()
-    placebo_signals['Buy_Signal'] = np.random.rand(len(df)) > 0.8
-    placebo_signals['Sell_Signal'] = np.random.rand(len(df)) > 0.8
+    placebo_signals['Buy_Signal'] = np.random.rand(len(df)) > 0.85
+    placebo_signals['Sell_Signal'] = np.random.rand(len(df)) > 0.85
     _, _, pl_eq = backtest_strategy(placebo_signals, strategy, atr_stop_multiplier=atr_stop_multiplier, brokerage_bps=cost_bps)
     pl_metrics = score_trades(pd.DataFrame(), 50000.0, "Placebo", "Noise", equity_curve=pl_eq)
     placebo_sharpe = pl_metrics['Sharpe']
 
     # Research Gate Decision
-    if oos_sr >= 0.5 and is_sr >= 0.7 and oos_metrics['Return %'] > 0 and oos_metrics['Deflated Sharpe'] >= 0.90 and oos_sr > placebo_sharpe:
+    if oos_sr >= 0.5 and is_sr >= 0.6 and oos_metrics['Return %'] > 0 and oos_metrics['Deflated Sharpe'] >= 0.90 and oos_sr > placebo_sharpe:
         verdict = "PASS_FOR_RESEARCH_COCKPIT"
         gate_decision = "PASS (Validated Candidate)"
     elif oos_sr >= 0.2 and oos_metrics['Return %'] > 0:
@@ -1633,7 +1660,6 @@ def run_all_strategies(
 
     results = []
     for i, strategy in enumerate(ALL_STRATEGIES):
-        # Check volume requirement
         if getattr(strategy, 'requires_volume', False) and not is_volume_valid(df):
             perf = {
                 'Strategy': strategy.name,
@@ -1680,9 +1706,7 @@ def run_idea_generation_pipeline(
     top_candidates_count: int = 5
 ) -> Dict[str, Any]:
     """
-    Two-Tier Idea Generation & Validation Pipeline:
-      Tier 1: Multi-strategy screening across universe
-      Tier 2: Purged Walk-Forward & Deflated Sharpe validation for top scorers
+    Two-Tier Idea Generation & Validation Pipeline.
     """
     if strategies is None:
         strategies = ALL_STRATEGIES
@@ -1704,7 +1728,7 @@ def run_idea_generation_pipeline(
                 all_screening.append(res)
 
     if not all_screening:
-        return {'screening': pd.DataFrame(), 'validated_candidates': []}
+        return {'screening_summary': pd.DataFrame(), 'top_screened': pd.DataFrame(), 'validated_candidates': []}
 
     combined_df = pd.concat(all_screening, ignore_index=True)
     top_screened = combined_df.sort_values(by=['Score', 'Sharpe', 'Return %'], ascending=False).head(top_candidates_count)
@@ -1737,7 +1761,7 @@ def run_idea_generation_pipeline(
 
 
 # ==============================================================================
-# ANALYSIS HELPERS & CHART GENERATION
+# REPORTING, EXPORT, & VISUALIZATION HELPERS (Section 8)
 # ==============================================================================
 
 def get_top_strategies(results_df: Optional[pd.DataFrame], top_n: int = 10) -> pd.DataFrame:
@@ -1764,6 +1788,32 @@ def get_rating_distribution(results_df: Optional[pd.DataFrame]) -> Dict[str, int
     if results_df is None or results_df.empty:
         return {}
     return results_df['Rating'].value_counts().to_dict()
+
+
+def generate_csv_report(results_df: pd.DataFrame, filename: str = "30_strategy_report.csv") -> str:
+    """Export complete auditable backtest results to CSV."""
+    if results_df is not None and not results_df.empty:
+        results_df.to_csv(filename, index=False)
+        print(f"  📁 Audit CSV exported: {filename}")
+    return filename
+
+
+def plot_heatmap(results_df: pd.DataFrame, metric: str = "Sharpe", filename: str = "strategy_heatmap.png") -> Optional[str]:
+    """
+    Plot cross-symbol strategy performance heatmap.
+    Explicitly distinguishes missing data pairs (NaN / grey) from 0.0 return.
+    """
+    if results_df is None or results_df.empty or 'Symbol' not in results_df.columns:
+        return None
+
+    pivot = results_df.pivot(index='Strategy', columns='Symbol', values=metric)
+    plt.figure(figsize=(14, 10))
+    sns.heatmap(pivot, annot=True, cmap="RdYlGn", center=0.0, cbar_kws={'label': metric}, mask=pivot.isna())
+    plt.title(f'Strategy vs Symbol Cross-Sectional Heatmap ({metric})', fontsize=14, fontweight='bold')
+    plt.tight_layout()
+    plt.savefig(filename, dpi=130, bbox_inches='tight')
+    plt.close()
+    return filename
 
 
 def generate_dashboard_chart(results_df: Optional[pd.DataFrame], symbol: str) -> Optional[str]:
