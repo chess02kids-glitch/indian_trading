@@ -1024,7 +1024,13 @@ const App = {
     $("#bot-toggle").setAttribute("aria-checked", String(!!this.bot.enabled));
     const riskSel = $("#bot-risk");
     riskSel.value = String(this.bot.risk_pct);
-    this.log("sys", "feed", `connected — ${state.feed.mode} feed · ${state.universe.length} symbols`);
+
+    const feedKey = `${state.feed.mode}_${state.universe.length}`;
+    if (this._lastFeedKey !== feedKey) {
+      this._lastFeedKey = feedKey;
+      this.log("sys", "feed", `connected — ${state.feed.mode} feed · ${state.universe.length} symbols`);
+    }
+
     this.renderEquity();
     this.renderTape();
   },
@@ -1362,9 +1368,16 @@ const App = {
     let es = null;
     let failures = 0;
     const connect = () => {
+      if (es) {
+        try { es.close(); } catch {}
+      }
       es = new EventSource("/api/live/stream");
       es.addEventListener("hello", () => {
         failures = 0;
+        if (this._pollTimer) {
+          clearInterval(this._pollTimer);
+          this._pollTimer = null;
+        }
         this.api("/api/live/state").then((s) => this.applyState(s)).catch(() => {});
       });
       es.addEventListener("tick", (e) => this.onTick(JSON.parse(e.data)));
@@ -1387,17 +1400,31 @@ const App = {
       es.onerror = () => {
         failures++;
         if (failures >= 2) {
-          es.close();
-          this.log("warn", "stream", "SSE interrupted — using polling fallback");
+          try { es.close(); } catch {}
           if (!this._pollTimer) {
+            this.log("warn", "stream", "SSE interrupted — using active polling fallback");
             this._pollTimer = setInterval(async () => {
               try {
                 const s = await this.api("/api/live/state");
                 this.applyState(s);
                 const lp = Object.fromEntries(s.universe.map((u) => [u.symbol, u]));
-                this.onTick({ t: Date.now(), p: Object.fromEntries(Object.entries(lp).map(([k, u]) => [k, [u.last, u.open, u.prev_close, u.volume, u.last, u.last, u.vwap]])) });
+                this.onTick({
+                  t: s.clock?.now_ms || Date.now(),
+                  p: Object.fromEntries(
+                    Object.entries(lp).map(([k, u]) => [
+                      k,
+                      [u.last, u.open, u.prev_close, u.volume, u.session_high ?? u.last, u.session_low ?? u.last, u.vwap]
+                    ])
+                  )
+                });
+                if (s.portfolio) this.onPortfolio(s.portfolio);
               } catch { /* retry next tick */ }
             }, 2000);
+
+            // Periodically attempt to reconnect SSE in background
+            setTimeout(() => {
+              if (this._pollTimer) connect();
+            }, 15000);
           }
         }
       };
