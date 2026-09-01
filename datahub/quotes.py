@@ -172,6 +172,11 @@ class QuoteProvider:
         return {}
 
 
+# Tie-break when two sources served an equal number of quotes: prefer the more
+# trustworthy label, so a tie is never resolved *down* to a weaker source.
+_SOURCE_RANK = {"UPSTOX": 0, "EOD": 1, "SIM": 2}
+
+
 class UpstoxQuoteProvider(QuoteProvider):
     """Read-only Upstox quotes via :mod:`paper_trading.market_data`."""
 
@@ -482,21 +487,34 @@ class QuoteChain:
         counts: dict[str, int] = {}
         for quote in quotes.values():
             counts[quote.source] = counts.get(quote.source, 0) + 1
+        # Report the source that actually served the most quotes.  The previous
+        # version picked by preference order (UPSTOX before SIM before EOD), so
+        # a single real quote alongside four simulated ones labelled the whole
+        # refresh "UPSTOX" — exactly the "never present a simulated price as a
+        # real quote" failure this repository forbids.
         primary = "NONE"
-        for name in ("UPSTOX", "SIM", "EOD"):
-            if counts.get(name):
-                primary = name
-                break
+        if counts:
+            primary = max(
+                counts, key=lambda name: (counts[name], -_SOURCE_RANK.get(name, 99))
+            )
+        mixed = len(counts) > 1
         return {
             "source": primary,
             "counts": counts,
             "quoted": len(quotes),
+            "mixed": mixed,
+            "sources": sorted(counts),
             "note": {
                 "UPSTOX": "live read-only Upstox quotes",
                 "SIM": "simulated quotes anchored to verified EOD closes — not real prices",
                 "EOD": "frozen last verified close — market data is stale",
                 "NONE": "no quote source could price any requested symbol",
-            }.get(primary, ""),
+            }.get(primary, "")
+            + (
+                " — MIXED SOURCES: only some symbols were priced by the primary source"
+                if mixed
+                else ""
+            ),
         }
 
 

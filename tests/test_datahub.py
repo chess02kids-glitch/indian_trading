@@ -572,3 +572,153 @@ def test_regime_endpoint_exposes_a_real_proxy_series():
     # and it must actually be a proxy-vs-SMA chart, not one line drawn twice
     differ = [p for p in series if p["sma"] is not None and p["proxy"] != p["sma"]]
     assert len(differ) > len(series) // 2, "proxy and SMA are identical — placeholder bug"
+
+
+# ---------------------------------------------------------------------------
+# Divergence must be drawable from the first mark, not only after a verdict
+# ---------------------------------------------------------------------------
+
+
+def test_divergence_preview_draws_the_cone_without_a_verdict():
+    stamp = datetime(2026, 9, 1, 9, 15, tzinfo=UTC).isoformat()
+    report = divergence_report(
+        [{"timestamp": stamp, "equity": 1_000_000.0}], initial_capital=1_000_000
+    )
+    assert report["ready"] is False
+    assert report["state"] == "AWAITING SESSIONS"
+    # the overlay is the point of the feature; it must not be empty
+    assert len(report["series"]) > 0, "tracker returned nothing to plot on day one"
+    row = report["series"][0]
+    assert row["actual"] == 1_000_000.0 and row["expected"] == 1_000_000.0
+    # verdict fields are honestly absent rather than faked
+    assert report["summary"]["z_score"] is None
+    assert report["summary"]["tracking_error"] is None
+
+
+def test_divergence_preview_with_no_marks_still_shows_the_expected_cone():
+    report = divergence_report([], initial_capital=500_000)
+    assert report["ready"] is False
+    assert len(report["series"]) > 10
+    first, last = report["series"][0], report["series"][-1]
+    assert first["expected"] == 500_000
+    assert last["expected"] > first["expected"], "expected path should drift upward"
+    # the cone widens with the horizon
+    assert last["band2_hi"] - last["band2_lo"] > first["band2_hi"] - first["band2_lo"]
+    assert report["summary"]["actual_equity"] is None
+
+
+def test_divergence_preview_flags_intraday_marks():
+    # 20 marks x 30 min = 10 hours, 09:15 -> 19:15 the SAME calendar day.
+    # (40 marks would have run 20 hours into the next day and legitimately
+    # produced a verdict, which is what the first version of this test hit.)
+    base = datetime(2026, 9, 1, 9, 15, tzinfo=UTC)
+    points = [
+        {"timestamp": (base + timedelta(minutes=30 * i)).isoformat(), "equity": 1_000_000.0 + i}
+        for i in range(20)
+    ]
+    report = divergence_report(points, initial_capital=1_000_000)
+    assert report["ready"] is False, "one calendar day must not produce a verdict"
+    assert len(report["series"]) >= 2
+    assert report["summary"]["actual_equity"] == 1_000_019.0
+    assert "second session" in report["reason"]
+
+
+def test_divergence_verdict_appears_once_a_second_session_exists():
+    """The complement of the test above: crossing midnight must unlock it."""
+    base = datetime(2026, 9, 1, 9, 15, tzinfo=UTC)
+    points = [
+        {"timestamp": (base + timedelta(hours=6 * i)).isoformat(), "equity": 1_000_000.0 + i * 100}
+        for i in range(8)
+    ]
+    report = divergence_report(points, initial_capital=1_000_000)
+    assert report["ready"] is True
+    assert report["summary"]["z_score"] is not None
+    assert report["summary"]["days_observed"] >= 2
+
+
+# ---------------------------------------------------------------------------
+# A mixed quote refresh must never be labelled as the best source
+# ---------------------------------------------------------------------------
+
+
+def _quote(symbol, source, price=100.0):
+    from datahub.quotes import QuoteResult
+
+    return QuoteResult(symbol=symbol, last_price=price, source=source)
+
+
+def test_summarise_reports_the_source_that_actually_served_most():
+    """Regression: preference order meant one real quote alongside four
+    simulated ones labelled the whole refresh UPSTOX — presenting simulated
+    prices as real quotes, which this repository forbids."""
+    from datahub.quotes import QuoteChain
+
+    class _Dead:
+        name = "UPSTOX"
+
+        def available(self):
+            return False
+
+        def status(self):
+            return {"name": "UPSTOX"}
+
+        def fetch(self, symbols):
+            return {}
+
+    chain = QuoteChain([_Dead()])
+
+    mixed = {"A": _quote("A", "UPSTOX")} | {s: _quote(s, "SIM") for s in "BCDE"}
+    summary = chain.summarise(mixed)
+    assert summary["source"] == "SIM", "simulated quotes were labelled as real"
+    assert summary["mixed"] is True
+    assert summary["counts"] == {"UPSTOX": 1, "SIM": 4}
+    assert "MIXED" in summary["note"].upper()
+
+    assert chain.summarise({s: _quote(s, "SIM") for s in "ABCDE"})["source"] == "SIM"
+    assert chain.summarise({s: _quote(s, "UPSTOX") for s in "ABCDE"})["source"] == "UPSTOX"
+    assert chain.summarise({})["source"] == "NONE"
+    # a tie resolves toward the more trustworthy label, never downward
+    tie = chain.summarise({"A": _quote("A", "UPSTOX"), "B": _quote("B", "SIM")})
+    assert tie["source"] == "UPSTOX" and tie["mixed"] is True
+
+
+# ---------------------------------------------------------------------------
+# Kelly must be measured, not defaulted to a payoff ratio of 1.0
+# ---------------------------------------------------------------------------
+
+
+def test_kelly_is_measured_from_the_strategys_own_periods():
+    """Regression: avg_win/avg_loss defaulted to 1.0, so R=1.0 and
+    f* = W − (1−W) went negative for any sub-50% win rate.  The "recommended"
+    size was therefore always 0% — a number that looked computed but never was."""
+    close = _toy_panel(n_symbols=30, n_days=1200, seed=11)
+    basket = [{"symbol": s, "last_close": 100.0} for s in list(close.columns)[:10]]
+    result = position_sizing(
+        capital=1_000_000,
+        basket=basket,
+        close=close,
+        monte_carlo_paths=150,
+        rebalance_days=20,
+    )
+    kelly = result["kelly"]
+    assert kelly["source"] == "measured"
+    assert kelly["periods_observed"] > 10
+    assert kelly["odds"] > 0 and kelly["odds"] != 1.0
+    assert 0 < kelly["win_rate_pct"] < 100
+    # the published formula must hold exactly
+    w = kelly["win_rate_pct"] / 100.0
+    expected_full = max(0.0, min(w - (1 - w) / kelly["odds"], 1.0))
+    assert kelly["full_kelly_pct"] == pytest.approx(expected_full * 100.0, abs=0.01)
+    assert kelly["recommended_pct"] == pytest.approx(
+        kelly["full_kelly_pct"] * kelly["fraction_used"], abs=0.01
+    )
+
+
+def test_kelly_falls_back_to_a_labelled_default_without_history():
+    close = _toy_panel(n_symbols=12, n_days=40, seed=3)  # too short to measure
+    basket = [{"symbol": s, "last_close": 100.0} for s in list(close.columns)[:5]]
+    kelly = position_sizing(
+        capital=100_000, basket=basket, close=close, monte_carlo_paths=50
+    )["kelly"]
+    assert kelly["source"] == "defaulted"
+    assert kelly["periods_observed"] == 0

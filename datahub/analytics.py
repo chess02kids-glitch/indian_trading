@@ -420,6 +420,8 @@ CORRELATION_FAMILIES = (
     "dual_ma",
     "ma_cross",
     "donchian",
+    "supertrend",
+    "supertrend_fast",
     "ts_momentum",
     "rsi_rev",
     "bollinger_rev",
@@ -438,6 +440,8 @@ def _family_returns(close: pd.DataFrame, families: Iterable[str]) -> dict[str, p
         strat_momentum_cs_ls,
         strat_reversal_cs_ls,
         strat_rsi_rev,
+        strat_supertrend,
+        strat_supertrend_fast,
         strat_ts_momentum,
     )
 
@@ -450,6 +454,11 @@ def _family_returns(close: pd.DataFrame, families: Iterable[str]) -> dict[str, p
         "dual_ma": lambda: strat_dual_ma(close, high, low, open_),
         "ma_cross": lambda: strat_ma_cross(close, high, low, open_),
         "donchian": lambda: strat_donchian(close, high, low, open_),
+        # Two parameterisations of the same indicator, on purpose: if these two
+        # correlate near 1.0 then adding a second SuperTrend buys no
+        # diversification, which is exactly the question this panel answers.
+        "supertrend": lambda: strat_supertrend(close, high, low, open_),
+        "supertrend_fast": lambda: strat_supertrend_fast(close, high, low, open_),
         "ts_momentum": lambda: strat_ts_momentum(close, high, low, open_),
         "rsi_rev": lambda: strat_rsi_rev(close, high, low, open_),
         "bollinger_rev": lambda: strat_bollinger_rev(close, high, low, open_),
@@ -561,6 +570,32 @@ def strategy_correlation(
             if avg >= 0.55
             else "DIVERSIFYING"
         )
+        # The average hides the structure.  A book can average 0.5 and still
+        # contain a 0.998 pair — two strategies that are the same bet twice.
+        # Escalate on the worst pair so that case can never be reported as
+        # "genuinely spreads the risk".
+        if worst_pair and worst_pair[2] >= 0.95 and verdict == "DIVERSIFYING":
+            verdict = "SOME OVERLAP"
+        note = {
+            "DUPLICATIVE": (
+                "These families move together — running more than one is the same "
+                "bet several times over, not diversification."
+            ),
+            "SOME OVERLAP": (
+                "Meaningful overlap. Size the combination as one risk budget, not "
+                "as independent strategies."
+            ),
+            "DIVERSIFYING": (
+                "Low average pairwise correlation — a combination genuinely spreads "
+                "the risk."
+            ),
+        }[verdict]
+        if worst_pair and worst_pair[2] >= 0.90:
+            note += (
+                f" Note: {worst_pair[0]} and {worst_pair[1]} correlate at "
+                f"{worst_pair[2]:.2f} — treat those two as one position, whatever "
+                "the average says."
+            )
         return {
             "families": names,
             "matrix": matrix,
@@ -573,20 +608,7 @@ def strategy_correlation(
             "rolling_window_days": rolling_window,
             "rolling_vs_momrem": rolling,
             "verdict": verdict,
-            "verdict_note": {
-                "DUPLICATIVE": (
-                    "These families move together — running more than one is the same "
-                    "bet several times over, not diversification."
-                ),
-                "SOME OVERLAP": (
-                    "Meaningful overlap. Size the combination as one risk budget, not "
-                    "as independent strategies."
-                ),
-                "DIVERSIFYING": (
-                    "Low average pairwise correlation — a combination genuinely spreads "
-                    "the risk."
-                ),
-            }[verdict],
+            "verdict_note": note,
             "meta": _frame_meta(frame),
         }
 
@@ -599,6 +621,121 @@ def strategy_correlation(
 # ---------------------------------------------------------------------------
 # 4. Backtest-vs-live divergence
 # ---------------------------------------------------------------------------
+
+
+def _divergence_preview(
+    points: Sequence[dict[str, Any]],
+    *,
+    initial_capital: float | None,
+    expected_cagr: float,
+    expected_vol: float,
+    label: str,
+    reason: str,
+) -> dict[str, Any]:
+    """Draw the expected cone and the actual equity even before a verdict exists.
+
+    The statistical verdict (tracking error, z-score) genuinely needs two
+    sessions.  The *overlay* does not: the expected path is implied by the
+    published CAGR/vol and can be drawn from the very first mark.  Returning an
+    empty payload here made the tracker's most valuable output invisible on day
+    one, which is exactly when a new user decides whether to trust it.
+    """
+    mu_annual = math.log1p(expected_cagr)
+    start = float(initial_capital or (points[0]["equity"] if points else 1_000_000.0))
+
+    def _row(fraction_of_year: float, actual: float | None) -> dict[str, Any]:
+        expected = start * math.exp(mu_annual * fraction_of_year)
+        sigma = expected_vol * math.sqrt(max(fraction_of_year, 0.0))
+        return {
+            "actual": None if actual is None else round(float(actual), 2),
+            "expected": round(expected, 2),
+            "band1_hi": round(expected * math.exp(sigma), 2),
+            "band1_lo": round(expected * math.exp(-sigma), 2),
+            "band2_hi": round(expected * math.exp(2 * sigma), 2),
+            "band2_lo": round(expected * math.exp(-2 * sigma), 2),
+        }
+
+    series: list[dict[str, Any]] = []
+    if points:
+        stamps = pd.to_datetime(
+            [str(p.get("timestamp") or p.get("date")) for p in points], utc=True
+        )
+        values = np.asarray([float(p["equity"]) for p in points], dtype=float)
+        # keep the chart legible without hiding the shape
+        step = max(1, len(points) // 160)
+        picks = list(range(0, len(points), step))
+        if picks[-1] != len(points) - 1:
+            picks.append(len(points) - 1)
+        origin = stamps[0]
+        for i in picks:
+            elapsed_years = (stamps[i] - origin).total_seconds() / (365.25 * 86400.0)
+            row = _row(elapsed_years, values[i])
+            row["date"] = str(stamps[i].date())
+            row["time"] = stamps[i].strftime("%H:%M")
+            series.append(row)
+        last = series[-1]
+        summary = {
+            "days_observed": 0,
+            "start_equity": round(start, 2),
+            "actual_equity": last["actual"],
+            "expected_equity": last["expected"],
+            "actual_return_pct": round((last["actual"] / start - 1.0) * 100.0, 3)
+            if last["actual"] is not None
+            else None,
+            "expected_return_pct": round((last["expected"] / start - 1.0) * 100.0, 3),
+            "gap_pct": round(
+                (last["actual"] / start - last["expected"] / start) * 100.0, 3
+            )
+            if last["actual"] is not None
+            else None,
+            "tracking_error": None,
+            "z_score": None,
+        }
+    else:
+        # nothing recorded yet: show one quarter of the cone so the comparison
+        # is still concrete
+        horizon_sessions = 63
+        for i in range(0, horizon_sessions + 1, 3):
+            row = _row(i / float(TRADING_DAYS), None)
+            row["date"] = f"T+{i}"
+            row["time"] = ""
+            series.append(row)
+        last = series[-1]
+        summary = {
+            "days_observed": 0,
+            "start_equity": round(start, 2),
+            "actual_equity": None,
+            "expected_equity": last["expected"],
+            "actual_return_pct": None,
+            "expected_return_pct": round((last["expected"] / start - 1.0) * 100.0, 3),
+            "gap_pct": None,
+            "tracking_error": None,
+            "z_score": None,
+        }
+
+    return {
+        "ready": False,
+        "state": "AWAITING SESSIONS",
+        "reason": reason,
+        "advice": (
+            "The overlay is live. The tracking-error and z-score verdicts start "
+            "once a second trading session is recorded."
+        ),
+        "points": len(points),
+        "series": series,
+        "summary": summary,
+        "assumptions": {
+            "label": label,
+            "expected_cagr": expected_cagr,
+            "expected_vol": expected_vol,
+            "mu_daily": round((1.0 + expected_cagr) ** (1.0 / TRADING_DAYS) - 1.0, 6),
+            "sigma_daily": round(expected_vol / math.sqrt(TRADING_DAYS), 6),
+            "note": (
+                "Expected path is the statistical expectation from the published OOS "
+                "CAGR/vol, not a replay of the historical curve."
+            ),
+        },
+    }
 
 
 def divergence_report(
@@ -627,25 +764,38 @@ def divergence_report(
     """
     points = [p for p in equity_points if p.get("equity") is not None]
     if len(points) < 2:
-        return {
-            "ready": False,
-            "reason": (
+        return _divergence_preview(
+            points,
+            initial_capital=initial_capital,
+            expected_cagr=expected_cagr,
+            expected_vol=expected_vol,
+            label=label,
+            reason=(
                 f"only {len(points)} equity snapshot(s) recorded — the tracker needs at "
                 "least two. Start the paper monitor and let it run a few sessions."
             ),
-            "points": len(points),
-        }
+        )
     stamps = pd.to_datetime([str(p.get("timestamp") or p.get("date")) for p in points], utc=True)
     values = np.array([float(p["equity"]) for p in points], dtype=float)
     # one mark per trading day: keep the last snapshot of each IST calendar day
     frame = pd.DataFrame({"stamp": stamps, "equity": values}).set_index("stamp")
     daily = frame["equity"].resample("1D").last().dropna()
     if len(daily) < 2:
-        return {
-            "ready": False,
-            "reason": "equity snapshots all fall on the same day — wait for a second session.",
-            "points": len(points),
-        }
+        # Still worth drawing: the expected cone needs no history, and seeing
+        # where the account actually sits against it is the whole point.  Only
+        # the statistical verdict is withheld until a second session exists.
+        return _divergence_preview(
+            points,
+            initial_capital=initial_capital,
+            expected_cagr=expected_cagr,
+            expected_vol=expected_vol,
+            label=label,
+            reason=(
+                "equity snapshots all fall on the same day — the overlay below is "
+                "drawn, but the tracking-error and z-score verdicts need a second "
+                "session."
+            ),
+        )
     start_equity = float(initial_capital or daily.iloc[0])
     days = np.arange(len(daily), dtype=float)
     mu_daily = (1.0 + expected_cagr) ** (1.0 / TRADING_DAYS) - 1.0
@@ -746,9 +896,10 @@ def position_sizing(
     target_vol: float = 0.18,
     max_position_weight: float = 0.15,
     kelly_fraction: float = 0.25,
-    win_rate: float = 0.4798,
-    avg_win: float = 1.0,
-    avg_loss: float = 1.0,
+    win_rate: float | None = None,
+    avg_win: float | None = None,
+    avg_loss: float | None = None,
+    rebalance_days: int = 20,
     monte_carlo_paths: int = 2000,
     horizon_years: int = 3,
     ruin_drawdown: float = 0.35,
@@ -810,41 +961,81 @@ def position_sizing(
                 }
             )
 
-        odds = avg_win / avg_loss if avg_loss > 0 else 0.0
-        kelly_full = win_rate - (1.0 - win_rate) / odds if odds > 0 else 0.0
+        # Kelly needs a real payoff ratio.  The old defaults (avg_win=avg_loss=1.0)
+        # made R=1.0, so f* = W − (1−W) went negative for any win rate below 50%
+        # and the "recommended" size was always 0% — a number that looked
+        # computed but never was.  Derive W and R from the strategy's own
+        # rebalance-period returns unless the caller supplies them explicitly.
+        # `_compute` is a closure: assigning to the parameter names here would
+        # make them unbound locals and shadow the arguments, so work on copies.
+        w_rate = win_rate
+        a_win = avg_win
+        a_loss = avg_loss
+        daily = None
+        sim_targets = None
+        odds_source = "defaulted"
+        odds_periods = 0
+        if close is not None:
+            sim_targets = momrem_targets(close)
+            daily = (
+                simulate_weights(close, sim_targets)["returns"].dropna().to_numpy(dtype=float)
+            )
+            if len(daily) > 3 * rebalance_days:
+                periods = [
+                    float(np.prod(1.0 + daily[i : i + rebalance_days]) - 1.0)
+                    for i in range(0, len(daily) - rebalance_days + 1, rebalance_days)
+                ]
+                wins = [p for p in periods if p > 0]
+                losses = [abs(p) for p in periods if p < 0]
+                if wins and losses:
+                    odds_source = "measured"
+                    odds_periods = len(periods)
+                    if w_rate is None:
+                        w_rate = len(wins) / float(len(periods))
+                    if a_win is None:
+                        a_win = float(np.mean(wins))
+                    if a_loss is None:
+                        a_loss = float(np.mean(losses))
+
+        # last-resort defaults only if there was nothing to measure
+        if w_rate is None:
+            w_rate = 0.4798
+        if a_win is None:
+            a_win = 1.0
+        if a_loss is None:
+            a_loss = 1.0
+
+        odds = a_win / a_loss if a_loss > 0 else 0.0
+        kelly_full = w_rate - (1.0 - w_rate) / odds if odds > 0 else 0.0
         kelly_full = max(0.0, min(kelly_full, 1.0))
         kelly_used = kelly_full * kelly_fraction
 
         # risk of ruin by bootstrapping the strategy's own daily returns
         risk_of_ruin: float | None = None
         ruin_detail: dict[str, Any] = {}
-        if close is not None:
-            targets = momrem_targets(close)
-            sim = simulate_weights(close, targets)
-            daily = sim["returns"].dropna().to_numpy(dtype=float)
-            if len(daily) > 60:
-                rng = np.random.default_rng(seed)
-                steps = int(TRADING_DAYS * horizon_years)
-                draws = rng.choice(daily, size=(monte_carlo_paths, steps))
-                equity = np.cumprod(1.0 + draws, axis=1)
-                peak = np.maximum.accumulate(equity, axis=1)
-                dd = equity / peak - 1.0
-                ruined = (dd.min(axis=1) <= -ruin_drawdown).mean()
-                risk_of_ruin = float(ruined)
-                ruin_detail = {
-                    "bootstrap_days": int(len(daily)),
-                    "paths": int(monte_carlo_paths),
-                    "horizon_years": horizon_years,
-                    "ruin_threshold_pct": round(ruin_drawdown * 100.0, 1),
-                    "median_max_dd_pct": round(float(np.median(dd.min(axis=1))) * 100.0, 2),
-                    "p90_max_dd_pct": round(
-                        float(np.percentile(dd.min(axis=1), 10)) * 100.0, 2
-                    ),
-                    "median_terminal_multiple": round(float(np.median(equity[:, -1])), 3),
-                    "p10_terminal_multiple": round(
-                        float(np.percentile(equity[:, -1], 10)), 3
-                    ),
-                }
+        if daily is not None and len(daily) > 60:
+            rng = np.random.default_rng(seed)
+            steps = int(TRADING_DAYS * horizon_years)
+            draws = rng.choice(daily, size=(monte_carlo_paths, steps))
+            equity = np.cumprod(1.0 + draws, axis=1)
+            peak = np.maximum.accumulate(equity, axis=1)
+            dd = equity / peak - 1.0
+            ruined = (dd.min(axis=1) <= -ruin_drawdown).mean()
+            risk_of_ruin = float(ruined)
+            ruin_detail = {
+                "bootstrap_days": int(len(daily)),
+                "paths": int(monte_carlo_paths),
+                "horizon_years": horizon_years,
+                "ruin_threshold_pct": round(ruin_drawdown * 100.0, 1),
+                "median_max_dd_pct": round(float(np.median(dd.min(axis=1))) * 100.0, 2),
+                "p90_max_dd_pct": round(
+                    float(np.percentile(dd.min(axis=1), 10)) * 100.0, 2
+                ),
+                "median_terminal_multiple": round(float(np.median(equity[:, -1])), 3),
+                "p10_terminal_multiple": round(
+                    float(np.percentile(equity[:, -1], 10)), 3
+                ),
+            }
 
         book_vol = None
         if rows:
@@ -862,8 +1053,15 @@ def position_sizing(
                 None if book_vol is None else round(book_vol * 100.0, 2)
             ),
             "kelly": {
-                "win_rate_pct": round(win_rate * 100.0, 2),
+                "win_rate_pct": round(w_rate * 100.0, 2),
                 "odds": round(odds, 3),
+                "avg_win_pct": round(a_win * 100.0, 3),
+                "avg_loss_pct": round(a_loss * 100.0, 3),
+                # provenance: a measured payoff ratio and a defaulted one must not
+                # look the same on screen
+                "source": "measured" if odds_source == "measured" else "defaulted",
+                "periods_observed": odds_periods,
+                "rebalance_days": rebalance_days,
                 "full_kelly_pct": round(kelly_full * 100.0, 2),
                 "fraction_used": kelly_fraction,
                 "recommended_pct": round(kelly_used * 100.0, 2),

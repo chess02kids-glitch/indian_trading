@@ -751,22 +751,34 @@ function renderResearchCheck(rc) {
 /* ------------------------------------------------------------- Divergence */
 
 function renderDivergence(data) {
-  if (!data.ready) {
+  // The overlay is drawable from the first mark; only the statistical verdict
+  // needs a second session.  Bailing out here used to hide the chart entirely.
+  if (!data.series || !data.series.length) {
     return `<div class="card"><h2>Backtest vs live divergence</h2>
       <div class="note warn"><b>Not enough history yet.</b> ${esc(data.reason || '')}</div>
-      <div class="note">This tracker needs at least two days of paper equity snapshots.
-      Go to <a href="#paper">Paper account</a>, set your virtual capital, click
+      <div class="note">Go to <a href="#paper">Paper account</a>, set your virtual capital, click
       <b>Start monitor</b>, and leave the dashboard running. Each quote refresh records a mark.</div></div>`;
   }
   const s = data.summary || {};
+  const pending = !data.ready;
+  const zTxt = (s.z_score === null || s.z_score === undefined) ? '—' : s.z_score.toFixed(2);
+  const zTone = (s.z_score === null || s.z_score === undefined) ? ''
+    : (Math.abs(s.z_score) >= 2 ? 'red' : (Math.abs(s.z_score) >= 1 ? 'amber' : 'green'));
+  const teTxt = (s.tracking_error === null || s.tracking_error === undefined)
+    ? '—' : (s.tracking_error * 100).toFixed(1) + '%';
+  const stateTone = data.state === 'ON TRACK' ? 'green'
+    : (data.state === 'WATCH' ? 'amber'
+    : (data.state === 'AWAITING SESSIONS' ? '' : 'red'));
   const a = data.assumptions || {};
   const acct = data.account || {};
   return `
   <div class="grid g4">
-    ${kpi('State', esc(data.state), data.state === 'ON TRACK' ? 'green' : (data.state === 'WATCH' ? 'amber' : 'red'))}
-    ${kpi('z-score', fmt.raw(s.z_score, 2), Math.abs(s.z_score) >= 2 ? 'red' : (Math.abs(s.z_score) >= 1 ? 'amber' : 'green'), 'cumulative gap ÷ expected σ')}
-    ${kpi('Tracking error', s.tracking_error === null ? '—' : (s.tracking_error * 100).toFixed(1) + '%', '', 'annualised, vs expectation')}
-    ${kpi('Days observed', fmt.num(s.days_observed, 0), 'blue', `since ${fmt.day(acct.first_point)}`)}
+    ${kpi('State', esc(data.state), stateTone)}
+    ${kpi('z-score', zTxt, zTone, 'cumulative gap ÷ expected σ')}
+    ${kpi('Tracking error', teTxt, '', 'annualised, vs expectation')}
+    ${kpi(pending ? 'Marks recorded' : 'Days observed',
+          pending ? fmt.num(acct.equity_points, 0) : fmt.num(s.days_observed, 0), 'blue',
+          `since ${fmt.day(acct.first_point)}`)}
   </div>
 
   <div class="card" style="margin-top:14px">
@@ -778,7 +790,8 @@ function renderDivergence(data) {
       <span><i style="background:rgba(88,166,255,.22)"></i>±1σ cone</span>
       <span><i style="background:rgba(88,166,255,.10)"></i>±2σ cone</span>
     </div>
-    <div class="note ${data.state === 'ON TRACK' ? 'good' : (data.state === 'WATCH' ? 'warn' : 'bad')}">${esc(data.advice)}</div>
+    ${pending ? `<div class="note warn"><b>Verdict pending.</b> ${esc(data.reason || '')}</div>` : ''}
+    <div class="note ${stateTone === 'green' ? 'good' : (stateTone === 'amber' ? 'warn' : (stateTone === 'red' ? 'bad' : ''))}">${esc(data.advice || '')}</div>
   </div>
 
   <div class="grid g2">
@@ -786,11 +799,11 @@ function renderDivergence(data) {
       <h2>The numbers</h2>
       <table>
         <tr><td>Starting equity</td><td class="right mono">${fmt.inr(s.start_equity, 0)}</td></tr>
-        <tr><td>Actual equity now</td><td class="right mono">${fmt.inr(s.actual_equity, 0)}</td></tr>
+        <tr><td>Actual equity now</td><td class="right mono">${s.actual_equity === null || s.actual_equity === undefined ? '—' : fmt.inr(s.actual_equity, 0)}</td></tr>
         <tr><td>Expected equity now</td><td class="right mono">${fmt.inr(s.expected_equity, 0)}</td></tr>
-        <tr><td>Actual return</td><td class="right mono">${fmt.pct(s.actual_return_pct, 3)}</td></tr>
+        <tr><td>Actual return</td><td class="right mono">${s.actual_return_pct === null || s.actual_return_pct === undefined ? '—' : fmt.pct(s.actual_return_pct, 3)}</td></tr>
         <tr><td>Expected return</td><td class="right mono">${fmt.pct(s.expected_return_pct, 3)}</td></tr>
-        <tr><td>Gap</td><td class="right mono">${fmt.pct(s.gap_pct, 3)}</td></tr>
+        <tr><td>Gap</td><td class="right mono">${s.gap_pct === null || s.gap_pct === undefined ? '—' : fmt.pct(s.gap_pct, 3)}</td></tr>
       </table>
     </div>
     <div class="card">
@@ -812,7 +825,8 @@ function renderDivergence(data) {
 
 function wireDivergence() {
   const d = state.cache.divergence;
-  if (d && d.ready && d.series) {
+  if (d && d.series && d.series.length) {
+    const hasActual = d.series.some((p) => p.actual !== null && p.actual !== undefined);
     lineChart($('#dv-chart'), {
       h: 320,
       yFmt: (v) => '₹' + (v / 1000).toFixed(0) + 'k',
@@ -822,8 +836,10 @@ function wireDivergence() {
         { color: 'rgba(88,166,255,.40)', band: 'rgba(88,166,255,.16)', width: 0,
           points: d.series.map((p) => ({ y: p.expected, lo: p.band1_lo, hi: p.band1_hi })) },
         { color: '#8b98a9', dash: '4 3', width: 1.5, points: d.series.map((p) => ({ y: p.expected })) },
-        { color: '#58a6ff', points: d.series.map((p) => ({ y: p.actual, label: p.date })) },
-      ],
+      ].concat(hasActual ? [{
+        color: '#58a6ff',
+        points: d.series.map((p) => ({ y: p.actual, label: (p.date || '') + (p.time ? ' ' + p.time : '') })),
+      }] : []),
     });
   }
 }
