@@ -403,11 +403,49 @@ class TestServerEndpoints:
         conn.close()
 
     def test_cockpit_page(self, server):
+        """/ is the unified shell; the cockpit itself moved to /cockpit.
+
+        The cockpit used to be the landing page.  It is still reachable at its
+        own route, and / now serves the single unified interface that embeds
+        every other section (strategy, live, paper, research, operations).
+        """
+        conn = HTTPConnection("127.0.0.1", server)
+        conn.request("GET", "/cockpit")
+        resp = conn.getresponse()
+        assert resp.status == 200
+        assert b"Research Cockpit" in resp.read()
+        conn.close()
+
+    def test_unified_shell_is_the_landing_page(self, server):
         conn = HTTPConnection("127.0.0.1", server)
         conn.request("GET", "/")
         resp = conn.getresponse()
         assert resp.status == 200
-        assert b"Research Cockpit" in resp.read()
+        body = resp.read()
+        conn.close()
+        assert b"Unified Trading System" in body
+        # the shell loads its assets from the same origin, not a CDN
+        assert b"/static/app.js" in body and b"/static/app.css" in body
+
+    def test_unified_assets_are_served(self, server):
+        for path, needle in (
+            ("/static/app.css", b":root"),
+            ("/static/app.js", b"addEventListener"),
+        ):
+            conn = HTTPConnection("127.0.0.1", server)
+            conn.request("GET", path)
+            resp = conn.getresponse()
+            body = resp.read()
+            conn.close()
+            assert resp.status == 200, path
+            assert needle in body, path
+
+    def test_unknown_static_asset_is_a_404_not_an_exception(self, server):
+        conn = HTTPConnection("127.0.0.1", server)
+        conn.request("GET", "/static/../../pyproject.toml")
+        resp = conn.getresponse()
+        assert resp.status == 404
+        resp.read()
         conn.close()
 
     def test_operations_page(self, server):

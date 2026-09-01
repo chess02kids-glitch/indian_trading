@@ -34,10 +34,28 @@ def rsi(x, n):
 
 
 def atr(high, low, close, n):
+    """Average true range, element-wise per symbol.
+
+    The previous version did ``pd.concat([...], axis=1).max(axis=1).to_frame()``,
+    which concatenates the three components *side by side* (5 symbols -> 15
+    columns), takes the max across all of them — mixing unrelated symbols — and
+    then collapses the result to a single column named after the close series.
+    Any caller doing ``mid + k * atr(...)`` then aligned on column labels and got
+    an all-NaN frame of 6 columns back, silently producing a flat signal.
+    """
     prev_close = close.shift(1)
-    tr = pd.concat([high - low, (high - prev_close).abs(), (low - prev_close).abs()], axis=1)
-    tr = tr.max(axis=1).to_frame()
-    return tr.rolling(n, min_periods=n).mean()
+    true_range = np.maximum.reduce(
+        [
+            (high - low).to_numpy(dtype=float),
+            (high - prev_close).abs().to_numpy(dtype=float),
+            (low - prev_close).abs().to_numpy(dtype=float),
+        ]
+    )
+    return (
+        pd.DataFrame(true_range, index=high.index, columns=high.columns)
+        .rolling(n, min_periods=n)
+        .mean()
+    )
 
 
 def rolling_vol(x, n):
@@ -106,6 +124,71 @@ def strat_donchian(close, high, low, open_, n=50, atr_stop=2.0):
     return pd.DataFrame(pos, index=close.index, columns=close.columns)
 
 
+def _supertrend_trend(close, high, low, n=10, mult=3.0):
+    """SuperTrend direction: True while the trend is up.
+
+    The bands ratchet — the upper band only falls and the lower band only rises
+    until price closes through them — so the indicator is path-dependent and
+    cannot be expressed as a single vectorised rolling expression.  The loop runs
+    over dates and stays vectorised across symbols, matching ``_state_pos``.
+
+    No look-ahead: the trend at close of day t uses the previous day's bands.
+    """
+    a = atr(high, low, close, n).values
+    mid = ((high + low) / 2.0).values
+    basic_up = mid + mult * a
+    basic_lo = mid - mult * a
+    c = close.values
+    rows, cols = c.shape
+
+    final_up = np.full(cols, np.nan)
+    final_lo = np.full(cols, np.nan)
+    trend = np.zeros((rows, cols), dtype=bool)
+    prev_trend = np.zeros(cols, dtype=bool)
+
+    for i in range(rows):
+        if i == 0:
+            final_up = basic_up[i].copy()
+            final_lo = basic_lo[i].copy()
+        else:
+            prev_c = c[i - 1]
+            # The upper band ratchets DOWN: take the new basic value when it is
+            # LOWER than the band we are holding, or when price has already
+            # closed above the old band (the stop is spent).  Taking it when it
+            # is higher — the natural but wrong reading — inflates the band
+            # forever and the trend can never flip up.
+            take_up = (basic_up[i] < final_up) | (prev_c > final_up)
+            final_up = np.where(
+                np.isnan(final_up), basic_up[i], np.where(take_up, basic_up[i], final_up)
+            )
+            # The lower band ratchets UP, by the mirrored rule.
+            take_lo = (basic_lo[i] > final_lo) | (prev_c < final_lo)
+            final_lo = np.where(
+                np.isnan(final_lo), basic_lo[i], np.where(take_lo, basic_lo[i], final_lo)
+            )
+            up = c[i] > final_up
+            down = c[i] < final_lo
+            prev_trend = np.where(up, True, np.where(down, False, prev_trend))
+        valid = ~np.isnan(basic_up[i]) & ~np.isnan(basic_lo[i])
+        trend[i] = prev_trend & valid
+    return pd.DataFrame(trend.astype(float), index=close.index, columns=close.columns)
+
+
+def strat_supertrend(close, high, low, open_, n=10, mult=3.0):
+    """Classic SuperTrend: long while price holds above the ratcheted lower band."""
+    return _supertrend_trend(close, high, low, n=n, mult=mult)
+
+
+def strat_supertrend_fast(close, high, low, open_, n=7, mult=2.0):
+    """A tighter SuperTrend variant.
+
+    Included deliberately: comparing two parameterisations of the *same*
+    indicator against each other is the sharpest test of whether a "strategy"
+    is diversifying anything or just re-betting the same signal.
+    """
+    return _supertrend_trend(close, high, low, n=n, mult=mult)
+
+
 def strat_vol_breakout(close, high, low, open_, n=20, k=1.5, exit_n=None):
     """Volatility breakout on range expansion."""
     exit_n = exit_n or n
@@ -134,6 +217,10 @@ def strat_momentum_cs(close, high, low, open_, lookback=250, top_frac=0.2, hold=
             continue
         top = m.nlargest(top_n).index
         w = 1.0 / top_n
+        # Clear the row before assigning: `rebal` is all-NaN and ffill() carries
+        # values forward forever, so without this the book accumulates the union
+        # of every name ever selected instead of the current top-N.
+        rebal.loc[d, :] = 0.0
         for s in top:
             rebal.loc[d, s] = w
     return rebal.ffill().fillna(0.0)
@@ -178,6 +265,10 @@ def strat_momentum_cs_ls(close, high, low, open_, lookback=250, hold=20, frac=0.
         top = m.nlargest(k).index
         bot = m.nsmallest(k).index
         w = 1.0 / (2 * k)
+        # Clear the row before assigning: `rebal` is all-NaN and ffill() carries
+        # values forward forever, so without this the book accumulates the union
+        # of every name ever selected instead of the current top-N.
+        rebal.loc[dt, :] = 0.0
         for s in top:
             rebal.loc[dt, s] = w
         for s in bot:
@@ -203,6 +294,10 @@ def strat_reversal_cs_ls(close, high, low, open_, lookback=20, hold=10, frac=0.2
         top = m.nlargest(k).index
         bot = m.nsmallest(k).index
         w = 1.0 / (2 * k)
+        # Clear the row before assigning: `rebal` is all-NaN and ffill() carries
+        # values forward forever, so without this the book accumulates the union
+        # of every name ever selected instead of the current top-N.
+        rebal.loc[dt, :] = 0.0
         for s in top:
             rebal.loc[dt, s] = -w  # short winners
         for s in bot:
@@ -235,6 +330,10 @@ def strat_momentum_cs_ls_vol(close, high, low, open_, lookback=250, hold=20,
         w = w / w.sum()  # long+short sum to zero via equal gross
         gross = w.abs().sum()
         w = w / gross * 2.0 * 0.5  # each side gross 0.5
+        # Clear the row before assigning: `rebal` is all-NaN and ffill() carries
+        # values forward forever, so without this the book accumulates the union
+        # of every name ever selected instead of the current top-N.
+        rebal.loc[dt, :] = 0.0
         for s in top:
             rebal.loc[dt, s] = w[s]
         for s in bot:

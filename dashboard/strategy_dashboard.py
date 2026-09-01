@@ -25,7 +25,6 @@ no JavaScript), so it works from any browser and behind any proxy.
 
 from __future__ import annotations
 
-import glob
 import html
 import json
 import time
@@ -74,47 +73,30 @@ def _cached(key: str, fn, *args, **kwargs):
 
 
 def load_panel() -> pd.DataFrame:
-    """Return the long-form (date, symbol) OHLCV panel from the clean bundle."""
+    """Return the long-form (date, symbol) OHLCV panel.
 
-    def _load() -> pd.DataFrame:
-        files = sorted(glob.glob(str(DATA_DIR / "*.parquet")))
-        frames = []
-        for f in files:
-            df = pd.read_parquet(
-                f, columns=["date", "symbol", "open", "high", "low", "close", "volume"]
-            )
-            df = df.dropna(subset=["date", "close"])
-            frames.append(df)
-        if not frames:
-            raise RuntimeError(
-                f"no clean price data found under {DATA_DIR} — run `python fetch_data.py`"
-            )
-        out = pd.concat(frames, ignore_index=True)
-        out["date"] = pd.to_datetime(out["date"])
-        out = out.drop_duplicates(subset=["date", "symbol"], keep="last")
-        out = out.sort_values(["date", "symbol"]).set_index(["date", "symbol"])
-        out = out[(out["close"] > 0) & (out["high"] >= out["low"]) & (out["high"] > 0)]
-        return out
+    Delegates to :mod:`datahub.panel` so this page, the Research Cockpit, the
+    Live Terminal and the Operations page can never disagree about what data
+    exists.  This used to be a private loader over ``data/clean/eod2_data``
+    while the Cockpit looked for a ``prices.parquet`` that nothing produced.
+    """
+    from datahub.panel import load_panel as _hub_panel
 
-    return _cached("panel", _load)
+    return _hub_panel()
 
 
-def _close_wide() -> pd.DataFrame:
-    """Wide symbol x date close matrix for the liquid universe (>=90% coverage since 2016)."""
+def _close_wide() -> tuple[pd.DataFrame, dict[str, Any]]:
+    """Close matrix for the production universe, plus the selection audit trail.
 
-    def _load() -> pd.DataFrame:
-        panel = load_panel()
-        wide = panel["close"].unstack("symbol").sort_index()
-        sub = wide.loc[wide.index >= pd.Timestamp("2016-01-01")]
-        coverage = sub.notna().mean()
-        universe = coverage[coverage >= 0.90].index.tolist()
-        # require the name to have traded recently (still listed / not delisted)
-        last = wide.index[-1]
-        recent = wide.loc[last, universe].notna()
-        universe = [s for s in universe if recent.get(s, False)]
-        return wide[universe]
+    The previous implementation filtered on "has a bar on the single newest date
+    of the whole panel".  The bundle legitimately contains more than one last-bar
+    date, so the intersection could be empty and the signal died with
+    "no data for signal computation".  ``datahub.select_universe`` uses a rolling
+    recency window and reports exactly what it rejected.
+    """
+    from datahub.panel import strategy_frame
 
-    return _cached("close_wide", _load)
+    return strategy_frame()
 
 
 # ---------------------------------------------------------------------------
@@ -130,7 +112,7 @@ def compute_momrem_signal(capital: float = 100_000.0) -> dict[str, Any]:
     """
 
     def _compute() -> dict[str, Any]:
-        close = _close_wide()
+        close, universe_meta = _close_wide()
         if close.empty:
             raise RuntimeError("no data for signal computation")
         dates = close.index
@@ -256,9 +238,36 @@ def compute_momrem_signal(capital: float = 100_000.0) -> dict[str, Any]:
                 "last_bar": as_of.date().isoformat(),
                 "bars_per_symbol_median": int(close.notna().sum(axis=1).median()),
             },
+            "universe": {
+                "size": universe_meta["size"],
+                "panel_symbols": universe_meta["panel_symbols"],
+                "research_parity_symbols": universe_meta["research_parity_symbols"],
+                "start": universe_meta["start"],
+                "recency_window": universe_meta["recency_window"],
+                "rejected_counts": {
+                    key: len(value) for key, value in universe_meta["rejected"].items()
+                },
+            },
+            "strategy": "momrem",
         }
 
-    return _cached(f"signal:{float(capital):.0f}", _compute)
+    signal = _cached(f"signal:{float(capital):.0f}", _compute)
+    try:
+        from datahub import state as sysstate
+
+        sysstate.beat(
+            "signal_computed",
+            {
+                "as_of": signal["as_of"],
+                "regime": signal["regime"]["state"],
+                "basket": len(signal["basket"]),
+                "universe": signal["universe"]["size"],
+                "capital": signal["capital"],
+            },
+        )
+    except Exception:  # noqa: BLE001 - heartbeats must never break the signal
+        pass
+    return signal
 
 
 # ---------------------------------------------------------------------------

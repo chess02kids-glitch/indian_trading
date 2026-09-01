@@ -358,14 +358,40 @@ def list_strategies() -> dict[str, dict[str, Any]]:
 def get_data_status(
     prices_path: Path | str = Path("data/clean/prices.parquet"),
 ) -> dict[str, Any]:
-    """Check what data is available without loading it into memory."""
-    prices_path = Path(prices_path)
+    """Report what price data exists, from the one shared source of truth.
+
+    Historically this function only knew about ``prices_path`` — a file that
+    nothing in the repository ever wrote — so the Research Cockpit reported
+    "Missing — no price data found" while the Strategy Dashboard was computing
+    signals from ``data/clean/eod2_data`` and the Live Terminal was rendering
+    charts from ``data/eod2/daily``.  Three pages, three answers.
+
+    Now the default path is *materialised* from the same panel every other page
+    reads (:func:`datahub.materialize_prices`), and the returned status is the
+    shared :func:`datahub.data_status` document.  An explicit non-default
+    ``prices_path`` still inspects that file directly, so research runs pointed
+    at a custom dataset keep working.
+    """
+    from datahub.panel import PRICES_FILE, data_status, materialize_prices
+
+    requested = Path(prices_path)
+    is_default = requested.resolve() == PRICES_FILE.resolve()
+
+    if is_default:
+        try:
+            materialize_prices()
+        except Exception as exc:  # noqa: BLE001 - report, never crash the cockpit
+            logger.warning("prices_materialisation_failed: %s", exc)
+        status = data_status()
+        status["prices_file"] = str(requested)
+        return status
+
     status: dict[str, Any] = {
-        "prices_file": str(prices_path),
-        "prices_exists": prices_path.is_file(),
+        "prices_file": str(requested),
+        "prices_exists": requested.is_file(),
         "prices_size_mb": (
-            round(prices_path.stat().st_size / 1_048_576, 2)
-            if prices_path.is_file()
+            round(requested.stat().st_size / 1_048_576, 2)
+            if requested.is_file()
             else None
         ),
         "universe_files": {},
@@ -376,22 +402,20 @@ def get_data_status(
             "exists": path.is_file(),
             "path": str(path),
         }
-    # Try to peek at price data dimensions if available
-    if prices_path.is_file():
+    if requested.is_file():
         try:
-            if prices_path.suffix == ".parquet":
-                pf = pd.read_parquet(prices_path)
+            if requested.suffix == ".parquet":
+                pf = pd.read_parquet(requested)
             else:
-                pf = pd.read_csv(prices_path)
+                pf = pd.read_csv(requested)
             if {"date", "symbol", "close"}.issubset(pf.columns):
-                dates = pf["date"].nunique()
-                symbols = pf["symbol"].nunique()
-                date_range = str(pf["date"].min()) + " to " + str(pf["date"].max())
                 status["prices_info"] = {
                     "format": "long",
-                    "dates": int(dates),
-                    "symbols": int(symbols),
-                    "date_range": date_range,
+                    "dates": int(pf["date"].nunique()),
+                    "symbols": int(pf["symbol"].nunique()),
+                    "date_range": str(pf["date"].min())
+                    + " to "
+                    + str(pf["date"].max()),
                 }
             else:
                 if "date" in pf.columns:
@@ -402,7 +426,7 @@ def get_data_status(
                     "symbols": len(pf.columns),
                     "date_range": str(pf.index[0]) + " to " + str(pf.index[-1]),
                 }
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             status["prices_error"] = str(exc)
     return status
 
