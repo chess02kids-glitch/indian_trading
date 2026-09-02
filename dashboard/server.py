@@ -76,10 +76,13 @@ _STATIC_TYPES = {
 # browser users — it stops unauthenticated scripts, scanners and CSRF.  A real
 # deployment must put an authenticating reverse proxy in front and bind the
 # dashboard to loopback.
-TOKEN_ENV = "QUANT_DASHBOARD_TOKEN"
+# These are the *names* of environment variables, not credentials. bandit
+# flags them as hardcoded passwords (B105) because their names contain
+# "TOKEN"; the secrets themselves are only ever read from the environment.
+TOKEN_ENV = "QUANT_DASHBOARD_TOKEN"  # nosec B105
 BIND_ENV = "QUANT_DASHBOARD_BIND"
 ALLOW_INSECURE_ENV = "QUANT_DASHBOARD_ALLOW_UNAUTHENTICATED"
-TOKEN_IN_UI_ENV = "QUANT_DASHBOARD_TOKEN_IN_UI"
+TOKEN_IN_UI_ENV = "QUANT_DASHBOARD_TOKEN_IN_UI"  # nosec B105
 DEFAULT_BIND = "127.0.0.1"
 
 

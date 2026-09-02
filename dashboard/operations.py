@@ -66,7 +66,8 @@ def broker_health(market_data: Any | None = None) -> dict[str, Any]:
         "configured": False,
         "mode": "PAPER_ONLY",
         "detail": "no market-data source inspected",
-        "token": None,
+        # Status placeholder, not a credential (bandit B105 false positive).
+        "token": None,  # nosec B105
         "last_quote_success": None,
         "last_quote_age_seconds": None,
         "last_quote_error": None,
@@ -151,8 +152,9 @@ def reconciliation(paper: Any | None, signal: dict[str, Any] | None) -> dict[str
     out["ledger_audit"] = audit
     try:
         sysstate.beat("reconciliation", {"passed": audit.get("passed")})
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception:  # noqa: BLE001 - telemetry must never break the report
+        # AUDIT: was a bare `pass`, which hid a failing heartbeat entirely.
+        logger.warning("reconciliation_heartbeat_failed", exc_info=True)
 
     try:
         positions = paper.ledger.all_positions()

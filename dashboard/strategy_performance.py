@@ -46,9 +46,12 @@ try:
 except ImportError:
     talib = None
 
+import logging
 import warnings
 
 warnings.filterwarnings("ignore")
+
+logger = logging.getLogger(__name__)
 
 
 # ==============================================================================
@@ -589,6 +592,9 @@ def load_local_market_data(symbol: str) -> Optional[pd.DataFrame]:
                 if all(c in df.columns for c in req):
                     return df[req]
             except Exception:
+                # AUDIT: was a bare `continue`, so an unreadable candidate
+                # file was silently indistinguishable from "no data".
+                logger.warning("price_candidate_unreadable", exc_info=True)
                 continue
     return None
 
@@ -679,7 +685,9 @@ def get_market_breadth() -> List[Dict[str, Any]]:
             with open(breadth_file, "r") as f:
                 return list(csv.DictReader(f))
     except Exception:
-        pass
+        # AUDIT: was a bare `pass`; a corrupt breadth file silently produced
+        # "no breadth data" instead of an error anyone could see.
+        logger.warning("breadth_file_unreadable path=%s", breadth_file, exc_info=True)
     return []
 
 
@@ -693,7 +701,9 @@ def get_nifty_50_constituents() -> List[str]:
             if "symbol" in df.columns:
                 return df["symbol"].tolist()
     except Exception:
-        pass
+        # AUDIT: was a bare `pass`, which silently fell back to the
+        # hard-coded list below and made a stale universe look current.
+        logger.warning("nifty50_constituents_unreadable", exc_info=True)
     return [
         "RELIANCE",
         "TCS",
@@ -1613,6 +1623,9 @@ def run_portfolio_backtest(
             sig_df["ATR"] = calc_atr(sig_df, 14)
             processed[sym] = sig_df
         except Exception:
+            # AUDIT: was a bare `continue`; a strategy that raised for every
+            # symbol looked identical to one that produced no signals.
+            logger.warning("strategy_signals_failed symbol=%s", sym, exc_info=True)
             continue
 
     if not processed:
