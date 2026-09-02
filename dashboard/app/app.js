@@ -73,10 +73,32 @@ async function api(path, options) {
   return body;
 }
 
+// AUDIT-039: the dashboard's mutating routes are protected by a shared secret.
+// The server injects `window.QUANT_DASHBOARD_TOKEN` into this page only when the
+// client is trusted (loopback, or QUANT_DASHBOARD_TOKEN_IN_UI=1). When it is not
+// available the server sets `QUANT_DASHBOARD_AUTH_REQUIRED` instead and every
+// mutating button must be visibly blocked, never silently broken.
+function authToken() { return window.QUANT_DASHBOARD_TOKEN || ''; }
+
+function mutationsRequireAuth() {
+  return window.QUANT_DASHBOARD_AUTH_REQUIRED === true && !authToken();
+}
+
+function blockedByAuth(what) {
+  toast('This action is disabled: the dashboard requires an operator token '
+    + '(QUANT_DASHBOARD_TOKEN) that this page was not given.' + (what ? ' (' + what + ')' : ''),
+    'warn');
+  return false;
+}
+
 function post(path, payload) {
+  if (mutationsRequireAuth()) throw new Error('operator token required');
+  const headers = { 'Content-Type': 'application/json' };
+  const token = authToken();
+  if (token) headers['X-Quant-Token'] = token;
   return api(path, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(payload || {}),
   });
 }
@@ -364,6 +386,14 @@ async function refreshKillSwitch() {
     $('#killstate').textContent = 'KILL SWITCH · ' + (sw.armed ? 'ARMED' : 'OFF');
     $('#killbtn').textContent = sw.armed ? 'DISARM' : 'ARM';
     $('#killbtn').dataset.armed = sw.armed ? '1' : '0';
+    // AUDIT-039: never show an ARM button the backend will refuse to honour.
+    if (mutationsRequireAuth()) {
+      $('#killbtn').disabled = true;
+      $('#killbtn').title = 'Operator token required (QUANT_DASHBOARD_TOKEN)';
+    } else {
+      $('#killbtn').disabled = false;
+      $('#killbtn').title = '';
+    }
     if (sw.armed) {
       setBanner('red', `<b>Kill switch armed</b> — all paper rebalancing and automation is blocked.
         Reason: ${esc(sw.reason || 'not given')} · armed ${fmt.stamp(sw.armed_at)}`);
@@ -373,6 +403,7 @@ async function refreshKillSwitch() {
 }
 
 async function toggleKillSwitch() {
+  if (mutationsRequireAuth()) { blockedByAuth('kill switch'); return; }
   const armed = $('#killbtn').dataset.armed === '1';
   const ok = await confirmDialog(
     armed ? 'Disarm the kill switch?' : 'Arm the kill switch?',
@@ -510,6 +541,10 @@ function wireOverview() {
     const btn = ev.target.closest('[data-act]');
     if (!btn) return;
     const act = btn.dataset.act;
+    if (act !== 'capital' && act !== 'audit' && mutationsRequireAuth()) {
+      blockedByAuth(act);
+      return;
+    }
     try {
       if (act === 'capital') {
         const v = Number($('#ov-capital').value);
@@ -1110,6 +1145,7 @@ function wireData() {
     const btn = ev.target.closest('[data-act]');
     if (!btn) return;
     const act = btn.dataset.act;
+    if (mutationsRequireAuth()) { blockedByAuth(act); return; }
     try {
       btn.disabled = true;
       if (act === 'expand') {

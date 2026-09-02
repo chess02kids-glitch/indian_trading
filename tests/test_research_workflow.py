@@ -16,7 +16,11 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from backtest.engine import BacktestConfig, VectorBTResearchEngine
+from backtest.engine import (
+    MEMBERSHIP_FROM_PRICES,
+    BacktestConfig,
+    VectorBTResearchEngine,
+)
 from research.contracts import CostModel, Experiment, ResearchInputError
 from research.experiments import ExperimentManager, build_research_artifacts
 from research.gate import ResearchGate
@@ -41,7 +45,7 @@ def _result(periods: int = 80):
     weights = pd.DataFrame(0.5, index=index, columns=["A", "B"])
     return VectorBTResearchEngine(
         BacktestConfig(use_vectorbt=False, cost_model=CostModel(1, 1))
-    ).run(prices, weights, strategy_name="momentum-test", universe_history=[])
+    ).run(prices, weights, strategy_name="momentum-test", universe_history=MEMBERSHIP_FROM_PRICES)
 
 
 class _RunContext:

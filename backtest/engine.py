@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Iterable as IterableABC
+from collections.abc import Mapping as MappingABC
 from dataclasses import dataclass
+from datetime import date, datetime
 from math import isfinite, sqrt
 from typing import Any
 
@@ -19,6 +22,13 @@ try:  # VectorBT is an optional runtime backend for environments without JIT sup
 except Exception:  # pragma: no cover - depends on the deployment's numerical stack
     _vectorbt = None
 
+__all__ = [
+    "MEMBERSHIP_FROM_PRICES",
+    "BacktestConfig",
+    "BacktestResult",
+    "VectorBTResearchEngine",
+]
+
 
 @dataclass(frozen=True, slots=True)
 class BacktestConfig:
@@ -32,6 +42,15 @@ class BacktestConfig:
     volatility_lookback: int = 63
     max_leverage: float = 1.0
     use_vectorbt: bool = True
+    #: Which simulation produces the numbers that are *reported* and used by
+    #: the research gate. AUDIT-008: VectorBT and the pandas implementation
+    #: disagree by up to 17% of total return on the same inputs, so a gate
+    #: decision could depend on whether an optional dependency happened to
+    #: import. ``pandas`` is deterministic and always available.
+    report_backend: str = "pandas"
+    #: AUDIT-009: never invent a price. When False (the default) a panel with
+    #: gaps raises instead of forward-filling through them.
+    allow_price_fill: bool = False
 
     def __post_init__(self) -> None:
         if (
@@ -64,6 +83,187 @@ class BacktestConfig:
             raise ResearchInputError("volatility_lookback must be at least two")
         if not isfinite(self.max_leverage) or self.max_leverage <= 0:
             raise ResearchInputError("max_leverage must be finite and positive")
+        if self.report_backend not in ("pandas", "vectorbt"):
+            raise ResearchInputError(
+                "report_backend must be 'pandas' or 'vectorbt', got "
+                f"{self.report_backend!r}"
+            )
+
+
+#: Sentinel for :meth:`VectorBTResearchEngine.run`'s ``universe_history``.
+#:
+#: "A symbol is a member on date *t* if the panel has a price for it on *t*."
+#: This is **weaker** than a real point-in-time membership history — a symbol
+#: that was delisted before the panel starts cannot be represented at all —
+#: but it is honest about what it is, and it is far better than the empty
+#: list, which silently means "no protection at all". Use it only for panels
+#: where no membership history exists (placebos, benchmarks computed on the
+#: same fixed panel as the candidate).
+MEMBERSHIP_FROM_PRICES = "from_prices"
+
+
+def _coerce_membership(
+    universe_history: Any,
+    *,
+    index: pd.DatetimeIndex,
+    columns: pd.Index,
+    prices: pd.DataFrame | None = None,
+) -> pd.DataFrame:
+    """Build the boolean (date x symbol) membership mask for a backtest.
+
+    AUDIT-007. ``VectorBTResearchEngine.run`` *required* ``universe_history``
+    and then never used it: a backtest run on today's index constituents over
+    ten years of history was scored exactly as if those constituents had been
+    known in advance. This converts the argument into the mask and the engine
+    applies it.
+
+    Accepted forms
+    --------------
+    * a boolean (or 0/1) :class:`~pandas.DataFrame` aligned to the panel;
+    * a sequence of ``(date, members)`` pairs — membership is stepped forward
+      from each date until the next one;
+    * a sequence of records with ``symbol`` / ``valid_from`` / ``valid_to``
+      keys (``UniverseDataset.to_frame().to_dict("records")``);
+    * a single frozen snapshot: a sequence of symbols, or a one-element
+      sequence containing one (``research.universe.Universe.history``);
+    * the string :data:`MEMBERSHIP_FROM_PRICES`.
+
+    ``None`` and an empty sequence are **rejected**: both used to mean "no
+    protection", and that is the failure mode this guard exists to prevent.
+    Dates or symbols the mask does not mention are treated as *not members*
+    — fail closed.
+    """
+    if universe_history is None:
+        raise ResearchInputError(
+            "universe_history is required. Backtests must explicitly provide "
+            "historical index membership to prevent survivorship bias. Do not "
+            "use today's universe for history."
+        )
+    if isinstance(universe_history, str):
+        if universe_history != MEMBERSHIP_FROM_PRICES:
+            raise ResearchInputError(
+                "universe_history must be a membership history, a boolean "
+                f"DataFrame, or {MEMBERSHIP_FROM_PRICES!r}; got "
+                f"{universe_history!r}"
+            )
+        if prices is None:
+            raise ResearchInputError(
+                f"{MEMBERSHIP_FROM_PRICES!r} requires the price panel"
+            )
+        return prices.notna()
+    if isinstance(universe_history, pd.DataFrame):
+        frame = universe_history
+        if not isinstance(frame.index, pd.DatetimeIndex):
+            raise ResearchInputError("membership DataFrame must use a DatetimeIndex")
+        aligned = frame.reindex(index=index, columns=columns)
+        return aligned.fillna(False).astype(bool)
+
+    records = list(universe_history)
+    if not records:
+        raise ResearchInputError(
+            "universe_history is empty. An empty history means 'no protection' "
+            "and is exactly the survivorship bias this argument exists to "
+            "prevent; pass a real membership history, a boolean DataFrame, or "
+            f"{MEMBERSHIP_FROM_PRICES!r}."
+        )
+    upper = {str(column).upper(): column for column in columns}
+    if all(isinstance(record, MappingABC) for record in records):
+        return _mask_from_validity_records(records, index=index, upper=upper)
+    if all(_looks_like_membership_pair(record) for record in records):
+        return _mask_from_dated_pairs(records, index=index, upper=upper)
+    # A frozen snapshot: either the symbols themselves, or one sequence of
+    # them (research.universe.Universe.history returns `[self.symbols]`).
+    snapshot = records[0] if len(records) == 1 and not isinstance(records[0], str) else records
+    if isinstance(snapshot, str) or not isinstance(snapshot, IterableABC):
+        raise ResearchInputError(
+            "universe_history must be a membership history, a boolean "
+            f"DataFrame, or {MEMBERSHIP_FROM_PRICES!r}"
+        )
+    members = {str(symbol).strip().upper() for symbol in snapshot}
+    mask = pd.DataFrame(False, index=index, columns=columns)
+    for name, column in upper.items():
+        if name in members:
+            mask[column] = True
+    return mask
+
+
+def _looks_like_membership_pair(record: Any) -> bool:
+    """True for a ``(date, members)`` pair.
+
+    A frozen snapshot is often written as ``[("A", "B", "C")]``, which is also
+    a two-or-more element tuple, so the discriminator is whether the first
+    element parses as a timestamp and the second is a collection of symbols.
+    """
+    if not isinstance(record, (tuple, list)) or len(record) != 2:
+        return False
+    date_value, members = record
+    if isinstance(members, str) or not isinstance(members, IterableABC):
+        return False
+    if isinstance(date_value, (pd.Timestamp, datetime)):
+        return True
+    if not isinstance(date_value, (str, date)):
+        return False
+    try:
+        pd.Timestamp(date_value)
+    except (TypeError, ValueError):
+        return False
+    return True
+
+
+def _mask_from_validity_records(
+    records: list[Any],
+    *,
+    index: pd.DatetimeIndex,
+    upper: MappingABC[str, Any],
+) -> pd.DataFrame:
+    mask = pd.DataFrame(False, index=index, columns=list(upper.values()))
+    for record in records:
+        symbol = str(record.get("symbol", "")).strip().upper()
+        column = upper.get(symbol)
+        if column is None:
+            continue
+        start = record.get("valid_from") or record.get("date") or record.get("as_of")
+        end = record.get("valid_to")
+        try:
+            start_ts = pd.Timestamp(start) if start is not None else None
+            end_ts = pd.Timestamp(end) if end is not None else None
+        except (TypeError, ValueError):
+            continue
+        if start_ts is None:
+            continue
+        if end_ts is not None and end_ts < index[0]:
+            continue
+        slice_ = index.slice_indexer(
+            max(start_ts, index[0]), min(end_ts, index[-1]) if end_ts is not None else index[-1]
+        )
+        mask.iloc[slice_, mask.columns.get_loc(column)] = True
+    return mask
+
+
+def _mask_from_dated_pairs(
+    records: list[Any],
+    *,
+    index: pd.DatetimeIndex,
+    upper: MappingABC[str, Any],
+) -> pd.DataFrame:
+    pairs = []
+    for date_value, members in records:
+        if isinstance(members, str) or not isinstance(members, IterableABC):
+            raise ResearchInputError("universe_history pairs must be (date, members)")
+        pairs.append((pd.Timestamp(date_value), {str(s).strip().upper() for s in members}))
+    pairs.sort(key=lambda pair: pair[0])
+    frame = pd.DataFrame(
+        {
+            column: pd.Series(
+                [name in members for _, members in pairs],
+                index=pd.DatetimeIndex([day for day, _ in pairs]),
+            )
+            for name, column in upper.items()
+        }
+    )
+    frame = frame[~frame.index.duplicated(keep="last")].sort_index()
+    aligned = frame.astype("boolean").reindex(index).ffill().fillna(False).astype(bool)
+    return aligned[list(upper.values())]
 
 
 @dataclass(frozen=True, slots=True)
@@ -122,7 +322,10 @@ class VectorBTResearchEngine:
 
     @staticmethod
     def _validate_inputs(
-        prices: pd.DataFrame, target_weights: pd.DataFrame
+        prices: pd.DataFrame,
+        target_weights: pd.DataFrame,
+        *,
+        allow_price_fill: bool = False,
     ) -> tuple[pd.DataFrame, pd.DataFrame]:
         if not isinstance(prices, pd.DataFrame) or prices.empty:
             raise ResearchInputError("prices must be a non-empty DataFrame")
@@ -138,10 +341,25 @@ class VectorBTResearchEngine:
             target_weights.columns
         ):
             raise ResearchInputError("prices and target_weights must align exactly")
-        numeric_prices = prices.apply(pd.to_numeric, errors="coerce").ffill().bfill()
+        numeric_prices = prices.apply(pd.to_numeric, errors="coerce")
         numeric_weights = target_weights.apply(pd.to_numeric, errors="coerce").fillna(
             0.0
         )
+        # AUDIT-009: this used to be ``.ffill().bfill()``, which invented a
+        # price for every gap — including every date before a symbol listed
+        # (research.realdata does exactly that one level up, AUDIT-014). A
+        # backtest must never silently trade a price that did not exist.
+        if numeric_prices.isna().any().any():
+            if not allow_price_fill:
+                gap_count = int(numeric_prices.isna().to_numpy().sum())
+                raise ResearchInputError(
+                    f"prices contain {gap_count} gaps; the system does not "
+                    "impute prices (see data.quality) — mask or exclude the "
+                    "affected symbols first, or set "
+                    "BacktestConfig(allow_price_fill=True) to accept the "
+                    "historical behaviour explicitly"
+                )
+            numeric_prices = numeric_prices.ffill().bfill()
         if (
             numeric_prices.isna().any().any()
             or (numeric_prices <= 0).any().any()
@@ -275,30 +493,68 @@ class VectorBTResearchEngine:
         prices: pd.DataFrame,
         target_weights: pd.DataFrame,
         strategy_name: str = "strategy",
-        universe_history: list[Any] | None = None,
+        universe_history: Any = None,
     ) -> BacktestResult:
-        """Run a deterministic target-weight backtest with costs and turnover."""
-        if universe_history is None:
-            raise ResearchInputError(
-                "universe_history is required. Backtests must explicitly provide "
-                "historical index membership to prevent survivorship bias. Do not "
-                "use today's universe for history."
-            )
-        prices, weights = self._validate_inputs(prices, target_weights)
+        """Run a deterministic target-weight backtest with costs and turnover.
+
+        ``universe_history`` is mandatory and is **applied**: a symbol that was
+        not a member of the universe on date *t* is given weight zero at *t*
+        (see :func:`_coerce_membership`, AUDIT-007).
+        """
+        prices, weights = self._validate_inputs(
+            prices, target_weights, allow_price_fill=self.config.allow_price_fill
+        )
+        # AUDIT-007: the membership mask is applied to the *weights*, which is
+        # what survivorship bias actually distorts — a symbol must not be held
+        # on a date when it was not in the universe. Prices are left intact
+        # (a zero weight already removes their contribution, and masking the
+        # price panel instead would poison the volatility-target estimate with
+        # NaNs).
+        membership = _coerce_membership(
+            universe_history, index=prices.index, columns=prices.columns, prices=prices
+        )
+        weights = weights.where(membership, 0.0)
         asset_returns = prices.pct_change().fillna(0.0)
         targets, rebalance = self._prepare_targets(weights, asset_returns)
         pandas_returns, pandas_equity, trades = self._simulate_pandas(
             prices, targets, rebalance
         )
         vectorbt_output = self._run_vectorbt(prices, targets)
+        divergence: float | None = None
         if vectorbt_output is None:
             returns, equity, backend = pandas_returns, pandas_equity, "pandas"
         else:
-            returns, equity, backend = (
-                vectorbt_output[0],
-                vectorbt_output[1],
-                "vectorbt",
+            # AUDIT-008: both backends are computed, but only one is allowed to
+            # produce a reported number. Otherwise the same inputs give a
+            # different Sharpe depending on whether an optional dependency
+            # imported, and the research gate can approve a strategy on one
+            # machine and reject it on another.
+            vectorbt_returns, vectorbt_equity = vectorbt_output
+            divergence = float(
+                abs(
+                    float(vectorbt_equity.iloc[-1] if len(vectorbt_equity) else 0.0)
+                    - float(pandas_equity.iloc[-1] if len(pandas_equity) else 0.0)
+                )
             )
+            if self.config.report_backend == "vectorbt":
+                returns, equity, backend = (
+                    vectorbt_returns,
+                    vectorbt_equity,
+                    "vectorbt",
+                )
+            else:
+                returns, equity, backend = pandas_returns, pandas_equity, "pandas"
+                if divergence > 1e-6:
+                    self.logger.warning(
+                        "backtest_backend_divergence",
+                        extra={
+                            "operation": "backtest",
+                            "strategy": strategy_name,
+                            "pandas_final_equity": float(pandas_equity.iloc[-1]),
+                            "vectorbt_final_equity": float(vectorbt_equity.iloc[-1]),
+                            "absolute_difference": divergence,
+                        },
+                    )
         trade_count = int((trades["turnover"] > 0).sum())
         total_cost = float(trades["total_cost"].sum())
         metrics = compute_performance_metrics(
@@ -309,8 +565,15 @@ class VectorBTResearchEngine:
             total_cost=total_cost,
             trade_count=trade_count,
         )
+        coverage = float(membership.to_numpy().mean()) if membership.size else 0.0
         metadata = {
             "backend": backend,
+            "report_backend": self.config.report_backend,
+            "cross_checked": vectorbt_output is not None,
+            "backend_divergence_final_equity": (
+                None if divergence is None else round(divergence, 10)
+            ),
+            "membership_coverage": round(coverage, 6),
             "rebalance_frequency": self.config.rebalance_frequency,
             "initial_cash": self.config.initial_cash,
             "transaction_cost_bps": self.config.cost_model.transaction_cost_bps,

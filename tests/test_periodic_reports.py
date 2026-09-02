@@ -6,7 +6,11 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from backtest.engine import BacktestConfig, VectorBTResearchEngine
+from backtest.engine import (
+    MEMBERSHIP_FROM_PRICES,
+    BacktestConfig,
+    VectorBTResearchEngine,
+)
 from research.contracts import CostModel, ResearchInputError
 from research.reporting import generate_periodic_reports
 
@@ -25,7 +29,7 @@ def _result(periods: int = 250):
     weights = pd.DataFrame(0.5, index=index, columns=["A", "B"])
     return VectorBTResearchEngine(
         BacktestConfig(use_vectorbt=False, cost_model=CostModel(1, 1))
-    ).run(prices, weights, strategy_name="periodic", universe_history=[])
+    ).run(prices, weights, strategy_name="periodic", universe_history=MEMBERSHIP_FROM_PRICES)
 
 
 def test_periodic_reports_cover_daily_weekly_monthly() -> None:

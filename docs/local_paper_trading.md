@@ -94,6 +94,47 @@ positions are retained with quantity zero so lifetime realised P&L stays
 reconcilable. `RESET PAPER` clears positions, orders, marks and equity history
 for a new virtual account (the event audit trail remains local).
 
+## Dashboard access control (AUDIT-039)
+
+The dashboard mutates operator state: it can arm **and disarm** the kill
+switch, reset the paper account and trigger a rebalance. It is therefore
+protected by four layers, controlled by environment variables:
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `QUANT_DASHBOARD_BIND` | `127.0.0.1` | Interface the server listens on. |
+| `QUANT_DASHBOARD_TOKEN` | *(empty)* | Shared secret required by every mutating request, sent as the `X-Quant-Token` header. |
+| `QUANT_DASHBOARD_ALLOW_UNAUTHENTICATED` | *(empty)* | Escape hatch: allows a routable bind with no token. Logged loudly. |
+| `QUANT_DASHBOARD_TOKEN_IN_UI` | *(empty)* | Hands the token to any client that can load the page, not only loopback. |
+| `QUANT_DASHBOARD_PUBLIC_HOST` | *(empty)* | Hostname accepted by the same-origin check when the dashboard sits behind a proxy. |
+
+The rules, in order:
+
+1. The default bind is **loopback only**.
+2. A bind to a routable interface without `QUANT_DASHBOARD_TOKEN` is
+   **refused at startup** unless `QUANT_DASHBOARD_ALLOW_UNAUTHENTICATED=1`
+   is set. The server never listens in that configuration.
+3. Every mutating request (`POST`) must pass a **same-origin check**, which
+   is what stops a browser on a hostile page from disarming the kill switch.
+4. Every mutating request must present `X-Quant-Token`, compared with
+   `hmac.compare_digest`.
+
+Honest limitation: the single-page app is served by this same server, so
+when `QUANT_DASHBOARD_TOKEN_IN_UI=1` the token is handed to any client that
+can load the page. The token is **not** an authentication boundary for
+browser users — it stops unauthenticated scripts, scanners and CSRF. A real
+deployment must put an authenticating reverse proxy in front and bind the
+dashboard to loopback.
+
+To deploy on a routable interface:
+
+```bash
+export QUANT_DASHBOARD_BIND=0.0.0.0
+export QUANT_DASHBOARD_TOKEN="$(openssl rand -hex 32)"
+export QUANT_DASHBOARD_PUBLIC_HOST=dashboard.example.com
+python -m dashboard.server
+```
+
 ## Optional automatic virtual-paper monitoring
 
 Automatic mode is **off by default**. It is intentionally a narrow local

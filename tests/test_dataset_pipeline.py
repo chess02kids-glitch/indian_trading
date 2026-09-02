@@ -11,7 +11,13 @@ from research.universe import build_universe_from_dataset
 
 
 def _frame(
-    symbol: str = "A", periods: int = 20, start: str = "2024-01-01"
+    # AUDIT-011: the clean writer now validates against the real NSE
+    # Capital-Market calendar, and 2024-01-22 was an exchange holiday ("Special
+    # Holiday"). February 2024 has no CM holiday, so the synthetic panel below
+    # stays deliberately holiday-free instead of accidentally trading on one.
+    symbol: str = "A",
+    periods: int = 20,
+    start: str = "2024-02-01",
 ) -> pd.DataFrame:
     rows = []
     for day in pd.date_range(start, periods=periods, freq="B"):
@@ -31,7 +37,7 @@ def _frame(
 
 def test_build_clean_dataset_writes_parquet_and_metadata(tmp_path) -> None:
     catalog = CleanDataCatalog(tmp_path)
-    frames = {"A": _frame("A"), "B": _frame("B", start="2024-02-01")}
+    frames = {"A": _frame("A"), "B": _frame("B", start="2024-02-05")}
     meta = build_clean_dataset(
         ["A", "B"], frames, source="yfinance", exchange="NSE", data_dir=tmp_path
     )
@@ -48,7 +54,7 @@ def test_build_clean_dataset_writes_parquet_and_metadata(tmp_path) -> None:
 
 
 def test_clean_dataset_panel_and_duckdb(tmp_path) -> None:
-    frames = {"A": _frame("A"), "B": _frame("B", start="2024-01-01")}
+    frames = {"A": _frame("A"), "B": _frame("B")}
     build_clean_dataset(["A", "B"], frames, data_dir=tmp_path)
     catalog = CleanDataCatalog(tmp_path)
     panel = catalog.load_market_panel(["A", "B"])

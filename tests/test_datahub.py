@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -38,12 +39,10 @@ from datahub.panel import (
     strategy_frame,
 )
 from datahub.quotes import (
-    EodQuoteProvider,
     QuoteChain,
     SimQuoteProvider,
     build_quote_chain,
 )
-
 
 # ---------------------------------------------------------------------------
 # Defect 3: universe selection must never silently empty itself
@@ -523,7 +522,6 @@ def test_json_safe_replaces_non_finite_values():
 
 
 def test_json_safe_output_is_always_strictly_parseable():
-    import json
 
     import numpy as np
 
@@ -651,7 +649,6 @@ def test_summarise_reports_the_source_that_actually_served_most():
     """Regression: preference order meant one real quote alongside four
     simulated ones labelled the whole refresh UPSTOX — presenting simulated
     prices as real quotes, which this repository forbids."""
-    from datahub.quotes import QuoteChain
 
     class _Dead:
         name = "UPSTOX"

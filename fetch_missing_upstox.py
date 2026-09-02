@@ -1,14 +1,17 @@
 import os
 import sys
-import pandas as pd
 from datetime import date, timedelta
-import requests
 from pathlib import Path
+
+import pandas as pd
+import requests
 
 # Fix path to import scripts
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), ".agents", "skills", "upstox")))
 try:
-    from scripts.instrument_search import search_equity
+    # Availability probe only: this one-off script can also fall back to raw
+    # requests, so the import is deliberately unused (ruff F401).
+    from scripts.instrument_search import search_equity  # noqa: F401
 except ImportError:
     # If the skill path is different or not found, we can do it via raw requests
     pass

@@ -131,7 +131,9 @@ def render(
     period_path: str | Path = DEFAULT_PERIOD_FILE,
 ) -> None:
     """Render the dashboard (called by ``streamlit run``)."""
-    import streamlit as st
+    from dashboard.streamlit_guard import require_streamlit as _require_streamlit
+
+    st = _require_streamlit()
 
     st.set_page_config(page_title="Quant India — Paper", layout="wide")
     st.title("Quant India — Paper Trading")

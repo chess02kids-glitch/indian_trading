@@ -18,6 +18,7 @@ If the risk guard returns any protective state, no order is submitted
 from __future__ import annotations
 
 import hashlib
+import logging
 import threading
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
@@ -32,6 +33,7 @@ from models.domain import (
     PortfolioTarget,
 )
 from risk_kill import RiskDecision, RiskGuard, RiskState
+from risk_kill.mapping import health_name_for_risk_state, is_hard_halt
 from store.protocols import OrderRepository, PositionRepository
 
 from .idempotency import IdempotencyRegistry, compute_idempotency_key
@@ -64,6 +66,43 @@ def _recovered_order_result(record: Any) -> OrderResult:
     )
 
 
+def _kill_switch_engaged(action: str) -> bool:
+    """AUDIT-021: consult the persisted operator kill switch.
+
+    Imported lazily so ``execution`` keeps no hard dependency on ``datahub``
+    and cannot fail at import time. Fails **closed**: an unreadable state file
+    counts as armed.
+    """
+    try:
+        from datahub.kill_switch import require_not_killed
+
+        return require_not_killed(action)
+    except Exception:  # noqa: BLE001 - a guard that raises is a guard that fails
+        logging.getLogger(__name__).exception(
+            "kill_switch_lookup_failed_failing_closed action=%s", action
+        )
+        return True
+
+
+def _kill_switch_reason() -> str:
+    try:
+        from datahub.kill_switch import blocked_reason
+
+        return blocked_reason()
+    except Exception:  # noqa: BLE001
+        return "operator kill switch is armed"
+
+
+def _record_risk_state(state: RiskState, reason: str = "") -> None:
+    """AUDIT-021: persist an automatic protective state across restarts."""
+    try:
+        from datahub.kill_switch import record_risk_state
+
+        record_risk_state(state.value, reason=reason)
+    except Exception:  # noqa: BLE001
+        logging.getLogger(__name__).exception("risk_state_persist_failed")
+
+
 def _order_id_for(target: PortfolioTarget, symbol: str, side: str) -> str:
     """Deterministic internal order id for one target/symbol/side."""
     basis = (
@@ -82,12 +121,14 @@ class ExecutionSummary:
     submitted: list[OrderResult] = field(default_factory=list)
     skipped: list[dict[str, Any]] = field(default_factory=list)
     halted: bool = False
+    halt_reason: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "run_id": self.run_id,
             "risk_state": self.risk_state,
             "halted": self.halted,
+            "halt_reason": self.halt_reason,
             "submitted": [
                 {
                     "internal_order_id": r.internal_order_id,
@@ -202,29 +243,55 @@ class ExecutionService:
         """Run the full guarded execution pass for one portfolio target."""
         moment = now or datetime.now(UTC)
         with self._lock:
+            # AUDIT-021 — operator kill switch. This is the *only* function
+            # that turns a PortfolioTarget into orders, so it must honour the
+            # operator's switch before anything else. datahub.state is the sole
+            # authority and it is persisted, so the switch survives a restart.
+            if _kill_switch_engaged("execute_targets"):
+                if self.health_service:
+                    from observability.health import SystemHealth
+
+                    self.health_service.set_state(
+                        SystemHealth.LOCKED,
+                        reason="operator kill switch is armed",
+                    )
+                if self.alert_service:
+                    self.alert_service.critical(
+                        "kill_switch_blocked_execution",
+                        message="Operator kill switch is armed; no orders submitted.",
+                        run_id=run_id,
+                    )
+                return ExecutionSummary(
+                    run_id=run_id,
+                    risk_state=RiskState.LOCK_ACCOUNT.value,
+                    submitted=[],
+                    skipped=[
+                        {
+                            "symbol": symbol,
+                            "reason": "operator kill switch is armed",
+                        }
+                        for symbol in sorted(target.limits)
+                    ],
+                    halted=True,
+                    halt_reason=_kill_switch_reason(),
+                )
+
             decision: RiskDecision = self.risk_guard.evaluate(risk_context)
             if decision.state is not RiskState.NOMINAL:
                 if self.health_service:
                     from observability.health import SystemHealth
 
-                    if decision.state == RiskState.HALTED:
-                        self.health_service.set_state(
-                            SystemHealth.HALTED,
-                            reason=f"Risk state {decision.state.value}",
-                        )
-                    elif decision.state == RiskState.LOCKED:
-                        self.health_service.set_state(
-                            SystemHealth.LOCKED,
-                            reason=f"Risk state {decision.state.value}",
-                        )
-                    elif decision.state == RiskState.WARNING:
-                        self.health_service.set_state(
-                            SystemHealth.WARNING,
-                            reason=f"Risk state {decision.state.value}",
-                        )
+                    # ``RiskState`` (risk_kill) and ``SystemHealth``
+                    # (observability) are different vocabularies. The mapping is
+                    # centralised in risk_kill.mapping so an unhandled state can
+                    # never raise AttributeError out of the fail-closed path.
+                    self.health_service.set_state(
+                        SystemHealth(health_name_for_risk_state(decision.state)),
+                        reason=f"Risk state {decision.state.value}",
+                    )
 
                 if self.alert_service:
-                    if decision.state in (RiskState.HALTED, RiskState.LOCKED):
+                    if is_hard_halt(decision.state):
                         self.alert_service.critical(
                             f"risk_{decision.state.value.lower()}",
                             message=f"Risk guard triggered: {decision.state.value}",
@@ -236,10 +303,14 @@ class ExecutionService:
                             message=f"Risk guard warned: {decision.state.value}",
                             run_id=run_id,
                         )
+                # AUDIT-021: RiskGuard is in-memory only. Persist the
+                # protective state so a restart does not resume from NOMINAL.
+                _record_risk_state(decision.state, "risk guard evaluation")
                 return ExecutionSummary(
                     run_id=run_id,
                     risk_state=decision.state.value,
                     halted=True,
+                    halt_reason=f"risk state {decision.state.value}",
                     skipped=[
                         {
                             "symbol": symbol,

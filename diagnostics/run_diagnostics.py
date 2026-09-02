@@ -12,7 +12,6 @@ Usage:
 from __future__ import annotations
 
 import argparse
-from pathlib import Path
 
 from diagnostics.protocol import run_full_diagnostics
 

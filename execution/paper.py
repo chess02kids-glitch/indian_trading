@@ -24,8 +24,12 @@ from models.domain import (
     OrderStatus,
     Position,
 )
+from observability.logging import get_logger
 
+from .state_machine import InvalidOrderTransition, OrderStateMachine
 from .validation import validate_limit_price_band, validate_order_intent
+
+logger = get_logger("quant_india.execution.paper")
 
 __all__ = ["PaperBroker", "PaperBrokerConfig"]
 
@@ -85,6 +89,9 @@ class PaperBroker:
         self._clock = clock
         self._cash = self.config.initial_cash
         self._orders: dict[str, OrderResult] = {}
+        # AUDIT-025: one state machine per order id, so an illegal transition
+        # is refused *and* the history survives for the audit trail.
+        self._machines: dict[str, OrderStateMachine] = {}
         self._positions: dict[tuple[str, str], Position] = {}
         self._by_key: dict[str, str] = {}
 
@@ -122,9 +129,7 @@ class PaperBroker:
         )
 
         result = self._simulate(validated)
-        self._orders[result.internal_order_id] = result
-        self._by_key.setdefault(validated.idempotency_key, result.internal_order_id)
-        return result
+        return self._store(result, reason="submitted")
 
     def cancel_order(self, internal_order_id: str) -> OrderResult | None:
         result = self._orders.get(internal_order_id)
@@ -144,8 +149,7 @@ class PaperBroker:
             average_fill_price=result.average_fill_price,
             reason="cancelled by operator",
         )
-        self._orders[internal_order_id] = cancelled
-        return cancelled
+        return self._store(cancelled, reason="cancelled by operator")
 
     def get_order_status(self, internal_order_id: str) -> OrderResult | None:
         return self._orders.get(internal_order_id)
@@ -162,6 +166,20 @@ class PaperBroker:
 
     def get_cash(self) -> float:
         return self._cash
+
+    def ping(self) -> bool:
+        """Liveness probe, so ``RiskGuard.check_broker_connectivity`` is real.
+
+        AUDIT-030: the risk context used to hard-code ``broker_connected=True``,
+        which made the connectivity check dead code. Every broker used by the
+        pipeline must be able to answer "are you reachable?".
+
+        For :class:`PaperBroker` the answer is trivially ``True``: it is an
+        in-process simulator with no network hop, so there is no connectivity
+        to lose. A real adapter must perform a real probe and return ``False``
+        (or raise) when it cannot reach the exchange.
+        """
+        return True
 
     def get_state(self) -> dict[str, Any]:
         """Machine-readable snapshot for dashboards and reconciliation."""
@@ -287,7 +305,7 @@ class PaperBroker:
                     average_fill_price=result.average_fill_price,
                     reason="order expired without fill",
                 )
-                self._orders[order_id] = expired
+                self._store(expired, reason="ttl elapsed")
 
     def _position_for(self, intent: OrderIntent) -> Position:
         key = (intent.symbol, intent.exchange)
@@ -316,3 +334,44 @@ class PaperBroker:
     def _make_result(self, **fields: Any) -> OrderResult:
         fields.setdefault("timestamp", self._now())
         return OrderResult.model_validate(fields)
+
+    # -- state machine ------------------------------------------------------
+
+    def _machine(self, internal_order_id: str) -> OrderStateMachine:
+        """The per-order state tracker (AUDIT-025).
+
+        Before this existed the broker replaced ``self._orders[id]`` directly
+        with no validation, so FILLED -> PENDING and CANCELLED -> FILLED were
+        both representable. Every mutation now goes through the machine.
+        """
+        machine = self._machines.get(internal_order_id)
+        if machine is None:
+            machine = OrderStateMachine(internal_order_id=internal_order_id)
+            self._machines[internal_order_id] = machine
+        return machine
+
+    def _store(
+        self, result: OrderResult, *, reason: str = ""
+    ) -> OrderResult:
+        """Validate and persist a state change for ``result``."""
+        machine = self._machine(result.internal_order_id)
+        previous = self._orders.get(result.internal_order_id)
+        try:
+            if previous is None:
+                machine.record(result, reason=reason)
+            else:
+                result = machine.transition(previous, result, reason=reason)
+        except InvalidOrderTransition:
+            # Never leave the ledger half-updated: the old state stands.
+            logger.error(
+                "illegal_order_transition order=%s from=%s to=%s",
+                result.internal_order_id,
+                previous.status.value if previous else "<new>",
+                result.status.value,
+            )
+            raise
+        self._orders[result.internal_order_id] = result
+        self._by_key.setdefault(
+            result.idempotency_key, result.internal_order_id
+        )
+        return result

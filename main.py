@@ -1,4 +1,5 @@
 import argparse
+import os
 import sys
 
 from data.duckdb_manager import DuckDBManager
@@ -40,10 +41,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     dash_parser.add_argument(
         "--port",
         type=int,
-        default=int(sys.argv[sys.argv.index("--port") + 1])
-        if "--port" in sys.argv
-        else 8080,
-        help="Port to listen on (default: 8080)",
+        default=int(os.getenv("PORT", "8080")),
+        help="Port to listen on (default: $PORT or 8080)",
     )
 
     # Broker sandbox command

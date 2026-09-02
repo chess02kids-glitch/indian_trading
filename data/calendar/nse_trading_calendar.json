@@ -1,0 +1,356 @@
+{
+  "schema_version": 1,
+  "exchange": "NSE",
+  "segment": "CM",
+  "segment_description": "Capital Market (cash equities).",
+  "sources": {
+    "2024": "https://www.nseindia.com/api/holiday-master?type=trading&year=2024",
+    "2025": "https://www.nseindia.com/api/holiday-master?type=trading&year=2025",
+    "2026": "https://www.nseindia.com/api/holiday-master?type=trading"
+  },
+  "retrieved_at": "2026-09-02",
+  "years": [
+    2024,
+    2025,
+    2026
+  ],
+  "notes": "Retrieved from NSE's public holiday-master API, \"CM\" (Capital Market) segment, which is the authoritative published list of equity trading holidays. Weekend entries are included because the exchange sometimes closes on a weekend (e.g. 2026-08-15 Independence Day, a Saturday) and sometimes opens one (see special_sessions). Refresh this file when NSE publishes the next calendar year; the loader warns when a date outside the covered years is queried. Special sessions are checked BEFORE holidays, so a date can be both a published holiday and a live session (Muhurat trading on Diwali). Known limitation: only the sessions listed here are recognised; a Muhurat session on a Diwali date that is not listed will still be reported as off-calendar until this file is refreshed. Verified 2026-09-02 against NSE/BSE circulars and press coverage for 2024-01-20, 2024-05-18 and 2025-10-21.",
+  "holidays": [
+    {
+      "date": "2024-01-22",
+      "weekday": "Monday",
+      "description": "Special Holiday (Ram Mandir consecration)"
+    },
+    {
+      "date": "2024-01-26",
+      "weekday": "Friday",
+      "description": "Republic Day"
+    },
+    {
+      "date": "2024-03-08",
+      "weekday": "Friday",
+      "description": "Mahashivratri"
+    },
+    {
+      "date": "2024-03-25",
+      "weekday": "Monday",
+      "description": "Holi"
+    },
+    {
+      "date": "2024-03-29",
+      "weekday": "Friday",
+      "description": "Good Friday"
+    },
+    {
+      "date": "2024-04-11",
+      "weekday": "Thursday",
+      "description": "Id-Ul-Fitr (Ramadan Eid)"
+    },
+    {
+      "date": "2024-04-14",
+      "weekday": "Sunday",
+      "description": "Dr. Baba Saheb Ambedkar Jayanti"
+    },
+    {
+      "date": "2024-04-17",
+      "weekday": "Wednesday",
+      "description": "Shri Ram Navami"
+    },
+    {
+      "date": "2024-04-21",
+      "weekday": "Sunday",
+      "description": "Shri Mahavir Jayanti"
+    },
+    {
+      "date": "2024-05-01",
+      "weekday": "Wednesday",
+      "description": "Maharashtra Day"
+    },
+    {
+      "date": "2024-05-20",
+      "weekday": "Monday",
+      "description": "General Parliamentary Elections"
+    },
+    {
+      "date": "2024-06-17",
+      "weekday": "Monday",
+      "description": "Bakri Id"
+    },
+    {
+      "date": "2024-07-17",
+      "weekday": "Wednesday",
+      "description": "Muharram"
+    },
+    {
+      "date": "2024-08-15",
+      "weekday": "Thursday",
+      "description": "Independence Day"
+    },
+    {
+      "date": "2024-09-07",
+      "weekday": "Saturday",
+      "description": "Ganesh Chaturthi"
+    },
+    {
+      "date": "2024-10-02",
+      "weekday": "Wednesday",
+      "description": "Mahatma Gandhi Jayanti"
+    },
+    {
+      "date": "2024-10-12",
+      "weekday": "Saturday",
+      "description": "Dussehra"
+    },
+    {
+      "date": "2024-11-02",
+      "weekday": "Saturday",
+      "description": "Balipratipada"
+    },
+    {
+      "date": "2024-11-15",
+      "weekday": "Friday",
+      "description": "Prakash Gurpurb Sri Guru Nanak Dev"
+    },
+    {
+      "date": "2024-11-20",
+      "weekday": "Wednesday",
+      "description": "Assembly Elections in Maharashtra"
+    },
+    {
+      "date": "2024-12-25",
+      "weekday": "Wednesday",
+      "description": "Christmas"
+    },
+    {
+      "date": "2025-01-26",
+      "weekday": "Sunday",
+      "description": "Republic Day"
+    },
+    {
+      "date": "2025-02-26",
+      "weekday": "Wednesday",
+      "description": "Mahashivratri"
+    },
+    {
+      "date": "2025-03-14",
+      "weekday": "Friday",
+      "description": "Holi"
+    },
+    {
+      "date": "2025-03-31",
+      "weekday": "Monday",
+      "description": "Id-Ul-Fitr (Ramadan Eid)"
+    },
+    {
+      "date": "2025-04-06",
+      "weekday": "Sunday",
+      "description": "Shri Ram Navami"
+    },
+    {
+      "date": "2025-04-10",
+      "weekday": "Thursday",
+      "description": "Shri Mahavir Jayanti"
+    },
+    {
+      "date": "2025-04-14",
+      "weekday": "Monday",
+      "description": "Dr. Baba Saheb Ambedkar Jayanti"
+    },
+    {
+      "date": "2025-04-18",
+      "weekday": "Friday",
+      "description": "Good Friday"
+    },
+    {
+      "date": "2025-05-01",
+      "weekday": "Thursday",
+      "description": "Maharashtra Day"
+    },
+    {
+      "date": "2025-06-07",
+      "weekday": "Saturday",
+      "description": "Bakri Id"
+    },
+    {
+      "date": "2025-07-06",
+      "weekday": "Sunday",
+      "description": "Muharram"
+    },
+    {
+      "date": "2025-08-15",
+      "weekday": "Friday",
+      "description": "Independence Day / Parsi New Year"
+    },
+    {
+      "date": "2025-08-27",
+      "weekday": "Wednesday",
+      "description": "Shri Ganesh Chaturthi"
+    },
+    {
+      "date": "2025-10-02",
+      "weekday": "Thursday",
+      "description": "Mahatma Gandhi Jayanti / Dussehra"
+    },
+    {
+      "date": "2025-10-21",
+      "weekday": "Tuesday",
+      "description": "Diwali Laxmi Pujan"
+    },
+    {
+      "date": "2025-10-22",
+      "weekday": "Wednesday",
+      "description": "Balipratipada"
+    },
+    {
+      "date": "2025-11-05",
+      "weekday": "Wednesday",
+      "description": "Prakash Gurpurb Sri Guru Nanak Dev"
+    },
+    {
+      "date": "2025-12-25",
+      "weekday": "Thursday",
+      "description": "Christmas"
+    },
+    {
+      "date": "2026-01-15",
+      "weekday": "Thursday",
+      "description": "Municipal Corporation Election - Maharashtra"
+    },
+    {
+      "date": "2026-01-26",
+      "weekday": "Monday",
+      "description": "Republic Day"
+    },
+    {
+      "date": "2026-02-15",
+      "weekday": "Sunday",
+      "description": "Mahashivratri"
+    },
+    {
+      "date": "2026-03-03",
+      "weekday": "Tuesday",
+      "description": "Holi"
+    },
+    {
+      "date": "2026-03-21",
+      "weekday": "Saturday",
+      "description": "Id-Ul-Fitr (Ramadan Eid)"
+    },
+    {
+      "date": "2026-03-26",
+      "weekday": "Thursday",
+      "description": "Shri Ram Navami"
+    },
+    {
+      "date": "2026-03-31",
+      "weekday": "Tuesday",
+      "description": "Shri Mahavir Jayanti"
+    },
+    {
+      "date": "2026-04-03",
+      "weekday": "Friday",
+      "description": "Good Friday"
+    },
+    {
+      "date": "2026-04-14",
+      "weekday": "Tuesday",
+      "description": "Dr. Baba Saheb Ambedkar Jayanti"
+    },
+    {
+      "date": "2026-05-01",
+      "weekday": "Friday",
+      "description": "Maharashtra Day"
+    },
+    {
+      "date": "2026-05-28",
+      "weekday": "Thursday",
+      "description": "Bakri Id"
+    },
+    {
+      "date": "2026-06-26",
+      "weekday": "Friday",
+      "description": "Muharram"
+    },
+    {
+      "date": "2026-08-15",
+      "weekday": "Saturday",
+      "description": "Independence Day"
+    },
+    {
+      "date": "2026-09-14",
+      "weekday": "Monday",
+      "description": "Ganesh Chaturthi"
+    },
+    {
+      "date": "2026-10-02",
+      "weekday": "Friday",
+      "description": "Mahatma Gandhi Jayanti"
+    },
+    {
+      "date": "2026-10-20",
+      "weekday": "Tuesday",
+      "description": "Dussehra"
+    },
+    {
+      "date": "2026-11-08",
+      "weekday": "Sunday",
+      "description": "Diwali Laxmi Pujan*"
+    },
+    {
+      "date": "2026-11-10",
+      "weekday": "Tuesday",
+      "description": "Diwali-Balipratipada"
+    },
+    {
+      "date": "2026-11-24",
+      "weekday": "Tuesday",
+      "description": "Prakash Gurpurb Sri Guru Nanak Dev"
+    },
+    {
+      "date": "2026-12-25",
+      "weekday": "Friday",
+      "description": "Christmas"
+    }
+  ],
+  "special_sessions": [
+    {
+      "date": "2024-03-02",
+      "weekday": "Saturday",
+      "description": "Special live trading session (Saturday)",
+      "source": "https://www.nseindia.com/api/holiday-master?type=trading&year=2024"
+    },
+    {
+      "date": "2025-02-01",
+      "weekday": "Saturday",
+      "description": "Union Budget 2025 special session (Saturday)",
+      "source": "https://www.nseindia.com/ (exchange circular); reported by India Today, 2026-01-31: \"Previously, markets were opened on a Saturday during the 2025 Budget\""
+    },
+    {
+      "date": "2026-02-01",
+      "weekday": "Sunday",
+      "description": "Union Budget 2026 special session (Sunday)",
+      "source": "https://www.nseindia.com/ (NSE circular dated 2026-01-16); reported by Business Standard, 2026-01-16 and India Today, 2026-01-31"
+    },
+    {
+      "date": "2024-01-20",
+      "weekday": "Saturday",
+      "description": "Special live trading session with intraday switchover to the DR site (disaster-recovery test). Trades were real, not simulated.",
+      "source": "NSE/BSE circulars, 2023-12-28; Business Standard 2024-01-19 https://www.business-standard.com/markets/stock-market-news/bse-nse-to-open-on-january-20-for-special-trading-session-check-details-124011900529_1.html",
+      "session": "09:15-10:00 (primary) and 11:30-12:30 (DR)"
+    },
+    {
+      "date": "2024-05-18",
+      "weekday": "Saturday",
+      "description": "Special live trading session with intraday switchover to the DR site (disaster-recovery test).",
+      "source": "NSE/BSE circulars 2024-05-13; Mint 2024-05-17 https://www.livemint.com/market/stock-market-news/stock-market-news-bse-nse-are-open-for-trade-tomorrow-this-is-the-reason-11715935341321.html",
+      "session": "09:15-10:00 (primary) and 11:30-12:30 (DR)"
+    },
+    {
+      "date": "2025-10-21",
+      "weekday": "Tuesday",
+      "description": "Diwali Laxmi Pujan \u2014 market closed for the regular session but a live one-hour Muhurat trading session was held, so real prices exist for this date.",
+      "source": "NSE/BSE holiday circular; NDTV Profit 2025-10-17 https://www.ndtvprofit.com/markets/diwali-2025-stock-market-holidays-will-nse-bse-remain-closed-for-laxmi-pujan-and-balipratipada",
+      "session": "13:45-14:45 (Muhurat trading)"
+    }
+  ]
+}

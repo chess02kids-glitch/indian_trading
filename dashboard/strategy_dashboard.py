@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import html
 import json
+import logging
 import time
 from datetime import UTC, date, datetime
 from pathlib import Path
@@ -39,6 +40,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 DATA_DIR = ROOT / "data" / "clean" / "eod2_data"
 RESULTS_FILE = ROOT / "research_live" / "results_summary.json"
+
+logger = logging.getLogger(__name__)
 EQUITY_FILE = ROOT / "research_live" / "deliverables" / "equity.csv"
 DRAWDOWN_FILE = ROOT / "research_live" / "deliverables" / "drawdown.csv"
 YEARLY_FILE = ROOT / "research_live" / "deliverables" / "yearly.csv"
@@ -266,7 +269,9 @@ def compute_momrem_signal(capital: float = 100_000.0) -> dict[str, Any]:
             },
         )
     except Exception:  # noqa: BLE001 - heartbeats must never break the signal
-        pass
+        # AUDIT: was a bare `pass`, so a dead heartbeat was indistinguishable
+        # from a healthy one.
+        logger.warning("strategy_signal_heartbeat_failed", exc_info=True)
     return signal
 
 

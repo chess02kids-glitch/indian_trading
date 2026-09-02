@@ -174,3 +174,50 @@ def history(limit: int = 25) -> list[dict[str, Any]]:
     with _lock:
         payload = _read()
     return list(payload.get("history") or [])[-limit:][::-1]
+
+
+# ---------------------------------------------------------------------------
+# Generic persisted state (added for AUDIT-021)
+# ---------------------------------------------------------------------------
+
+
+def append_history(*, action: str, reason: str = "", by: str = "system") -> None:
+    """Append one entry to the persisted audit history.
+
+    Public so that :mod:`datahub.kill_switch` can record refusals without
+    reaching into this module's private helpers.
+    """
+    with _lock:
+        payload = _read()
+        history = list(payload.get("history") or [])
+        history.append(
+            {
+                "at": _now(),
+                "action": action,
+                "reason": reason,
+                "by": by,
+            }
+        )
+        payload["history"] = history[-200:]
+        _write(payload)
+
+
+def set_state_value(key: str, detail: Any) -> None:
+    """Persist an arbitrary timestamped value under ``heartbeats[key]``.
+
+    Used for values that are not heartbeats in the Operations-page sense but
+    must still survive a restart (for example the last automatic protective
+    risk state).
+    """
+    with _lock:
+        payload = _read()
+        payload.setdefault("heartbeats", {})[key] = {"at": _now(), "detail": detail}
+        _write(payload)
+
+
+def get_state_value(key: str) -> Any | None:
+    """Read a value written by :func:`set_state_value` (``None`` when absent)."""
+    with _lock:
+        payload = _read()
+    entry = payload.get("heartbeats", {}).get(key)
+    return entry if isinstance(entry, dict) else None

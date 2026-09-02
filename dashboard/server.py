@@ -7,7 +7,9 @@ existing research engine, and operational state remains read-only.
 
 from __future__ import annotations
 
+import hmac
 import html
+import ipaddress
 import json
 import logging
 import os
@@ -15,6 +17,7 @@ import queue
 import sys
 import threading
 import time
+from datetime import UTC, datetime
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -45,6 +48,165 @@ _STATIC_TYPES = {
     ".js": "text/javascript; charset=utf-8",
     ".svg": "image/svg+xml",
 }
+
+# ---------------------------------------------------------------------------
+# Access control (AUDIT-039)
+# ---------------------------------------------------------------------------
+# The dashboard mutates operator state — it can arm *and disarm* the kill
+# switch, reset the paper account, and trigger rebalances.  Before this change
+# it bound ``0.0.0.0`` with no authentication, authorisation, CSRF or origin
+# check on any route, so any host that could reach the port could disarm the
+# kill switch with a single unauthenticated ``curl``.
+#
+# The controls below, in order of preference:
+#
+# 1. **Bind to loopback by default.**  A deployment that wants to listen on a
+#    routable interface must set ``QUANT_DASHBOARD_BIND`` explicitly.
+# 2. **Fail closed on a routable bind.**  If the bind address is not loopback
+#    and ``QUANT_DASHBOARD_TOKEN`` is empty, the server refuses to start
+#    unless ``QUANT_DASHBOARD_ALLOW_UNAUTHENTICATED=1`` is set.  That escape
+#    hatch exists for supervised local demos and is logged loudly.
+# 3. **Origin check** on every mutating request, which is what actually stops
+#    a browser on a hostile page from disarming the switch (CSRF).
+# 4. **Shared-secret header** ``X-Quant-Token`` on every mutating route.
+#
+# Honest limitation: the SPA is served by this same server, so when
+# ``QUANT_DASHBOARD_TOKEN_IN_UI=1`` the token is handed to any client that can
+# load the page.  The token is therefore **not** an authentication boundary for
+# browser users — it stops unauthenticated scripts, scanners and CSRF.  A real
+# deployment must put an authenticating reverse proxy in front and bind the
+# dashboard to loopback.
+# These are the *names* of environment variables, not credentials. bandit
+# flags them as hardcoded passwords (B105) because their names contain
+# "TOKEN"; the secrets themselves are only ever read from the environment.
+TOKEN_ENV = "QUANT_DASHBOARD_TOKEN"  # nosec B105
+BIND_ENV = "QUANT_DASHBOARD_BIND"
+ALLOW_INSECURE_ENV = "QUANT_DASHBOARD_ALLOW_UNAUTHENTICATED"
+TOKEN_IN_UI_ENV = "QUANT_DASHBOARD_TOKEN_IN_UI"  # nosec B105
+DEFAULT_BIND = "127.0.0.1"
+
+
+class DashboardAccessError(RuntimeError):
+    """Raised when the dashboard is started with an unsafe configuration."""
+
+
+def dashboard_token() -> str:
+    """Return the configured shared secret (empty when none is set)."""
+    return os.getenv(TOKEN_ENV, "").strip()
+
+
+def _is_loopback(address: str) -> bool:
+    try:
+        return ipaddress.ip_address(address.strip()).is_loopback
+    except ValueError:
+        # Not a literal IP (e.g. a hostname). Treat only the obvious local
+        # names as loopback; anything else is assumed routable.
+        return address.strip().lower() in {"localhost", "localhost.localdomain"}
+
+
+def resolve_bind(bind: str | None = None) -> str:
+    """Resolve the bind address and refuse an unsafe combination.
+
+    Raises :class:`DashboardAccessError` when listening on a routable
+    interface without a shared secret and without an explicit override.
+    """
+    resolved = (bind or os.getenv(BIND_ENV) or DEFAULT_BIND).strip() or DEFAULT_BIND
+    if not dashboard_token() and not _is_loopback(resolved):
+        if os.getenv(ALLOW_INSECURE_ENV, "").strip().lower() not in {
+            "1",
+            "true",
+            "yes",
+        }:
+            raise DashboardAccessError(
+                f"refusing to bind the dashboard to {resolved!r} without "
+                f"{TOKEN_ENV}: every mutating route (including "
+                "POST /api/kill-switch) would be reachable unauthenticated. "
+                f"Set {TOKEN_ENV}, bind to 127.0.0.1, or set "
+                f"{ALLOW_INSECURE_ENV}=1 to acknowledge the risk."
+            )
+        logger.warning(
+            "dashboard_unauthenticated_bind address=%s — every mutating route "
+            "is reachable without a token",
+            resolved,
+        )
+    return resolved
+
+
+def _token_in_ui() -> bool:
+    """Whether the server may hand the shared secret to the SPA shell."""
+    flag = os.getenv(TOKEN_IN_UI_ENV, "").strip().lower()
+    return flag in {"1", "true", "yes"}
+
+
+# ---------------------------------------------------------------------------
+# Health (AUDIT-028)
+# ---------------------------------------------------------------------------
+# ``/healthz`` used to need only the standard library, so the Docker and
+# compose healthchecks reported the container **healthy** while every
+# ``/api/*`` panel was failing. Verified before the fix: with the
+# third-party imports blocked, ``/healthz`` answered ``{"status": "ok"}``
+# while ``get_paper_service()`` raised ``ModuleNotFoundError: No module
+# named 'numpy'``. A healthcheck that cannot observe a broken dependency is
+# worse than no healthcheck, because it tells the orchestrator to keep
+# routing traffic to a dead container.
+#
+# The check below imports the modules that every API panel depends on and
+# touches one attribute from each, so a missing or broken dependency turns
+# into a 503 with a readable reason instead of a silent "ok".
+CRITICAL_SUBSYSTEMS: tuple[tuple[str, str, str], ...] = (
+    ("paper_trading", "paper_trading.service", "PaperTradingService"),
+    ("operations", "dashboard.operations", "build_report"),
+    ("data_panel", "datahub.panel", "data_status"),
+    ("kill_switch", "datahub.kill_switch", "is_killed"),
+)
+
+#: Third-party packages the API depends on. These are probed *by name* as
+#: well as through the subsystem imports above, because an already-imported
+#: module is served from ``sys.modules`` without a fresh import — a probe
+#: that only touched our own modules would keep reporting "ok" long after
+#: the environment around them broke.
+RUNTIME_DEPENDENCIES: tuple[str, ...] = (
+    "numpy",
+    "pandas",
+    "duckdb",
+    "pydantic",
+    "pyarrow",
+)
+
+
+def subsystem_health() -> dict[str, Any]:
+    """Import every critical subsystem and report which ones are broken.
+
+    Returns ``{"status": "ok"|"degraded", "subsystems": {...}, "failed": [...]}.
+    Never raises: the kill-switch entry is read-only and the rest are imports.
+    """
+    import importlib
+
+    subsystems: dict[str, str] = {}
+    failed: list[str] = []
+    for label, module_name, attribute in CRITICAL_SUBSYSTEMS:
+        try:
+            module = importlib.import_module(module_name)
+            getattr(module, attribute)
+        except Exception as exc:  # noqa: BLE001 - report, never raise
+            subsystems[label] = f"{type(exc).__name__}: {exc}"
+            failed.append(label)
+        else:
+            subsystems[label] = "ok"
+    for package in RUNTIME_DEPENDENCIES:
+        label = f"dependency:{package}"
+        try:
+            importlib.import_module(package)
+        except Exception as exc:  # noqa: BLE001 - report, never raise
+            subsystems[label] = f"{type(exc).__name__}: {exc}"
+            failed.append(label)
+        else:
+            subsystems[label] = "ok"
+    return {
+        "status": "ok" if not failed else "degraded",
+        "subsystems": subsystems,
+        "failed": failed,
+    }
 
 
 def get_live_feed() -> Any:
@@ -270,16 +432,25 @@ class DashboardHandler(BaseHTTPRequestHandler):
                     query[k] = unquote(v)
 
         if path == "/healthz":
+            health = subsystem_health()
+            health["component"] = "research-cockpit"
+            health["checked_at"] = datetime.now(UTC).isoformat()
             self._send_json(
-                HTTPStatus.OK,
-                {"status": "ok", "component": "research-cockpit"},
+                HTTPStatus.OK
+                if health["status"] == "ok"
+                else HTTPStatus.SERVICE_UNAVAILABLE,
+                health,
             )
         elif path == "/api/status":
             self._send_json(HTTPStatus.OK, collect_status())
         elif path == "/live":
             try:
                 body = (WEB_DIR / "live_terminal.html").read_bytes()
-                self._send(HTTPStatus.OK, "text/html; charset=utf-8", body)
+                self._send(
+                    HTTPStatus.OK,
+                    "text/html; charset=utf-8",
+                    self._with_bootstrap(body),
+                )
             except OSError:
                 self._send(
                     HTTPStatus.NOT_FOUND,
@@ -340,7 +511,11 @@ class DashboardHandler(BaseHTTPRequestHandler):
                     b"unified app assets missing\n",
                 )
             else:
-                self._send(HTTPStatus.OK, "text/html; charset=utf-8", body)
+                self._send(
+                    HTTPStatus.OK,
+                    "text/html; charset=utf-8",
+                    self._with_bootstrap(body),
+                )
         elif path.startswith("/static/"):
             name = Path(path[len("/static/") :]).name
             static_file = APP_DIR / name
@@ -472,9 +647,101 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 HTTPStatus.NOT_FOUND, "text/plain; charset=utf-8", b"Not found\n"
             )
 
+    # -- access control -----------------------------------------------------
+
+    def _with_bootstrap(self, body: bytes) -> bytes:
+        """Inject the auth bootstrap into the SPA shell.
+
+        The SPA needs the shared secret to keep its buttons working (AUDIT-013:
+        a control the UI invites but the backend refuses is a broken UI). The
+        secret is handed out only to a loopback client or when the operator
+        explicitly opts in with ``QUANT_DASHBOARD_TOKEN_IN_UI=1``; otherwise the
+        UI is told that mutations require a token so it can disable them
+        instead of failing silently.
+        """
+        token = dashboard_token()
+        if token and (self._client_is_loopback() or _token_in_ui()):
+            script = (
+                f"<script>window.QUANT_DASHBOARD_TOKEN={json.dumps(token)};</script>"
+            )
+        elif token:
+            script = "<script>window.QUANT_DASHBOARD_AUTH_REQUIRED=true;</script>"
+        else:
+            script = ""
+        if not script:
+            return body
+        encoded = script.encode("utf-8")
+        for marker in (
+            b'<script src="/static/app.js"></script>',
+            b'<script src="/live/static/live_terminal.js"></script>',
+            b"</head>",
+        ):
+            if marker in body:
+                return body.replace(marker, encoded + marker, 1)
+        return body + encoded
+
+    def _client_is_loopback(self) -> bool:
+        try:
+            return _is_loopback(self.client_address[0])
+        except (IndexError, TypeError):  # pragma: no cover - defensive
+            return False
+
+    def _authorize_mutating(self) -> bool:
+        """Reject a mutating request that is not authorised.
+
+        AUDIT-039: every route below mutates operator state. This is the single
+        choke point for the origin check (CSRF) and the shared-secret header.
+        Returns True when the request may proceed; on failure it has already
+        written the response.
+        """
+        if not self._origin_allowed():
+            self._send_json(
+                HTTPStatus.FORBIDDEN,
+                {"error": "cross-origin mutations are not allowed"},
+            )
+            return False
+        expected = dashboard_token()
+        if not expected:
+            # No token configured: the deployment is trusted (loopback, or an
+            # explicit ALLOW_UNAUTHENTICATED override). The origin check above
+            # still applies.
+            return True
+        supplied = self.headers.get("X-Quant-Token", "")
+        if not hmac.compare_digest(supplied, expected):
+            self._send_json(HTTPStatus.UNAUTHORIZED, {"error": "unauthorized"})
+            return False
+        return True
+
+    def _origin_allowed(self) -> bool:
+        """Same-origin check for browser-initiated state changes."""
+        origin = self.headers.get("Origin")
+        if not origin:
+            # Non-browser client (curl, a script). The token check is the
+            # control for these; there is no ambient authority to abuse.
+            return True
+        try:
+            from urllib.parse import urlparse
+
+            origin_host = (urlparse(origin).hostname or "").lower()
+        except ValueError:
+            return False
+        if not origin_host:
+            return False
+        host = (self.headers.get("Host", "").split(":")[0] or "").strip().lower()
+        allowed = {
+            host,
+            "localhost",
+            "127.0.0.1",
+            str(os.getenv("QUANT_DASHBOARD_PUBLIC_HOST", "")).strip().lower(),
+        }
+        return origin_host in {value for value in allowed if value}
+
     def do_POST(self) -> None:  # noqa: N802
         """Handle POST requests for launching research runs."""
         path = self.path.split("?")[0]
+
+        if not self._authorize_mutating():
+            return
 
         if path == "/api/research/run":
             self._handle_research_run()
@@ -809,21 +1076,42 @@ class DashboardHandler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
 
-def run_server(port: int | None = None) -> None:
-    """Run the dashboard and local 30-second quote poller on all interfaces."""
+def run_server(port: int | None = None, *, bind: str | None = None) -> None:
+    """Run the dashboard and local 30-second quote poller.
+
+    AUDIT-039: the bind address defaults to **loopback**. Listening on a
+    routable interface is an explicit opt-in (``QUANT_DASHBOARD_BIND``) and,
+    without ``QUANT_DASHBOARD_TOKEN``, is refused outright — see
+    :func:`resolve_bind`.
+    """
     from paper_trading.poller import PaperQuotePoller
 
     actual_port = port if port is not None else int(os.getenv("PORT", "8080"))
+    # Resolve the bind *first*: a refused configuration must not start the
+    # quote poller or bind a socket on the way out.
+    actual_bind = resolve_bind(bind)
     paper = get_paper_service()
     poller = PaperQuotePoller(paper, interval_seconds=paper.quote_stale_seconds)
     poller.start()
-    server = ThreadingHTTPServer(("0.0.0.0", actual_port), DashboardHandler)  # nosec B104
-    print(f"Quant India unified dashboard: http://0.0.0.0:{actual_port}/")
-    print(f"  ├─ strategy    http://0.0.0.0:{actual_port}/strategy")
-    print(f"  ├─ live        http://0.0.0.0:{actual_port}/live")
-    print(f"  ├─ paper       http://0.0.0.0:{actual_port}/paper")
-    print(f"  ├─ research    http://0.0.0.0:{actual_port}/cockpit")
-    print(f"  └─ operations  http://0.0.0.0:{actual_port}/operations")
+    # nosec B104: the address is resolved by resolve_bind(), which refuses a
+    # routable bind unless a shared secret is configured.
+    server = ThreadingHTTPServer((actual_bind, actual_port), DashboardHandler)  # nosec B104
+    host = "localhost" if _is_loopback(actual_bind) else actual_bind
+    print(f"Quant India unified dashboard: http://{host}:{actual_port}/")
+    print(f"  bind          {actual_bind}:{actual_port}")
+    print(
+        "  mutations     "
+        + (
+            "shared secret required (X-Quant-Token)"
+            if dashboard_token()
+            else "unauthenticated (loopback bind)"
+        )
+    )
+    print(f"  ├─ strategy    http://{host}:{actual_port}/strategy")
+    print(f"  ├─ live        http://{host}:{actual_port}/live")
+    print(f"  ├─ paper       http://{host}:{actual_port}/paper")
+    print(f"  ├─ research    http://{host}:{actual_port}/cockpit")
+    print(f"  └─ operations  http://{host}:{actual_port}/operations")
     try:
         server.serve_forever()
     finally:

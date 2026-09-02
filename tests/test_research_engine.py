@@ -16,7 +16,11 @@ import pytest
 
 from backtest.benchmarks import benchmark_suite, compare_results
 from backtest.costs import IndiaCostModel
-from backtest.engine import BacktestConfig, VectorBTResearchEngine
+from backtest.engine import (
+    MEMBERSHIP_FROM_PRICES,
+    BacktestConfig,
+    VectorBTResearchEngine,
+)
 from backtest.validation import deflated_sharpe_from_returns
 from portfolio.construction import InverseVolatilityConstructor
 from research.contracts import Experiment, MarketData, ResearchInputError
@@ -131,7 +135,7 @@ class TestProductionStrategy:
         engine = build_engine()
         weights = constructor.construct(strategy.generate_signals(data), data)
         result = engine.run(
-            data.close, weights, strategy_name=strategy.name, universe_history=[]
+            data.close, weights, strategy_name=strategy.name, universe_history=MEMBERSHIP_FROM_PRICES
         )
         benchmarks = benchmark_suite(data.close, weights, engine=engine)
         comparison = compare_results({strategy.name: result, **benchmarks})
@@ -155,7 +159,7 @@ class TestProductionStrategy:
         engine = build_engine()
         weights = constructor.construct(strategy.generate_signals(data), data)
         engine.run(
-            data.close, weights, strategy_name=strategy.name, universe_history=[]
+            data.close, weights, strategy_name=strategy.name, universe_history=MEMBERSHIP_FROM_PRICES
         )
         benchmarks = benchmark_suite(data.close, weights, engine=engine)
         assert set(benchmarks) == {
@@ -174,10 +178,10 @@ class TestProductionStrategy:
         engine = build_engine()
         weights = constructor.construct(strategy.generate_signals(data), data)
         first = engine.run(
-            data.close, weights, strategy_name=strategy.name, universe_history=[]
+            data.close, weights, strategy_name=strategy.name, universe_history=MEMBERSHIP_FROM_PRICES
         )
         second = engine.run(
-            data.close, weights, strategy_name=strategy.name, universe_history=[]
+            data.close, weights, strategy_name=strategy.name, universe_history=MEMBERSHIP_FROM_PRICES
         )
         assert first.metrics.to_dict() == second.metrics.to_dict()
         assert first.returns.tolist() == second.returns.tolist()
@@ -189,7 +193,7 @@ class TestProductionStrategy:
         engine = build_engine()
         weights = constructor.construct(strategy.generate_signals(data), data)
         result = engine.run(
-            data.close, weights, strategy_name=strategy.name, universe_history=[]
+            data.close, weights, strategy_name=strategy.name, universe_history=MEMBERSHIP_FROM_PRICES
         )
         metrics = result.metrics
         assert all(np.isfinite(v) for v in metrics.to_dict().values())
@@ -205,7 +209,7 @@ class TestStatisticalValidation:
         engine = build_engine()
         weights = constructor.construct(strategy.generate_signals(data), data)
         result = engine.run(
-            data.close, weights, strategy_name=strategy.name, universe_history=[]
+            data.close, weights, strategy_name=strategy.name, universe_history=MEMBERSHIP_FROM_PRICES
         )
         oos = result.returns.loc[result.returns.index[-252] :]
         dsr = deflated_sharpe_from_returns(oos, trials=6)

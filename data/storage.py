@@ -11,8 +11,14 @@ base_logger = get_logger("quant_india.data.storage")
 class StorageManager:
     """Manages raw historical parquet storage with monthly partitioning."""
 
-    def __init__(self, data_dir: Path = settings.storage.raw_dir):
-        self.data_dir = data_dir
+    def __init__(self, data_dir: Path | None = None):
+        # AUDIT-027: resolved at call time instead of being bound as a
+        # default argument at import time, so ``QUANT_DATA_DIR`` is honoured.
+        # (The intermediate fix left ``self.data_dir = None`` when no
+        # argument was passed, which broke ``StorageManager()`` outright.)
+        self.data_dir = (
+            Path(data_dir) if data_dir is not None else settings.storage.raw_dir
+        )
         self.logger = ContextLogger(base_logger, operation="storage")
 
     def _get_partition_path(

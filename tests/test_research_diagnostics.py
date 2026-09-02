@@ -6,7 +6,11 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from backtest.engine import BacktestConfig, VectorBTResearchEngine
+from backtest.engine import (
+    MEMBERSHIP_FROM_PRICES,
+    BacktestConfig,
+    VectorBTResearchEngine,
+)
 from research.contracts import (
     CostModel,
     MarketData,
@@ -275,7 +279,7 @@ def _engine_result():
         )
     )
     weights = _churn_weights(prices)
-    return engine.run(prices, weights, strategy_name="churn", universe_history=[])
+    return engine.run(prices, weights, strategy_name="churn", universe_history=MEMBERSHIP_FROM_PRICES)
 
 
 def _churn_weights(prices: pd.DataFrame) -> pd.DataFrame:

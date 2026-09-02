@@ -13,7 +13,10 @@ from models.domain import (
     ResearchResult,
 )
 
+from .protocols import EquitySnapshot
+
 __all__ = [
+    "InMemoryEquityRepository",
     "InMemoryOrderRepository",
     "InMemoryPositionRepository",
     "InMemoryReconciliationRepository",
@@ -60,6 +63,31 @@ class InMemoryOrderRepository:
     def list_intents(self) -> list[OrderIntent]:
         with self._lock:
             return list(self._intents.values())
+
+
+class InMemoryEquityRepository:
+    """Equity mark-to-market history held in process memory."""
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._snapshots: list[EquitySnapshot] = []
+
+    def save_snapshot(self, snapshot: EquitySnapshot) -> EquitySnapshot:
+        with self._lock:
+            self._snapshots.append(snapshot)
+            return snapshot
+
+    def snapshot_for_date(self, day: str) -> EquitySnapshot | None:
+        with self._lock:
+            for snapshot in self._snapshots:
+                if snapshot.date == day:
+                    return snapshot
+        return None
+
+    def history(self, limit: int = 0) -> list[EquitySnapshot]:
+        with self._lock:
+            rows = list(self._snapshots)
+        return rows[-limit:] if limit and limit > 0 else rows
 
 
 class InMemoryPositionRepository:

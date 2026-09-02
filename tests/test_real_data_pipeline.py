@@ -771,6 +771,11 @@ def test_universe_constituent_validation(
     assert disk_dataset.all_symbols("nifty100") == dataset.all_symbols("nifty100")
 
 
+# AUDIT-014 (FIXED): these previously xfailed because
+# build_market_panels kept incomplete symbols in the panel and
+# back-filled their first traded price over pre-listing dates.
+# The defaults are now exclude_incomplete=True /
+# fill_missing_prices=False, so the documented contract holds.
 def test_missing_constituent_handling(
     world: dict[str, Any], ingested_world: dict[str, Any]
 ) -> None:
@@ -804,7 +809,10 @@ def test_missing_constituent_handling(
 def test_universe_version_fingerprinting(
     world: dict[str, Any], ingested_world: dict[str, Any]
 ) -> None:
-    csv_path = world["universe_dir"] / "nifty100.csv"
+    # AUDIT-004d: the PIT universe is written one directory per index
+    # (``<universe_root>/nifty100-pit/nifty100.csv``); ``world["universe_dir"]``
+    # is the universe root, not the index directory.
+    csv_path = world["universe_dir"] / "nifty100-pit" / "nifty100.csv"
     first = nse_membership_adapter.membership_fingerprint(pd.read_csv(csv_path))
     second = nse_membership_adapter.membership_fingerprint(pd.read_csv(csv_path))
     assert first == second
@@ -909,7 +917,9 @@ def _capture_local_run(
         "clean_sha": clean_sha,
         "clean_fp": clean_fp,
         "report": report,
-        "universe_csv": (out_dir / "universe" / "nifty100.csv").read_bytes(),
+        "universe_csv": (
+            out_dir / "universe" / "nifty100-pit" / "nifty100.csv"
+        ).read_bytes(),
         "panel_symbols": (out_dir / "universe" / "panel_symbols.txt").read_text(
             encoding="utf-8"
         ),
@@ -1051,6 +1061,11 @@ def test_pit_membership_mask_semantics() -> None:
     assert unmasked.values.iloc[30, loc_c] > 0
 
 
+# AUDIT-014 (FIXED): these previously xfailed because
+# build_market_panels kept incomplete symbols in the panel and
+# back-filled their first traded price over pre-listing dates.
+# The defaults are now exclude_incomplete=True /
+# fill_missing_prices=False, so the documented contract holds.
 def test_ingestion_to_research_integration(
     world: dict[str, Any], ingested_world: dict[str, Any]
 ) -> None:
@@ -1153,6 +1168,11 @@ def _stable_summary(summary: dict[str, Any]) -> dict[str, Any]:
     return {key: summary[key] for key in STABLE_SUMMARY_KEYS}
 
 
+# AUDIT-014 (FIXED): these previously xfailed because
+# build_market_panels kept incomplete symbols in the panel and
+# back-filled their first traded price over pre-listing dates.
+# The defaults are now exclude_incomplete=True /
+# fill_missing_prices=False, so the documented contract holds.
 def test_full_real_data_pipeline_ledger_and_reproducibility(
     world: dict[str, Any],
     ingested_world: dict[str, Any],

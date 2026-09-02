@@ -4,12 +4,16 @@ backtest
 broker
 config
 dashboard
+data
+datahub
+diagnostics
 execution
 ingestion
 main
 models
 observability
 orchestration
+paper_trading
 portfolio
 reconciliation
 reports

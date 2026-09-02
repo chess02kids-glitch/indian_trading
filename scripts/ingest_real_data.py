@@ -51,6 +51,7 @@ if str(ROOT) not in sys.path:
 
 from data.dataset import CleanDataCatalog  # noqa: E402
 from data.quality import (  # noqa: E402
+    DataQualityError,
     check_ohlcv_long_frame,
     detect_data_staleness,
 )
@@ -58,6 +59,7 @@ from data.storage import StorageManager  # noqa: E402
 from data.universe import UniverseDataset  # noqa: E402
 from ingestion.eod2_adapter import (  # noqa: E402
     EOD2_SOURCE,
+    EQ_SERIES,
     Eod2SourceSpec,
     eod2_symbols_available,
     load_isin_map,
@@ -123,6 +125,7 @@ def ingest_prices(
     window_end: str,
     catalog: CleanDataCatalog,
     storage: StorageManager,
+    series_drops: Mapping[str, int] | None = None,
 ) -> dict[str, Any]:
     """Raw + validated ingestion of the eod2 price files (mode A).
 
@@ -133,6 +136,9 @@ def ingest_prices(
     normalised source rows for the research window; the validated clean
     layer stores only rows that pass the quality gate (duplicates,
     malformed OHLC, future dates excluded + reported).
+
+    ``series_drops`` carries what the NSE series filter (AUDIT-012) removed
+    upstream, so the report states the impact instead of hiding it.
     """
     spec = Eod2SourceSpec.from_meta(
         load_meta_json(eod2_dir), commit=_git_head(eod2_dir)
@@ -148,6 +154,14 @@ def ingest_prices(
         if not path.is_file():
             per_symbol[symbol] = {
                 "status": "missing_in_source",
+                "file": f"daily/{file_name}",
+            }
+            continue
+        if symbol not in pre_parsed:
+            # AUDIT-012: the source file exists but has no rows in the EQ
+            # series, so parse_eod2_daily_file refused it.
+            per_symbol[symbol] = {
+                "status": "no_equity_rows",
                 "file": f"daily/{file_name}",
             }
             continue
@@ -203,6 +217,13 @@ def ingest_prices(
             "accepted_rows": combined_accepted,
             "quality_issue_counts": combined_quality_issues,
         },
+        # AUDIT-012: what the NSE-series filter removed, so the change is
+        # auditable rather than invisible.
+        "series_filter": {
+            "kept": EQ_SERIES,
+            "dropped_rows_by_series": dict(sorted((series_drops or {}).items())),
+            "dropped_rows_total": int(sum((series_drops or {}).values())),
+        },
         "ohlc_inconsistencies": ohlc_inconsistencies,
         "available_in_source": sorted(available),
     }
@@ -228,12 +249,33 @@ def ingest_membership(
         (NIFTY_500_INDEX_ID, "Nifty 500", "nifty500"),
     ]
 
-    combined_audit = {}
+    combined_audit: dict[str, Any] = {}
 
     # ensure parent root exists
     universe_root.mkdir(parents=True, exist_ok=True)
 
     for idx_id, idx_name, slug in indices:
+        # AUDIT-004b: an upstream snapshot that does not carry one of the three
+        # indices used to abort the whole ingestion with
+        # ``ValueError: index 217 rows are named [], not 'Nifty 50'``. Missing
+        # one index is not fatal (the operator may only be licensed for a
+        # subset); missing *all* of them is, and still fails closed below.
+        rows = extract_index_rows(frame, index_id=idx_id)
+        if rows.empty:
+            combined_audit[slug] = {
+                "status": "absent",
+                "index_id": idx_id,
+                "index_name": idx_name,
+                "rows": 0,
+                "symbols_ever": 0,
+                "members_at_as_of": [],
+                "members_at_as_of_count": 0,
+                "excluded_symbols": [],
+                "isin_coverage": {"mapped": 0, "unmapped": 0},
+            }
+            continue
+        # Rows exist: verify the id still maps to the expected index name so a
+        # silent upstream id reassignment cannot switch universes underneath us.
         rows = extract_index_rows(frame, index_id=idx_id, index_name=idx_name)
         pit_frame = build_pit_universe_frame(rows, index_name=slug, isin_map=isin_map)
         u_dir = universe_root / f"{slug}-pit"
@@ -272,7 +314,65 @@ def ingest_membership(
             },
         }
 
+    if all(entry.get("status") == "absent" for entry in combined_audit.values()):
+        # Fail closed: no point-in-time universe means any backtest built on
+        # this run would be survivorship-biased by construction.
+        raise SystemExit(
+            f"none of the expected indices {[i[0] for i in indices]} are present "
+            f"in {source_csv}; refusing to build a survivorship-biased universe"
+        )
     return combined_audit
+
+
+def merge_membership_audit(combined_audit: Mapping[str, Any]) -> dict[str, Any]:
+    """Flatten the per-index membership audit into report shape.
+
+    AUDIT-004c: ``ingest_membership`` returns ``{slug: audit}`` but
+    :func:`build_completeness_report` reads ``report['universe']['rows']``,
+    ``['symbols_ever']``, ``['members_at_as_of_count']``, ``['excluded_symbols']``
+    and ``['isin_coverage']`` at the *top* level. Rendering the completeness
+    report therefore raised ``KeyError: 'rows'`` — the artifact the whole
+    real-data pipeline exists to produce could never be written.
+
+    Counters are aggregated across the present indices; per-index detail stays
+    available under ``by_index``.
+    """
+    present = {
+        slug: entry
+        for slug, entry in combined_audit.items()
+        if isinstance(entry, Mapping) and entry.get("status") != "absent"
+    }
+    symbols_ever_count = 0
+    members: set[str] = set()
+    excluded: set[str] = set()
+    rows = 0
+    mapped = 0
+    unmapped = 0
+    for entry in present.values():
+        rows += int(entry.get("rows", 0) or 0)
+        # ``symbols_ever`` is a per-index count of distinct symbols, and the
+        # three indices nest (Nifty 50 ⊂ 100 ⊂ 500), so the widest present
+        # index carries the headline number rather than a sum that would
+        # double-count.
+        symbols_ever_count = max(
+            symbols_ever_count, int(entry.get("symbols_ever", 0) or 0)
+        )
+        members.update(str(s) for s in entry.get("members_at_as_of", []) or [])
+        excluded.update(str(s) for s in entry.get("excluded_symbols", []) or [])
+        coverage = entry.get("isin_coverage") or {}
+        mapped += int(coverage.get("mapped", 0) or 0)
+        unmapped += int(coverage.get("unmapped", 0) or 0)
+    return {
+        "indices_present": sorted(present),
+        "indices_absent": sorted(set(combined_audit) - set(present)),
+        "rows": rows,
+        "symbols_ever": symbols_ever_count,
+        "members_at_as_of": sorted(members),
+        "members_at_as_of_count": len(members),
+        "excluded_symbols": sorted(excluded),
+        "isin_coverage": {"mapped": mapped, "unmapped": unmapped},
+        "by_index": {slug: dict(entry) for slug, entry in combined_audit.items()},
+    }
 
 
 def requested_constituents(
@@ -846,6 +946,9 @@ def _panels_and_bundle_context(
         source=EOD2_SOURCE,
         window_start=window_start,
         window_end=as_of,
+        # AUDIT-014: explicit, so the change in the defaults is visible here.
+        exclude_incomplete=True,
+        fill_missing_prices=False,
     )
     return panels, symbols, universe_root
 
@@ -882,7 +985,8 @@ def _panel_symbols_for_fetch(
     return list(panels.symbols)
 
 
-def main(argv: list[str] | None = None) -> int:
+def build_parser() -> "argparse.ArgumentParser":
+    """Build the CLI parser (split out so tests can assert the surface)."""
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
@@ -906,9 +1010,18 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--membership-dir", type=Path, default=None)
     parser.add_argument(
         "--universe-root",
+        "--universe-dir",
+        dest="universe_root",
         type=Path,
         default=ROOT / "data" / "universe",
-        help="where the point-in-time universe CSVs + provenance are written",
+        help=(
+            "where the point-in-time universe CSVs + provenance are written. "
+            "AUDIT-004: --universe-dir is the spelling used by "
+            "tests/test_real_data_pipeline.py and docs/real_data.md; it is "
+            "accepted as an alias because the CLI previously rejected it with "
+            "SystemExit(2), which made the whole real-data ingestion fixture "
+            "error out and silently skipped 7 real-data tests."
+        ),
     )
     parser.add_argument(
         "--report-dir",
@@ -930,6 +1043,11 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="explicit symbol list for --fetch-fundamentals (default: derived)",
     )
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = build_parser()
     args = parser.parse_args(argv)
 
     output_root = args.report_dir
@@ -958,15 +1076,22 @@ def main(argv: list[str] | None = None) -> int:
         # Parse once; the data-derived market calendar (holidays + special
         # sessions included) drives the clean layer's off-calendar checks.
         pre_parsed: dict[str, pd.DataFrame] = {}
+        series_drops: dict[str, int] = {}
         spec_for_parse = Eod2SourceSpec.from_meta(
             load_meta_json(eod2_dir), commit=_git_head(eod2_dir)
         )
         for symbol in symbols:
             path = eod2_dir / "daily" / symbol_to_filename(symbol)
             if path.is_file():
-                pre_parsed[symbol] = parse_eod2_daily_file(
-                    path, symbol, spec=spec_for_parse
-                )
+                # AUDIT-012: keep only the NSE equity (EQ) series. A file with
+                # no EQ rows is refused outright rather than contributing an
+                # empty or misleading history.
+                try:
+                    pre_parsed[symbol] = parse_eod2_daily_file(
+                        path, symbol, spec=spec_for_parse, dropped_series=series_drops
+                    )
+                except DataQualityError as exc:
+                    print(f"  ! {symbol}: {exc}")
         windowed_frames = {
             symbol: _window_rows(frame, args.window_start, args.as_of)
             for symbol, frame in pre_parsed.items()
@@ -984,6 +1109,7 @@ def main(argv: list[str] | None = None) -> int:
             window_end=args.as_of,
             catalog=catalog,
             storage=storage,
+            series_drops=series_drops,
         )
 
         panels, _, _ = _panels_and_bundle_context(
@@ -998,7 +1124,7 @@ def main(argv: list[str] | None = None) -> int:
             panels=panels,
             price_audit=price_audit,
             membership_audit={
-                **membership_audit,
+                **merge_membership_audit(membership_audit),
                 "source_repo": "aditya-jha/nse-historical-membership",
                 "source_commit": _git_head(membership_dir),
                 "source_license": "CC BY 4.0",

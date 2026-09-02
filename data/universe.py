@@ -268,12 +268,32 @@ class UniverseDataset:
 
     @classmethod
     def from_dir(cls, directory: str | Path) -> "UniverseDataset":
-        """Load and merge every CSV/Parquet membership file in a directory."""
+        """Load and merge every CSV/Parquet membership file in a directory.
+
+        AUDIT-004d: the point-in-time universe is written one directory per
+        index (``<root>/nifty100-pit/nifty100.csv``), but ``from_dir`` only
+        looked at files directly inside ``path`` and silently skipped
+        sub-directories, so pointing it at a universe root that has no flat
+        CSVs raised ``ValueError: no universe membership files found`` even
+        though the data was present one level down.
+
+        Files directly inside ``path`` always win; sub-directories are a
+        fallback only. The repository's own ``data/universe`` holds *both*
+        flat CSVs and ``<slug>-pit/`` directories (and the pit directories
+        contain stray copies), so merging both would double-count.
+        """
         path = Path(directory).expanduser()
         if not path.is_dir():
             raise FileNotFoundError(f"universe dataset directory missing: {path}")
         records: list[UniverseMembership] = []
-        for child in sorted(path.iterdir()):
+        candidates: list[Path] = [child for child in sorted(path.iterdir()) if child.is_file()]
+        if not any(child.suffix.lower() in (".csv", ".parquet") for child in candidates):
+            for child in sorted(path.iterdir()):
+                if child.is_dir():
+                    candidates.extend(
+                        sorted(grand for grand in child.iterdir() if grand.is_file())
+                    )
+        for child in candidates:
             if not child.is_file():
                 continue
             if child.suffix.lower() == ".csv":

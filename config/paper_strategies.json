@@ -241,6 +241,14 @@
       "mode": "DAILY",
       "min_rebalance_seconds": 86400,
       "reason": "Waiting for backtest validation on Nifty 50 hourly data"
+    },
+    "momrem": {
+      "label": "MomReM - momentum + market-remainder composite",
+      "status": "RESEARCH_ONLY",
+      "paper_approved": false,
+      "mode": "DAILY",
+      "min_rebalance_seconds": 86400,
+      "reason": "Forensic audit AUDIT-013/AUDIT-034: not approved for paper allocation. The bundled research artefact reports a positive in-sample Sharpe but the out-of-sample Sharpe is negative (Sharpe 0.816 in-sample vs -0.293 out-of-sample), so it has not cleared the research gate. Approval requires a passing docs/research_gate.md report attached to the registry entry."
     }
   }
 }

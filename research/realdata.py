@@ -84,6 +84,12 @@ class ResearchPanels:
     excluded: Mapping[str, str] = field(default_factory=dict)
     market_holidays: tuple[str, ...] = ()
     special_sessions: tuple[str, ...] = ()
+    #: Symbols recorded in ``excluded`` that are nevertheless *present* in the
+    #: panel (AUDIT-014). A reader must not assume ``excluded`` == "not here".
+    incomplete_symbols: tuple[str, ...] = ()
+    #: How gaps were handled: "ffill_bfill" (prices imputed), "none" (NaN) or
+    #: "none_excluded" (NaN, incomplete symbols dropped).
+    price_fill: str = "ffill_bfill"
 
     @property
     def market_data(self) -> MarketData:
@@ -127,14 +133,40 @@ def build_market_panels(
     window_start: date | str,
     window_end: date | str,
     minimum_symbols: int = 50,
+    exclude_incomplete: bool = True,
+    fill_missing_prices: bool = False,
 ) -> ResearchPanels:
     """Assemble the rectangular research panel over the max clean window.
 
     Calendar = union of all observed dates within
     ``[window_start, window_end]``. A symbol is *complete* when it has an
-    observation for every calendar day; incomplete symbols are excluded
-    with an explicit reason (never silently dropped) and the panel is
-    built from the complete set.
+    observation for every calendar day.
+
+    AUDIT-014 (FIXED — the defaults no longer fabricate prices):
+
+    * ``exclude_incomplete=True`` (default) drops a symbol that is missing
+      any calendar day in the window and records the reason in ``excluded``.
+      It used to default to ``False``, which kept the symbol *in* the panel
+      while also listing it in ``excluded`` — so ``excluded`` was notes, not
+      a list of removed symbols, and the completeness report's
+      ``excluded_symbols`` block was factually wrong. Pass ``False`` to
+      restore the historical behaviour; :attr:`ResearchPanels.incomplete_symbols`
+      then names every symbol the panel contains despite being incomplete.
+    * ``fill_missing_prices=False`` (default) leaves gaps as ``NaN``.
+      It used to default to ``True``, which forward- **and back**-filled: a
+      symbol that listed mid-window had its *first* traded price copied
+      backwards over every earlier date, so the panel contained prices for
+      days on which the instrument did not exist (verified in the repository's
+      own fixture world: NEWCO, first trade 2024-03-05, carried a constant
+      121.18 across the preceding 306 sessions). That contradicted
+      :mod:`data.quality`'s "the system does not impute prices", and it is
+      why :func:`backtest.engine.VectorBTResearchEngine.run` now refuses a
+      panel with gaps instead of filling them (AUDIT-009).
+
+    Behavioural note: flipping these defaults changes every published
+    Sharpe/CAGR/drawdown produced from a panel that contained an incomplete
+    symbol. That is the point — the old numbers were computed partly from
+    prices that never existed — but any stored baseline must be re-derived.
     """
     start = pd.Timestamp(window_start).date()
     end = pd.Timestamp(window_end).date()
@@ -175,17 +207,23 @@ def build_market_panels(
     complete: dict[str, pd.DataFrame] = {}
     excluded: dict[str, str] = {}
     excluded.update(missing_in_clean)
+    incomplete: tuple[str, ...] = ()
     for symbol, frame in sorted(frames.items()):
         observed = set(pd.to_datetime(frame["date"]))
         missing_days = len(set(calendar) - observed)
-        complete[symbol] = frame
         if missing_days:
             first = str(pd.to_datetime(frame["date"]).min().date())
-            # We no longer exclude, but just note it
-            excluded[symbol] = (
+            reason = (
                 f"incomplete price history in window: {missing_days} "
                 f"calendar day(s) missing (first observation {first})"
             )
+            excluded[symbol] = reason
+            if exclude_incomplete:
+                # The documented contract: drop it from the panel and keep
+                # the reason. Nothing is silently discarded.
+                continue
+            incomplete = incomplete + (symbol,)
+        complete[symbol] = frame
 
     if len(complete) < minimum_symbols:
         raise ResearchInputError(
@@ -194,10 +232,19 @@ def build_market_panels(
         )
 
     symbols = tuple(sorted(complete))
-    close = _pivot_field(complete, "close", calendar).ffill().bfill()
-    high = _pivot_field(complete, "high", calendar).ffill().bfill()
-    low = _pivot_field(complete, "low", calendar).ffill().bfill()
-    volume = _pivot_field(complete, "volume", calendar).fillna(0)
+
+    def _panel(field_name: str, *, zero_fill: bool = False) -> pd.DataFrame:
+        wide = _pivot_field(complete, field_name, calendar)
+        if zero_fill:
+            return wide.fillna(0)
+        if fill_missing_prices:
+            return wide.ffill().bfill()
+        return wide
+
+    close = _panel("close")
+    high = _panel("high")
+    low = _panel("low")
+    volume = _panel("volume", zero_fill=True)
 
     weekdays_not_traded = tuple(
         ts.date().isoformat() for ts in calendar if ts.dayofweek >= 5
@@ -214,6 +261,12 @@ def build_market_panels(
         ),
         excluded=excluded,
         market_holidays=weekdays_not_traded,
+        incomplete_symbols=incomplete,
+        price_fill=(
+            "none_excluded"
+            if exclude_incomplete
+            else ("ffill_bfill" if fill_missing_prices else "none")
+        ),
     )
 
 

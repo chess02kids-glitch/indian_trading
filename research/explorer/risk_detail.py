@@ -18,8 +18,13 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from .bollinger_validation import long_only_weights, _daily_metrics
-from .io import load_eod_panels, load_pit_universe, panel_universe_mask, resolve_research_universe
+from .bollinger_validation import _daily_metrics, long_only_weights
+from .io import (
+    load_eod_panels,
+    load_pit_universe,
+    panel_universe_mask,
+    resolve_research_universe,
+)
 from .sim import DiscoveryConfig, simulate
 
 ROOT = Path(__file__).resolve().parents[2]

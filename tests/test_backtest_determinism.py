@@ -26,7 +26,11 @@ import pandas as pd
 import pytest
 
 from backtest.costs import IndiaCostModel
-from backtest.engine import BacktestConfig, VectorBTResearchEngine
+from backtest.engine import (
+    MEMBERSHIP_FROM_PRICES,
+    BacktestConfig,
+    VectorBTResearchEngine,
+)
 from portfolio.construction import EqualWeightConstructor
 from research.contracts import MarketData
 from research.factors import MomentumFactor
@@ -78,7 +82,7 @@ def _run_reference(use_vectorbt: bool = False) -> "object":
             rebalance_frequency="M",
         )
     )
-    return engine.run(prices, weights, strategy_name="momentum63", universe_history=[])
+    return engine.run(prices, weights, strategy_name="momentum63", universe_history=MEMBERSHIP_FROM_PRICES)
 
 
 class TestBacktestDeterminism:

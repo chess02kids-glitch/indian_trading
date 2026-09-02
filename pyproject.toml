@@ -28,6 +28,9 @@ dependencies = [
     "numpy>=1.26,<3.0",
     "plotly>=5.0,<6.0",
     "vectorbt>=0.26,<1.0",
+    # AUDIT-017: dashboard/strategy_performance.py imports seaborn at module
+    # scope, so a clean install cannot even *collect* tests/test_strategy_performance.py.
+    "seaborn>=0.13.0",
     # cryptography >=50.0.0: PYSEC-2026-3552 / CVE-2026-69247 fix.
     "cryptography>=50.0.0",
     # CI runs `pip-audit --strict` on the whole environment, not just the
@@ -62,17 +65,58 @@ tracking = [
 paper = [
     "upstox-python-sdk>=2.0"
 ]
+# AUDIT-033: the four Streamlit dashboards need `streamlit`, which was
+# declared nowhere — `make dashboard` failed with a bare ModuleNotFoundError
+# on a clean install. It is an optional extra because it is heavy and the
+# HTTP dashboard the Docker image runs (`python -m dashboard.server`) does
+# not need it. Install with: pip install -e ".[dashboards]"
+dashboards = [
+    "streamlit>=1.30"
+]
 
 [tool.setuptools]
 # datahub is the shared data layer every dashboard page reads through, and
 # diagnostics holds the factor diagnostics bundle; both were missing, so an
 # editable install silently omitted them.
-packages = ["config", "ingestion", "research", "models", "backtest", "portfolio", "agents", "risk_kill", "execution", "reconciliation", "orchestration", "observability", "dashboard", "reports", "auth", "store", "broker", "paper_trading", "datahub", "diagnostics"]
+# AUDIT-016: "data" was missing from the setuptools package list, so a non-editable
+# install (and therefore the wheel and the Docker image) shipped without it. Every
+# entry point that reaches data.quality / data.dataset / data.storage then dies with
+# "ModuleNotFoundError: No module named 'data'" unless the repository root happens to
+# be on sys.path (which is only true for `python -m ...` from the checkout).
+packages = ["config", "ingestion", "research", "models", "backtest", "portfolio", "agents", "risk_kill", "execution", "reconciliation", "orchestration", "observability", "dashboard", "reports", "auth", "store", "broker", "paper_trading", "datahub", "diagnostics", "data"]
 py-modules = ["main"]
+# AUDIT-011: data.quality reads the committed exchange calendar from
+# data/calendar/nse_trading_calendar.json. Without this entry a wheel/Docker
+# install ships the module but not its data file, and every deployment
+# silently falls back to the weekday-only calendar (logging a warning nobody
+# reads) — i.e. the fix would be present in the source tree and absent in
+# production. The pattern is deliberately non-recursive so the market-data
+# tree under data/ is not pulled into the wheel.
+[tool.setuptools.package-data]
+data = ["calendar/*.json"]
 
 [tool.ruff]
 line-length = 88
 target-version = "py312"
+# `data/membership/` is a vendored research data tree (scrapers, one-off
+# CLI tools and their own tests) that was never held to this repository's
+# lint standard. Because `make lint` runs `ruff check .`, including it makes
+# the lint target fail on 67 pre-existing findings that have nothing to do
+# with the trading system — which in practice means nobody runs it, and real
+# findings in the system code get lost in the noise. Excluded until that tree
+# is cleaned up or moved out of the package.
+extend-exclude = [
+    "data/membership",
+    "research_live",
+    ".agents",
+    "scratch",
+]
+# NOTE(forensic audit): the four trees above are vendored or experimental
+# (scrapers, one-off agent skills, exploration scripts). They carry ~100
+# pre-existing findings that would otherwise make `make lint` fail on every
+# run, which in practice meant nobody ran it and real findings in the trading
+# code went unnoticed. Excluding them is what makes the lint gate usable;
+# cleaning them up is tracked separately.
 
 [tool.ruff.lint]
 select = ["E", "F", "I"]

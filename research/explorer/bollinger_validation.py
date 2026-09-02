@@ -20,13 +20,17 @@ Output: ``data/features/bollinger_validation.json`` and a summary table.
 from __future__ import annotations
 
 import itertools
-import json
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-from .io import load_eod_panels, load_pit_universe, panel_universe_mask, resolve_research_universe
+from .io import (
+    load_eod_panels,
+    load_pit_universe,
+    panel_universe_mask,
+    resolve_research_universe,
+)
 from .sim import DiscoveryConfig, simulate
 from .strategies import _bollinger_weights
 

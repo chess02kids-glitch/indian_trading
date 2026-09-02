@@ -5,11 +5,45 @@ from pathlib import Path
 
 @dataclass
 class StorageConfig:
-    """Storage configuration for paths and databases."""
+    """Storage configuration for paths and databases.
+
+    AUDIT-027: ``data_dir`` is a dataclass field whose default is evaluated
+    **once**, when ``settings`` is constructed — which happens at import.
+    Because ``settings`` is a module-level singleton, a later
+    ``QUANT_DATA_DIR`` change (a test fixture monkeypatching the
+    environment, or a supervisor rewriting it) has no effect by itself, and
+    every caller keeps writing into the committed ``data/``. Two things fix
+    that:
+
+    * ``StorageManager`` / ``DuckDBManager`` no longer bind
+      ``settings.storage.*`` as *default arguments* (which Python evaluates
+      at import), so they read the current value at construction time;
+    * :meth:`rebind` re-resolves the field from the current environment for
+      callers that need it.
+
+    Tests redirect the attribute directly with
+    ``monkeypatch.setattr(settings.storage, "data_dir", path)``, which is
+    restored correctly — a property-plus-override scheme was tried first and
+    leaked a stale override into later tests.
+    """
 
     data_dir: Path = field(
         default_factory=lambda: Path(os.getenv("QUANT_DATA_DIR", "data"))
     )
+
+    def rebind(self, data_dir: Path | str | None = None) -> Path:
+        """Re-resolve ``data_dir`` from the environment and return it.
+
+        AUDIT-027: the default is evaluated once, when ``settings`` is
+        constructed, so a later ``QUANT_DATA_DIR`` change (a test fixture
+        monkeypatching the environment, or a supervisor rewriting it) had no
+        effect and every caller kept writing into the committed ``data/``.
+        Callers that must honour the current environment call this first.
+        """
+        self.data_dir = Path(data_dir) if data_dir is not None else Path(
+            os.getenv("QUANT_DATA_DIR", "data")
+        )
+        return self.data_dir
 
     @property
     def raw_dir(self) -> Path:
